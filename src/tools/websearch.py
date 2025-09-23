@@ -1,6 +1,7 @@
 from functools import lru_cache
 from langchain_tavily import TavilySearch
 
+
 @lru_cache(maxsize=1)
 def get_websearch_tool() -> TavilySearch:
     """Return a shared instance of TavilySearch, initialized lazily."""
