@@ -2,6 +2,7 @@ import re
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
+
 def remove_ansi_escape_characters(sequence: str) -> str:
     """
     Remove ANSI escape sequences from a given string.

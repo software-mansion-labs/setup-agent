@@ -1,5 +1,5 @@
 import logging
-from logging.config import Logger
+from logging import Logger
 from typing import Type, Dict, Optional
 
 class LoggerFactory:

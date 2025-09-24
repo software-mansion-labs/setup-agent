@@ -3,6 +3,7 @@ import re
 PROGRESS_RE = re.compile(r"\d{1,3}\.\d%#+\s*")
 SPINNER_CHARS = set("⠏⠋⠙⠹⠸⠼⠴⠦⠧⠇|/-\\")
 
+
 def is_progress_noise(sequence: str) -> bool:
     """
     Detect spinner frames or progress bar lines in a string.

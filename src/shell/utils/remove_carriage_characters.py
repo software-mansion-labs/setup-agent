@@ -1,5 +1,6 @@
 CARRIAGE_CHARACTER = "\r"
 
+
 def remove_carriage_character(sequence: str) -> str:
     """
     Remove all carriage return characters ('\\r') from a given string.

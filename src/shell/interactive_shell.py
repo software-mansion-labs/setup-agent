@@ -1,18 +1,16 @@
 import pexpect
 import getpass
-from functools import reduce
-
+from functools import lru_cache, reduce
 from model import get_llm
 from langchain_core.messages import HumanMessage
+from shell.utils.remove_ansi_escape_characters import remove_ansi_escape_characters
+from shell.utils.apply_backspaces import apply_backspaces
+from shell.utils.remove_carriage_characters import remove_carriage_character
+from shell.utils.is_progress_noise import is_progress_noise
+from shell.types import InteractionReviewLLMResponse, InteractionReview, StreamToShellOutput
+from utils.logger import LoggerFactory
+from typing import Optional
 
-from utils.remove_ansi_escape_characters import remove_ansi_escape_characters
-from utils.apply_backspaces import apply_backspaces
-from utils.remove_carriage_characters import remove_carriage_character
-from utils.is_progress_noise import is_progress_noise
-from utils.logger import with_logger, Logger
-from src.shell.types import InteractionReviewLLMResponse, InteractionReview, StreamToShellOutput
-
-@with_logger(name="Shell")
 class InteractiveShell:
     """
     A persistent interactive shell interface with streaming output and
@@ -26,14 +24,15 @@ class InteractiveShell:
     - Logs shell output and LLM decisions.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, log_file: Optional[str] = None) -> None:
         """
         Initialize the interactive shell and set up environment.
         Starts a persistent zsh shell and sets a simple prompt.
         """
-        self.logger: Logger
+        self.logger = LoggerFactory.get_logger(name="Shell")
         self._llm = get_llm()
         self._buffer = ""
+        self._log_file = log_file
 
         self.logger.info("Starting persistent zsh shell...")
         self.child = pexpect.spawn("/bin/zsh", ["-l"], encoding="utf-8", echo=False)
@@ -62,7 +61,7 @@ class InteractiveShell:
         passwd = getpass.getpass("\n[Shell] Enter your sudo password: ")
         return self.stream_command(command=passwd.strip())
 
-    def run_command_with_confirmation(self, command: str) -> StreamToShellOutput:
+    def run_command(self, command: str) -> StreamToShellOutput:
         """
         Run a shell command and stream its output with optional LLM analysis.
 
@@ -149,8 +148,7 @@ class InteractiveShell:
                 self._buffer += clean_chunk
 
                 if not is_progress_noise(clean_chunk):
-                    with open("logs.txt", "a") as f:
-                        f.write(clean_chunk)
+                    self._log_to_file(clean_chunk)
 
                 llm_called = False
 
@@ -170,8 +168,7 @@ class InteractiveShell:
 
                         if interaction_review.needs_action:
                             self.logger.debug("Shell awaits interaction")
-                            with open("logs.txt", "a") as f:
-                                f.write("\n")
+                            self._log_to_file("\n")
                             
                             return StreamToShellOutput(
                                 **interaction_review.model_dump()
@@ -187,11 +184,18 @@ class InteractiveShell:
                 self.logger.error(f"Unexpected exception: {e}")
                 break
 
-        with open("logs.txt", "a") as f:
-            f.write("\n")
+        self._log_to_file("\n")
 
         self.logger.info("Command finished")
         return StreamToShellOutput(needs_action=False, output=self._buffer.strip())
 
+    def _log_to_file(self, sequence: str):
+        if self._log_file is not None:
+            with open(self._log_file, "a") as f:
+                f.write(sequence)
 
-interactive_shell = InteractiveShell()
+@lru_cache(maxsize=1)
+def get_interactive_shell() -> InteractiveShell:
+    """Return a shared instance of InteractiveShell, initialized lazily."""
+
+    return InteractiveShell()
