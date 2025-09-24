@@ -6,6 +6,7 @@ from utils.logger import LoggerFactory
 logger = LoggerFactory.get_logger(name="[User Input Tool]")
 interactive_shell = get_interactive_shell()
 
+
 @tool(parse_docstring=True)
 def user_input_tool(prompt: str) -> StreamToShellOutput:
     """
@@ -22,11 +23,11 @@ def user_input_tool(prompt: str) -> StreamToShellOutput:
             - needs_action (bool): True if further agent/user action is required.
             - reason (Optional[str]): Description of the required action, if any.
             - output (str): Full cleaned output of the shell after executing the input.
-    
+
     Raises:
         Exception: If an error occurs while sending the input to the shell.
     """
     logger.debug("user_input_tool called with prompt: %s", prompt)
-    
+
     user_response = input(f"[Agent] {prompt}\n> ")
     return interactive_shell.stream_command(user_response)

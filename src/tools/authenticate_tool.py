@@ -6,6 +6,7 @@ from utils.logger import LoggerFactory
 logger = LoggerFactory.get_logger(name="[Authenticate Tool]")
 interactive_shell = get_interactive_shell()
 
+
 @tool(parse_docstring=True)
 def authenticate_tool() -> StreamToShellOutput:
     """
@@ -24,5 +25,5 @@ def authenticate_tool() -> StreamToShellOutput:
     """
 
     logger.debug("authenticate_tool called.")
-    
+
     return interactive_shell.authenticate()

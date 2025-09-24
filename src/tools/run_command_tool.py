@@ -6,6 +6,7 @@ from utils.logger import LoggerFactory
 logger = LoggerFactory.get_logger(name="[Run Command Tool]")
 interactive_shell = get_interactive_shell()
 
+
 @tool(parse_docstring=True)
 def run_command_tool(command: str) -> StreamToShellOutput:
     """
@@ -25,5 +26,5 @@ def run_command_tool(command: str) -> StreamToShellOutput:
     """
 
     logger.debug("run_command_tool called with command: %s", command)
-    
+
     return interactive_shell.run_command(command)
