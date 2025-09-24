@@ -6,7 +6,7 @@ from agents.agents import AgentNode
 from agents.planner import planner
 from agents.installer import installer
 from dotenv import load_dotenv
-from shell.interactive_shell import get_interactive_shell, InteractiveShell
+from shell.safe_interactive_shell import get_safe_interactive_shell
 
 
 # TODO: update workflow by adding condtional reverse edges
@@ -35,8 +35,9 @@ def main():
         }
     )
 
-    interactive_shell = get_interactive_shell()
+    interactive_shell = get_safe_interactive_shell()
     interactive_shell.run_command("ls -al")
+
 
 if __name__ == "__main__":
     main()

@@ -7,9 +7,14 @@ from shell.utils.remove_ansi_escape_characters import remove_ansi_escape_charact
 from shell.utils.apply_backspaces import apply_backspaces
 from shell.utils.remove_carriage_characters import remove_carriage_character
 from shell.utils.is_progress_noise import is_progress_noise
-from shell.types import InteractionReviewLLMResponse, InteractionReview, StreamToShellOutput
+from shell.types import (
+    InteractionReviewLLMResponse,
+    InteractionReview,
+    StreamToShellOutput,
+)
 from utils.logger import LoggerFactory
 from typing import Optional
+
 
 class InteractiveShell:
     """
@@ -158,7 +163,7 @@ class InteractiveShell:
 
             except pexpect.TIMEOUT:
                 if not llm_called:
-                    self.logger.debug("Output stable for 2s; invoking LLM...")                    
+                    self.logger.debug("Output stable for 2s; invoking LLM...")
                     llm_called = True
 
                     try:
@@ -169,7 +174,7 @@ class InteractiveShell:
                         if interaction_review.needs_action:
                             self.logger.debug("Shell awaits interaction")
                             self._log_to_file("\n")
-                            
+
                             return StreamToShellOutput(
                                 **interaction_review.model_dump()
                             )
@@ -190,12 +195,30 @@ class InteractiveShell:
         return StreamToShellOutput(needs_action=False, output=self._buffer.strip())
 
     def _log_to_file(self, sequence: str):
+        """
+        Append a sequence of text to the shell's log file if logging is enabled.
+
+        This method safely opens the log file in append mode and writes
+        the provided sequence. If no log file is set, it does nothing.
+
+        Args:
+            sequence (str): The text or command output to log.
+        """
         if self._log_file is not None:
             with open(self._log_file, "a") as f:
                 f.write(sequence)
 
+
 @lru_cache(maxsize=1)
 def get_interactive_shell() -> InteractiveShell:
-    """Return a shared instance of InteractiveShell, initialized lazily."""
+    """
+    Return a shared instance of `InteractiveShell`, initialized lazily.
 
+    This function ensures that only one instance of `InteractiveShell` is
+    created and reused throughout the application, improving efficiency
+    and maintaining consistent state across shell interactions.
+
+    Returns:
+        InteractiveShell: A singleton instance of the interactive shell.
+    """
     return InteractiveShell()
