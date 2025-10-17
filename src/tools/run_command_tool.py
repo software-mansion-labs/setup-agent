@@ -25,6 +25,6 @@ def run_command_tool(command: str) -> StreamToShellOutput:
             - output (str): Full cleaned output of the executed command.
     """
 
-    logger.debug("run_command_tool called with command: %s", command)
+    logger.info("run_command_tool called with command: %s", command)
 
     return interactive_shell.run_command(command)

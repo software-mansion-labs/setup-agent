@@ -24,6 +24,6 @@ def authenticate_tool() -> StreamToShellOutput:
             - output (str): Full cleaned output of the shell response.
     """
 
-    logger.debug("authenticate_tool called.")
+    logger.info("authenticate_tool called.")
 
     return interactive_shell.authenticate()

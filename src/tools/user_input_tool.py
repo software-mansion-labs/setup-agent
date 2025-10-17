@@ -27,7 +27,7 @@ def user_input_tool(prompt: str) -> StreamToShellOutput:
     Raises:
         Exception: If an error occurs while sending the input to the shell.
     """
-    logger.debug("user_input_tool called with prompt: %s", prompt)
+    logger.info("user_input_tool called with prompt: %s", prompt)
 
     user_response = input(f"[Agent] {prompt}\n> ")
     return interactive_shell.stream_command(user_response)

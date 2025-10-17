@@ -60,7 +60,7 @@ class InteractiveShell:
         Args:
             text (str): The command or input to send to the shell.
         """
-        self.logger.debug(f"Sending to shell: {text}")
+        self.logger.info(f"Sending to shell: {text}")
         self.child.sendline(text)
 
     def authenticate(self) -> StreamToShellOutput:
@@ -150,7 +150,7 @@ class InteractiveShell:
         self._buffer = ""
         self._send(command)
 
-        self.logger.debug(f"Running command: {command}")
+        self.logger.info(f"Running command: {command}")
         llm_called = False
 
         while True:
@@ -168,12 +168,12 @@ class InteractiveShell:
                 llm_called = False
 
                 if clean_chunk.strip().endswith("$"):
-                    self.logger.debug("Detected shell prompt; command finished.")
+                    self.logger.info("Detected shell prompt; command finished.")
                     break
 
             except pexpect.TIMEOUT:
                 if not llm_called:
-                    self.logger.debug("Output stable for 2s; invoking LLM...")
+                    self.logger.info("Output stable for 2s; invoking LLM...")
                     llm_called = True
 
                     try:
@@ -182,7 +182,7 @@ class InteractiveShell:
                         )
 
                         if interaction_review.needs_action:
-                            self.logger.debug("Shell awaits interaction")
+                            self.logger.info("Shell awaits interaction")
                             self._log_to_file("\n")
 
                             return StreamToShellOutput(
