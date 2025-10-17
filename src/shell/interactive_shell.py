@@ -29,7 +29,13 @@ class InteractiveShell:
     - Logs shell output and LLM decisions.
     """
 
-    def __init__(self, log_file: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        log_file: Optional[str] = None,
+        init_timeout: int = 65536,
+        read_buffer_size: int = 2,
+        read_timeout: int = 10,
+    ) -> None:
         """
         Initialize the interactive shell and set up environment.
         Starts a persistent zsh shell and sets a simple prompt.
@@ -38,11 +44,13 @@ class InteractiveShell:
         self._llm = get_llm()
         self._buffer = ""
         self._log_file = log_file
+        self._read_buffer_size = read_buffer_size
+        self._read_timeout = read_timeout
 
         self.logger.info("Starting persistent zsh shell...")
         self.child = pexpect.spawn("/bin/zsh", ["-l"], encoding="utf-8", echo=False)
         self.child.sendline('PS1="$ "')
-        self.child.expect(r"\$ ", timeout=10)
+        self.child.expect(r"\$ ", timeout=init_timeout)
         self.logger.info("Shell ready.")
 
     def _send(self, text: str) -> None:
@@ -147,7 +155,9 @@ class InteractiveShell:
 
         while True:
             try:
-                chunk = self.child.read_nonblocking(65536, timeout=2.0)
+                chunk = self.child.read_nonblocking(
+                    self._read_buffer_size, timeout=self._read_timeout
+                )
                 clean_chunk = self._clean_chunk(chunk)
 
                 self._buffer += clean_chunk
