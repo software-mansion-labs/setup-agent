@@ -15,7 +15,7 @@ from config import Config
 def main():
     load_dotenv()
 
-    config = Config.init(".")
+    config = Config.init()
     guidelines_retriever_node = GuidelinesRetrieverNode()
 
     graph = StateGraph(GraphState)

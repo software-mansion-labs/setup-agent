@@ -13,8 +13,10 @@ dependencies = [
     "langchain-openai>=0.3.32",
     "langchain-tavily>=0.2.11",
     "langgraph>=0.6.6",
+    "markdown>=3.9",
     "pexpect>=4.9.0",
     "pre-commit>=4.3.0",
+    "unstructured>=0.18.15",
 ]
 
 [dependency-groups]
