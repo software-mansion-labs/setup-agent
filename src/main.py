@@ -1,12 +1,13 @@
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from agents.runner import runner
-from graph_state import GraphState
+from src.graph_state import GraphState
 from agents.agents import AgentNode
 from agents.planner import planner
 from agents.installer import installer
 from dotenv import load_dotenv
 from shell.safe_interactive_shell import get_safe_interactive_shell
+from src.nodes.guidelines_retriever import GuidelinesRetrieverNode
 
 
 # TODO: update workflow by adding condtional reverse edges
@@ -32,12 +33,11 @@ def main():
                     content="Install all required tools according to the provided guidelines."
                 )
             ]
-        }
+        } # type: ignore
     )
 
     interactive_shell = get_safe_interactive_shell()
     interactive_shell.run_command("ls -al")
-
 
 if __name__ == "__main__":
     main()

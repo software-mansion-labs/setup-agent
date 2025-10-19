@@ -1,7 +1,13 @@
-from typing import Optional, List
 from langgraph.graph import MessagesState
+from typing import Optional, List
+from pydantic import BaseModel
+
+
+class GuidelineFile(BaseModel):
+    file: str
+    content: str
 
 
 class GraphState(MessagesState):
-    guidelines_text: Optional[str]
-    requirements: Optional[List[str]]
+    next_agent: Optional[str]
+    guideline_files: List[GuidelineFile]

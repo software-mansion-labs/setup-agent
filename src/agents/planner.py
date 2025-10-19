@@ -1,6 +1,6 @@
-from graph_state import GraphState
+from src.graph_state import GraphState
 
 
 # TODO: implement planner agent logic
 def planner(state: GraphState) -> GraphState:
-    return {}
+    return state
