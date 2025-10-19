@@ -5,6 +5,6 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 @lru_cache(maxsize=1)
 def get_llm(model: str = "openai:gpt-4o") -> BaseChatModel:
-    """Return a shared instance of ChatOpenAI, initialized lazily."""
+    """Return a shared instance of BaseChatModel, initialized lazily."""
 
     return init_chat_model(model=model)
