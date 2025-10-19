@@ -89,7 +89,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         self, guideline_files: List[GuidelineFile]
     ) -> List[GuidelineFile]:
         if not guideline_files:
-            self.logger.info("No guideline files found.")
+            self.logger.warning("No guideline files found.")
             return []
 
         choices = sorted(
