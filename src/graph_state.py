@@ -11,3 +11,5 @@ class GuidelineFile(BaseModel):
 class GraphState(MessagesState):
     next_agent: Optional[str]
     guideline_files: List[GuidelineFile]
+    possible_tasks: List[str]
+    chosen_task: str
