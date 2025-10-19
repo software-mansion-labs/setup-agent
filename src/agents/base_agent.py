@@ -29,7 +29,7 @@ class BaseAgent(BaseLLMNode):
     ):
         super().__init__(name=name)
         self.agent = create_react_agent(
-            model=self._llm.bind_tools(
+            model=self._llm.get_raw_llm().bind_tools(
                 tools=tools, parallel_tool_calls=parallel_tool_calls
             ),
             tools=tools,

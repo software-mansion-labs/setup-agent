@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from llm.model import get_llm
 from langchain.prompts import ChatPromptTemplate
 from typing import Type, TypeVar
+from langchain_core.language_models.chat_models import BaseChatModel
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -13,7 +14,7 @@ class StructuredLLM:
     """
 
     def __init__(self):
-        self._llm = get_llm()
+        self._raw_llm = get_llm()
 
     def invoke(
         self, schema: Type[T], system_message: str, input_text: str
@@ -23,7 +24,7 @@ class StructuredLLM:
         Accepts a Pydantic model class (Type[BaseModel]).
         Returns a parsed Pydantic object (schema).
         """
-        structured_llm = self._llm.with_structured_output(schema, method="json_mode")
+        structured_llm = self._raw_llm.with_structured_output(schema, method="json_mode")
 
         system_message = (
             system_message
@@ -43,3 +44,6 @@ class StructuredLLM:
             return schema.model_validate(raw_result.model_dump())
         else:
             raise TypeError(f"Unexpected return type: {type(raw_result)}")
+
+    def get_raw_llm(self) -> BaseChatModel:
+        return self._raw_llm
