@@ -82,14 +82,14 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             + direct_files
         )
 
-        print(f"[GuidelinesRetriever] Supported files found: {len(supported_files)}")
+        self.logger.info(f"Supported files found: {len(supported_files)}")
         return supported_files
 
     def _prompt_user_selection(
         self, guideline_files: List[GuidelineFile]
     ) -> List[GuidelineFile]:
         if not guideline_files:
-            print("[GuidelinesRetriever] No guideline files found.")
+            self.logger.info("No guideline files found.")
             return []
 
         choices = sorted(
@@ -107,7 +107,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         return selected
 
     def invoke(self, state: GraphState) -> GraphState:
-        print("[GuidelinesRetriever] Retrieving guidelines from the project")
+        self.logger.info("Retrieving guidelines from the project")
         supported_files = self._collect_supported_files()
         relevant_files = self._filter_non_relevant_files(supported_files)
         guideline_files = self._pick_guideline_files_from_content(relevant_files)

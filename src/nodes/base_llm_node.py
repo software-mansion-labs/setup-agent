@@ -4,6 +4,7 @@ from langchain.prompts import ChatPromptTemplate
 from typing import Type, TypeVar
 from abc import abstractmethod, ABC
 from graph_state import GraphState
+from utils.logger import LoggerFactory
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -17,6 +18,7 @@ class BaseLLMNode(ABC):
     def __init__(self, name: str):
         self.name = name
         self._llm = get_llm()
+        self.logger = LoggerFactory.get_logger(name=name)
 
     def _invoke_structured_llm(
         self, schema: Type[T], system_message: str, input_text: str
