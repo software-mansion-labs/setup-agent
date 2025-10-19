@@ -1,15 +1,15 @@
-from src.graph_state import GraphState
+from graph_state import GraphState
 from config import Config
 from typing import List
 import os
 from itertools import chain
-from src.graph_state import GuidelineFile
+from graph_state import GuidelineFile
 from InquirerPy.prompts import checkbox
-from src.nodes.base_llm_node import BaseLLMNode
-from src.utils.file_loader import FileLoader
-from src.nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
-from src.nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
-from src.nodes.nodes import WorkflowNode
+from nodes.base_llm_node import BaseLLMNode
+from utils.file_loader import FileLoader
+from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
+from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
+from nodes.nodes import WorkflowNode
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):

@@ -1,5 +1,4 @@
 from functools import lru_cache
-import getpass
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
 from shell.interactive_shell import InteractiveShell

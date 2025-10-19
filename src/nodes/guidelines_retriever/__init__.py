@@ -1,4 +1,4 @@
-from src.nodes.guidelines_retriever.node import GuidelinesRetrieverNode
+from nodes.guidelines_retriever.node import GuidelinesRetrieverNode
 
 __all__ = [
     "GuidelinesRetrieverNode",

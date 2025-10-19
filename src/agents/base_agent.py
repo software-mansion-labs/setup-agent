@@ -1,13 +1,13 @@
 from abc import abstractmethod
 
-from src.graph_state import GraphState
+from graph_state import GraphState
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from langgraph.prebuilt import create_react_agent
 from uuid import UUID
 from typing import Sequence
 from langchain.tools import BaseTool
 from typing import Optional
-from src.nodes.base_llm_node import BaseLLMNode
+from nodes.base_llm_node import BaseLLMNode
 
 
 class CustomAgentState(AgentState):

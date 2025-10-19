@@ -1,9 +1,9 @@
 from pydantic import BaseModel
-from src.model import get_llm
+from model import get_llm
 from langchain.prompts import ChatPromptTemplate
 from typing import Type, TypeVar
 from abc import abstractmethod, ABC
-from src.graph_state import GraphState
+from graph_state import GraphState
 
 T = TypeVar("T", bound=BaseModel)
 

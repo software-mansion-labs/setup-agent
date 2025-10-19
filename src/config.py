@@ -1,5 +1,5 @@
 from __future__ import annotations
-from src.utils.singleton_meta import SingletonMeta
+from utils.singleton_meta import SingletonMeta
 from typing import List
 from pathlib import Path
 
