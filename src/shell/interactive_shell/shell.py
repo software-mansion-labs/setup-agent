@@ -1,22 +1,18 @@
 import pexpect
 import getpass
-from functools import lru_cache, reduce
-from llm.structured_llm import StructuredLLM
-from shell.utils.remove_ansi_escape_characters import remove_ansi_escape_characters
-from shell.utils.apply_backspaces import apply_backspaces
-from shell.utils.remove_carriage_characters import remove_carriage_character
-from shell.utils.is_progress_noise import is_progress_noise
+from functools import lru_cache
 from shell.types import (
     InteractionReviewLLMResponse,
     InteractionReview,
     StreamToShellOutput,
 )
-from utils.logger import LoggerFactory
 from typing import Optional
-from shell.base_interactive_shell.prompts import BaseInteractiveShellPrompts
+from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
+from shell.base_shell import BaseShell
+from uuid import UUID
 
 
-class InteractiveShell:
+class InteractiveShell(BaseShell):
     """
     A persistent interactive shell interface with streaming output and
     LLM-based detection of user interaction requirements.
@@ -31,6 +27,7 @@ class InteractiveShell:
 
     def __init__(
         self,
+        id: Optional[UUID] = None,
         log_file: Optional[str] = None,
         init_timeout: int = 65536,
         read_buffer_size: int = 2,
@@ -40,18 +37,10 @@ class InteractiveShell:
         Initialize the interactive shell and set up environment.
         Starts a persistent zsh shell and sets a simple prompt.
         """
-        self.logger = LoggerFactory.get_logger(name="Shell")
-        self._llm = StructuredLLM()
-        self._buffer = ""
+        super().__init__(id=id, init_timeout=init_timeout)
         self._log_file = log_file
         self._read_buffer_size = read_buffer_size
         self._read_timeout = read_timeout
-
-        self.logger.info("Starting persistent zsh shell...")
-        self.child = pexpect.spawn("/bin/zsh", ["-l"], encoding="utf-8", echo=False)
-        self.child.sendline('PS1="$ "')
-        self.child.expect(r"\$ ", timeout=init_timeout)
-        self.logger.info("Shell ready.")
 
     def _send(self, text: str) -> None:
         """
@@ -85,29 +74,6 @@ class InteractiveShell:
             StreamToShellOutput: The final shell output or an LLM decision if interaction is required.
         """
         return self.stream_command(command=command)
-
-    def _clean_chunk(self, chunk: str) -> str:
-        """
-        Clean a chunk of shell output using a series of transformations.
-
-        Steps:
-            - Remove ANSI escape codes.
-            - Remove carriage returns.
-            - Apply backspace character handling.
-            - Strip leading/trailing whitespace.
-
-        Args:
-            chunk (str): Raw shell output.
-
-        Returns:
-            str: Cleaned shell output.
-        """
-        cleaning_pipeline = [
-            remove_ansi_escape_characters,
-            remove_carriage_character,
-            apply_backspaces,
-        ]
-        return reduce(lambda acc, func: func(acc), cleaning_pipeline, chunk).strip()
 
     def _review_for_interaction(self, buffer: str) -> InteractionReview:
         """
@@ -157,7 +123,7 @@ class InteractiveShell:
 
                 self._buffer += clean_chunk
 
-                if not is_progress_noise(clean_chunk):
+                if not self._is_progress_noise(clean_chunk):
                     self._log_to_file(clean_chunk)
 
                 llm_called = False
