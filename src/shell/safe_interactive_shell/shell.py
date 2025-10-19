@@ -1,23 +1,8 @@
 from functools import lru_cache
-from pydantic import BaseModel
-from langchain_core.messages import HumanMessage
-from shell.interactive_shell import InteractiveShell
+from shell.base_interactive_shell.shell import InteractiveShell
 from shell.types import StreamToShellOutput
-
-
-class CommandReview(BaseModel):
-    """
-    Represents the safety review of a shell command.
-
-    Attributes:
-        description (str): A brief explanation of what the command does.
-        safe (bool): Indicates whether the command is considered safe to run.
-        reason (str): Explanation of why the command is safe or unsafe.
-    """
-
-    description: str
-    safe: bool
-    reason: str
+from shell.safe_interactive_shell.types import CommandReview
+from shell.safe_interactive_shell.prompts import SafeInteractiveShellPrompts
 
 
 class SafeInteractiveShell(InteractiveShell):
@@ -95,28 +80,10 @@ class SafeInteractiveShell(InteractiveShell):
             CommandReview: A structured review containing the description, safety, and reason.
         """
         try:
-            prompt = f"""
-                You are a command-line safety assistant.
-
-                Analyze the following shell command and provide:
-                1. A short description of what the command does.
-                2. Whether it is SAFE to run (read-only, listing, inspecting, etc.) or UNSAFE
-                (installs software, deletes/modifies files, requires sudo, etc.).
-
-                Return your response strictly as JSON following this schema:
-                {{
-                    "description": string,
-                    "safe": boolean,
-                    "reason": string
-                }}
-
-                Command to analyze:
-                {command}
-            """
-
-            structured_llm = self._llm.with_structured_output(CommandReview)
-            review: CommandReview = structured_llm.invoke(
-                [HumanMessage(content=prompt)]
+            review = self._llm.invoke(
+                schema=CommandReview,
+                system_message=SafeInteractiveShellPrompts.REVIEW_COMMAND_SAFETY.value,
+                input_text=command,
             )
 
         except Exception as e:

@@ -1,8 +1,7 @@
 import pexpect
 import getpass
 from functools import lru_cache, reduce
-from model import get_llm
-from langchain_core.messages import HumanMessage
+from llm.structured_llm import StructuredLLM
 from shell.utils.remove_ansi_escape_characters import remove_ansi_escape_characters
 from shell.utils.apply_backspaces import apply_backspaces
 from shell.utils.remove_carriage_characters import remove_carriage_character
@@ -14,6 +13,7 @@ from shell.types import (
 )
 from utils.logger import LoggerFactory
 from typing import Optional
+from shell.base_interactive_shell.prompts import BaseInteractiveShellPrompts
 
 
 class InteractiveShell:
@@ -41,7 +41,7 @@ class InteractiveShell:
         Starts a persistent zsh shell and sets a simple prompt.
         """
         self.logger = LoggerFactory.get_logger(name="Shell")
-        self._llm = get_llm()
+        self._llm = StructuredLLM()
         self._buffer = ""
         self._log_file = log_file
         self._read_buffer_size = read_buffer_size
@@ -119,20 +119,15 @@ class InteractiveShell:
         Returns:
             InteractionReview: LLM decision indicating whether interaction is needed, along with reasoning and output.
         """
-        prompt = f"""
-            You are a command-line assistant. Analyze this shell output and determine
-            if the system is **actually waiting for user input right now**.
-
-            Shell output:
-            \"\"\"{buffer}\"\"\"
-        """
-
-        structured_llm = self._llm.with_structured_output(InteractionReviewLLMResponse)
-        interaction_review_llm_response: InteractionReviewLLMResponse = (
-            structured_llm.invoke([HumanMessage(content=prompt)])
+        interaction_review_llm_response = self._llm.invoke(
+            schema=InteractionReviewLLMResponse,
+            system_message=BaseInteractiveShellPrompts.REVIEW_FOR_INTERACTION.value,
+            input_text=buffer,
         )
+
         return InteractionReview(
-            **interaction_review_llm_response.model_dump(), output=buffer
+            **interaction_review_llm_response.model_dump(),
+            output=buffer,
         )
 
     def stream_command(self, command: str) -> StreamToShellOutput:

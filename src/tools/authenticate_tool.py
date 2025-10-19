@@ -1,6 +1,5 @@
 from langchain_core.tools import tool
-from shell.interactive_shell import get_interactive_shell
-from shell.types import StreamToShellOutput
+from shell import get_interactive_shell, StreamToShellOutput
 from utils.logger import LoggerFactory
 
 logger = LoggerFactory.get_logger(name="[Authenticate Tool]")
