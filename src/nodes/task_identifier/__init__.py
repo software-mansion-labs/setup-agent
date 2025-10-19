@@ -1,3 +1,3 @@
-from nodes.task_identifier.node import *
+from nodes.task_identifier.node import TaskIdentifierNode
 
-__all__ = []
+__all__ = ["TaskIdentifierNode"]

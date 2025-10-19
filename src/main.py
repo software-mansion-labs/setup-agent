@@ -2,14 +2,10 @@ from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from agents.runner import runner
 from graph_state import GraphState
-from nodes.nodes import WorkflowNode
+from nodes import GuidelinesRetrieverNode, TaskIdentifierNode, WorkflowNode
 from agents.planner import planner
 from agents.installer import installer
-from nodes.guidelines_retriever import GuidelinesRetrieverNode
 from dotenv import load_dotenv
-from shell.safe_interactive_shell import get_safe_interactive_shell
-from nodes.guidelines_retriever import GuidelinesRetrieverNode
-from nodes.task_identifier import TaskIdentifierNode
 from config import Config
 
 
@@ -25,20 +21,17 @@ def main():
     graph.add_node(
         WorkflowNode.GUIDELINES_RETRIEVER_NODE.value, guidelines_retriever_node.invoke
     )
-    graph.add_node(
-        WorkflowNode.TASK_IDENTIFIER_NODE.value, task_identifier_node.invoke
-    )
+    graph.add_node(WorkflowNode.TASK_IDENTIFIER_NODE.value, task_identifier_node.invoke)
     graph.add_node(WorkflowNode.PLANNER.value, planner)
     graph.add_node(WorkflowNode.INSTALLER.value, installer)
     graph.add_node(WorkflowNode.RUNNER.value, runner)
 
     graph.add_edge(START, WorkflowNode.GUIDELINES_RETRIEVER_NODE.value)
     graph.add_edge(
-        WorkflowNode.GUIDELINES_RETRIEVER_NODE.value, WorkflowNode.TASK_IDENTIFIER_NODE.value
+        WorkflowNode.GUIDELINES_RETRIEVER_NODE.value,
+        WorkflowNode.TASK_IDENTIFIER_NODE.value,
     )
-    graph.add_edge(
-        WorkflowNode.TASK_IDENTIFIER_NODE.value, WorkflowNode.PLANNER.value
-    )
+    graph.add_edge(WorkflowNode.TASK_IDENTIFIER_NODE.value, WorkflowNode.PLANNER.value)
     graph.add_edge(WorkflowNode.PLANNER.value, WorkflowNode.INSTALLER.value)
     graph.add_edge(WorkflowNode.INSTALLER.value, WorkflowNode.RUNNER.value)
     graph.add_edge(WorkflowNode.RUNNER.value, END)
