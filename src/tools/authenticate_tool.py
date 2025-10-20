@@ -8,8 +8,11 @@ from typing import Optional
 from utils.logger import LoggerFactory
 import getpass
 
+
 @tool
-def authenticate_tool(state: Annotated[CustomAgentState, InjectedState]) -> StreamToShellOutput:
+def authenticate_tool(
+    state: Annotated[CustomAgentState, InjectedState],
+) -> StreamToShellOutput:
     """
     Prompt the user for a password and send it to the persistent interactive shell.
 

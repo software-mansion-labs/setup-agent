@@ -3,7 +3,13 @@ from itertools import chain
 
 from graph_state import GraphState, FinishedStep, Node, WorkflowError, Step
 from langchain_core.messages import HumanMessage
-from tools import authenticate_tool, get_websearch_tool, run_command_tool, user_input_tool, ask_user_tool
+from tools import (
+    authenticate_tool,
+    get_websearch_tool,
+    run_command_tool,
+    user_input_tool,
+    ask_user_tool,
+)
 from agents.base_agent import BaseAgent
 from shell import ShellRegistry
 from agents.installer.prompts import InstallerPrompts
@@ -27,6 +33,7 @@ class Installer(BaseAgent):
     - User input interaction (`user_input_tool`)
     - Asking user (`ask_user_tool`)
     """
+
     def __init__(self):
         self._shell_registry = ShellRegistry.get()
         tools = [
@@ -34,7 +41,7 @@ class Installer(BaseAgent):
             run_command_tool,
             authenticate_tool,
             user_input_tool,
-            ask_user_tool
+            ask_user_tool,
         ]
         super().__init__(
             name=Node.INSTALLER_AGENT.value,
@@ -122,7 +129,11 @@ class Installer(BaseAgent):
         ).execute()
 
     def _handle_non_continue_choice(
-        self, choice: str, step: Step, finished_steps: List[FinishedStep], state: GraphState
+        self,
+        choice: str,
+        step: Step,
+        finished_steps: List[FinishedStep],
+        state: GraphState,
     ) -> GraphState:
         """Handle user choices other than 'Continue'.
 
@@ -181,16 +192,20 @@ class Installer(BaseAgent):
         state["finished_steps"] = finished_steps
         return state
 
-    def _prepare_installation_prompt(self, step: Step, finished_steps: List[FinishedStep]) -> str:
+    def _prepare_installation_prompt(
+        self, step: Step, finished_steps: List[FinishedStep]
+    ) -> str:
         commands_text = FILE_SEPARATOR.join(
             ", ".join(substep.suggested_commands) for substep in step.substeps
         )
         installed_text = (
-            ", ".join(f.step.description for f in finished_steps) if finished_steps else "none"
+            ", ".join(f.step.description for f in finished_steps)
+            if finished_steps
+            else "none"
         )
 
         return InstallerPrompts.INSTALLATION_PROMPT.value.format(
             step_description=step.description,
             installed_text=installed_text,
-            commands_text=commands_text
+            commands_text=commands_text,
         )

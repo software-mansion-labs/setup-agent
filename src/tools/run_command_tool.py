@@ -8,8 +8,11 @@ from agents.base_agent import CustomAgentState
 from typing import Optional
 from utils.logger import LoggerFactory
 
+
 @tool(parse_docstring=True)
-def run_command_tool(command: str, state: Annotated[CustomAgentState, InjectedState]) -> StreamToShellOutput:
+def run_command_tool(
+    command: str, state: Annotated[CustomAgentState, InjectedState]
+) -> StreamToShellOutput:
     """
     Run a shell command in the persistent interactive shell.
 

@@ -184,12 +184,15 @@ class Planner(BaseAgent):
             GraphState: The same or updated state, possibly containing new error reports.
         """
         self.logger.info("Checking if installation succeeded...")
-        choices = [Choice(value=True, name="Yes, everything worked"), Choice(value=False, name="No, there was a problem")]
+        choices = [
+            Choice(value=True, name="Yes, everything worked"),
+            Choice(value=False, name="No, there was a problem"),
+        ]
 
         is_installation_successful = ListPrompt(
             message="Did the installation/process achieve the desired goal?",
             choices=choices,
-            default=True
+            default=True,
         ).execute()
 
         if is_installation_successful:
@@ -222,9 +225,7 @@ class Planner(BaseAgent):
         description = "User reported installation issue"
         errors = state.get("errors", [])
 
-        errors.append(
-            WorkflowError(description=description, error=problem_description)
-        )
+        errors.append(WorkflowError(description=description, error=problem_description))
 
         self.logger.info("Capturing clarifying details from the user...")
 
@@ -247,7 +248,7 @@ class Planner(BaseAgent):
             user_reply = InputPrompt(message=f"[Agent] {agent_question}\n=>").execute()
             if not user_reply.strip():
                 break
-            
+
             errors.append(
                 WorkflowError(
                     description=f"Clarification: {agent_question}", error=user_reply

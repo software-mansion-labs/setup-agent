@@ -1,6 +1,7 @@
 from langchain_core.tools import tool
 from utils.logger import LoggerFactory
 
+
 @tool(parse_docstring=True)
 def ask_user_tool(prompt: str) -> str:
     """

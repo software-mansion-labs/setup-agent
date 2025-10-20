@@ -13,6 +13,7 @@ from typing import Type, TypeVar
 
 T = TypeVar("T", bound=BaseModel)
 
+
 class CustomAgentState(AgentState):
     shell_id: Optional[UUID]
     structured_response: Optional[BaseModel]
@@ -30,7 +31,7 @@ class BaseAgent(BaseLLMNode):
         prompt: str,
         tools: Sequence[BaseTool] = [],
         parallel_tool_calls: bool = False,
-        response_format: Optional[Type[T]] = None
+        response_format: Optional[Type[T]] = None,
     ):
         super().__init__(name=name)
         self.agent = create_react_agent(
@@ -41,7 +42,7 @@ class BaseAgent(BaseLLMNode):
             name=name,
             prompt=prompt,
             state_schema=CustomAgentState,
-            response_format=response_format
+            response_format=response_format,
         )
 
     @abstractmethod

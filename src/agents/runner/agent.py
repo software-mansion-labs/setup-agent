@@ -109,7 +109,11 @@ class Runner(BaseAgent):
         ).execute()
 
     def _handle_non_continue_choice(
-        self, choice: str, step: Step, finished_steps: List[FinishedStep], state: GraphState
+        self,
+        choice: str,
+        step: Step,
+        finished_steps: List[FinishedStep],
+        state: GraphState,
     ) -> GraphState:
         """Handle user actions other than 'Continue' (Skip or Learn more).
 
@@ -173,7 +177,9 @@ class Runner(BaseAgent):
         state["next_node"] = Node.PLANNER_AGENT
         return state
 
-    def _prepare_execution_prompt(self, step: Step, finished_steps: List[FinishedStep]) -> str:
+    def _prepare_execution_prompt(
+        self, step: Step, finished_steps: List[FinishedStep]
+    ) -> str:
         """Construct a formatted prompt for the language model to guide command execution.
 
         Args:

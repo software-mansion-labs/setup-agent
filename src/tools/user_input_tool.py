@@ -10,7 +10,9 @@ from typing import Optional
 
 
 @tool(parse_docstring=True)
-def user_input_tool(prompt: str, state: Annotated[CustomAgentState, InjectedState]) -> StreamToShellOutput:
+def user_input_tool(
+    prompt: str, state: Annotated[CustomAgentState, InjectedState]
+) -> StreamToShellOutput:
     """
     Prompt the user for input and send the response to the persistent interactive shell.
 
