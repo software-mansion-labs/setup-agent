@@ -10,6 +10,7 @@ class Node(str, Enum):
     PLANNER_AGENT = "PLANNER_AGENT"
     INSTALLER_AGENT = "INSTALLER_AGENT"
     RUNNER_AGENT = "RUNNER_AGENT"
+    AUDITOR_AGENT = "AUDITOR_AGENT"
     GUIDELINES_RETRIEVER_NODE = "GUIDELINES_RETRIEVER_NODE"
     TASK_IDENTIFIER_NODE = "TASK_IDENTIFIER_NODE"
 
@@ -50,9 +51,9 @@ class WorkflowError(BaseModel):
 
 
 class GraphState(MessagesState):
-    plan: Deque[Step]
+    plan: Optional[Deque[Step]]
     finished_steps: List[FinishedStep]
-    failed_steps: List[FinishedStep]
+    failed_steps: List[FailedStep]
     errors: List[WorkflowError]
     next_node: Optional[Node]
     guideline_files: List[GuidelineFile]

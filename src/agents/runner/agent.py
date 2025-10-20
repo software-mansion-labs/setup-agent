@@ -50,7 +50,7 @@ class Runner(BaseAgent):
             return state
 
         next_step = steps.popleft()
-        if next_step.assigned_agent != Node.RUNNER_AGENT.value:
+        if next_step.assigned_agent != Node.RUNNER_AGENT:
             self.logger.warning("Received task that is not assigned to the runner")
             return state
 

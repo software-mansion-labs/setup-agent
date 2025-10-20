@@ -3,7 +3,7 @@ from agents.base_agent import BaseAgent
 from graph_state import GraphState, Step, Substep, WorkflowError, Node
 from shell import ShellRegistry
 from tools import get_websearch_tool
-from typing import List
+from typing import List, Deque
 from config import Config
 from langchain_core.messages import HumanMessage
 from agents.planner.types import ReadmeAnalysis
@@ -120,9 +120,9 @@ class Planner(BaseAgent):
             PlannerPrompts.HANDLE_ERRORS.value,
             input_text=f"errors: {list(errors)}",
         )
-
+        plan = state.get("plan") or deque()
         planned_steps = self._assign_shells(analysis.plan)
-        state["plan"] = deque(planned_steps) + state["plan"]
+        state["plan"] = deque(planned_steps) + plan
         state["errors"] = []
         return state
 
@@ -145,12 +145,13 @@ class Planner(BaseAgent):
             PlannerPrompts.HANDLE_FAILED_STEPS.value,
             input_text=f"failed_steps: {list(failed_steps)}",
         )
+        plan = state.get("plan") or deque()
 
         planned_steps = self._assign_shells(analysis.plan)
         state["plan"] = (
             deque(planned_steps)
             + deque([failed_step.step for failed_step in failed_steps])
-            + state["plan"]
+            + plan
         )
 
         state["failed_steps"] = []
@@ -294,12 +295,12 @@ class Planner(BaseAgent):
         """
         self.logger.info("Planning unified step sequence...")
 
-        if "plan" not in state:
+        if state["plan"] is None:
             self._first_analysis(state)
 
         state = self._handle_failed_steps(state)
 
-        if len(state["plan"]) == 0:
+        if not state["plan"]:
             state = self._ensure_installation_success(state)
 
         state = self._handle_errors(state)

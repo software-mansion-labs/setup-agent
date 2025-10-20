@@ -45,7 +45,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         guideline_files: List[GuidelineFile] = []
 
         for file in files:
-            content = self._file_loader.load_document(file)
+            content = self._file_loader.load_document(os.path.join(self._project_root, file))
             if not content.strip():
                 continue
 

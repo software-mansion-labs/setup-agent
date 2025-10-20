@@ -190,7 +190,7 @@ class Installer(BaseAgent):
         )
 
         return InstallerPrompts.INSTALLATION_PROMPT.value.format(
-            next_step_description=step.description,
+            step_description=step.description,
             installed_text=installed_text,
             commands_text=commands_text
         )
