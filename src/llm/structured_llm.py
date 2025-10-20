@@ -16,15 +16,15 @@ class StructuredLLM:
     def __init__(self):
         self._raw_llm = get_llm()
 
-    def invoke(
-        self, schema: Type[T], system_message: str, input_text: str
-    ) -> T:
+    def invoke(self, schema: Type[T], system_message: str, input_text: str) -> T:
         """
         Invoke the LLM with a structured output schema.
         Accepts a Pydantic model class (Type[BaseModel]).
         Returns a parsed Pydantic object (schema).
         """
-        structured_llm = self._raw_llm.with_structured_output(schema, method="json_mode")
+        structured_llm = self._raw_llm.with_structured_output(
+            schema, method="json_mode"
+        )
 
         system_message = (
             system_message

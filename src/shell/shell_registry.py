@@ -4,14 +4,15 @@ from uuid import UUID, uuid1
 from shell import InteractiveShell, BaseShell
 from utils.singleton_meta import SingletonMeta
 
+
 class ShellRegistry(metaclass=SingletonMeta):
     def __init__(self):
         self.shell_registry: Dict[UUID, BaseShell] = {}
         self.main_shell = InteractiveShell()
-    
+
     def register_new_shell(self) -> UUID:
         """
-        Create a new InteractiveShell instance, register it in the registry, 
+        Create a new InteractiveShell instance, register it in the registry,
         and return its unique UUID.
         """
         uuid = uuid1()
@@ -21,7 +22,7 @@ class ShellRegistry(metaclass=SingletonMeta):
 
         shell = InteractiveShell(uuid)
         self.shell_registry[uuid] = shell
- 
+
         return uuid
 
     def get_shell(self, uuid: Optional[UUID] = None) -> BaseShell:
@@ -31,7 +32,7 @@ class ShellRegistry(metaclass=SingletonMeta):
         """
         if uuid is not None and uuid in self.shell_registry:
             return self.shell_registry[uuid]
-        
+
         return self.main_shell
 
     @classmethod
@@ -43,5 +44,7 @@ class ShellRegistry(metaclass=SingletonMeta):
     def get(cls) -> ShellRegistry:
         """Get the singleton instance. Raises if not initialized."""
         if cls._instance is None:
-            raise RuntimeError("ShellRegistry not initialized. Call ShellRegistry.init() first.")
+            raise RuntimeError(
+                "ShellRegistry not initialized. Call ShellRegistry.init() first."
+            )
         return cls._instance

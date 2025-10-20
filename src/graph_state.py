@@ -5,6 +5,7 @@ from uuid import UUID
 from typing import Deque
 from enum import Enum
 
+
 class Node(str, Enum):
     PLANNER_AGENT = "PLANNER_AGENT"
     INSTALLER_AGENT = "INSTALLER_AGENT"
@@ -12,9 +13,11 @@ class Node(str, Enum):
     GUIDELINES_RETRIEVER_NODE = "GUIDELINES_RETRIEVER_NODE"
     TASK_IDENTIFIER_NODE = "TASK_IDENTIFIER_NODE"
 
+
 class Substep(BaseModel):
     description: str
     suggested_commands: List[str] = []
+
 
 class Step(BaseModel):
     description: str
@@ -23,19 +26,23 @@ class Step(BaseModel):
     run_in_separate_shell: bool = False
     shell_id: Optional[UUID] = None
 
+
 class FinishedStep(BaseModel):
     step: Step
     output: Optional[str] = None
     skipped: bool = False
+
 
 class FailedStep(BaseModel):
     step: Step
     reason: str
     guidance: str
 
+
 class GuidelineFile(BaseModel):
     file: str
     content: str
+
 
 class WorkflowError(BaseModel):
     description: str

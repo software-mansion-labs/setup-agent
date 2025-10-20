@@ -8,10 +8,11 @@ from functools import reduce
 from utils.logger import LoggerFactory
 from llm import StructuredLLM
 
-ANSI_ESCAPE_RE = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]')
+ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 PROGRESS_RE = re.compile(r"\d{1,3}\.\d%#+\s*")
 SPINNER_CHARS = set("⠏⠋⠙⠹⠸⠼⠴⠦⠧⠇|/-\\")
 CARRIAGE_CHARACTER = "\r"
+
 
 class BaseShell(ABC):
     def __init__(self, id: Optional[UUID] = None, init_timeout: int = 65536):
@@ -35,7 +36,7 @@ class BaseShell(ABC):
     @abstractmethod
     def run_command(self, command: str) -> StreamToShellOutput:
         return self.stream_command(command=command)
-    
+
     def _remove_ansi_escape_characters(self, sequence: str) -> str:
         """
         Remove ANSI escape sequences from a given string.
@@ -55,7 +56,7 @@ class BaseShell(ABC):
             'Hello'
         """
         return ANSI_ESCAPE_RE.sub("", sequence)
-    
+
     def _remove_carriage_character(self, sequence: str) -> str:
         """
         Remove all carriage return characters ('\\r') from a given string.
@@ -67,7 +68,7 @@ class BaseShell(ABC):
             str: A new string with all carriage return characters removed.
         """
         return sequence.replace(CARRIAGE_CHARACTER, "")
-    
+
     def _apply_backspaces(self, sequence: str) -> str:
         """
         Simulates the effect of backspace characters in a string.

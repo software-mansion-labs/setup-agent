@@ -4,4 +4,10 @@ from shell.base_shell import BaseShell
 from shell.types import StreamToShellOutput
 from shell.shell_registry import ShellRegistry
 
-__all__ = ["ShellRegistry", "BaseShell", "InteractiveShell", "SafeInteractiveShell", "StreamToShellOutput"]
+__all__ = [
+    "ShellRegistry",
+    "BaseShell",
+    "InteractiveShell",
+    "SafeInteractiveShell",
+    "StreamToShellOutput",
+]

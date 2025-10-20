@@ -27,7 +27,9 @@ class BaseLLMNode(ABC):
         Accepts a Pydantic model class (Type[BaseModel]).
         Returns a parsed Pydantic object (schema).
         """
-        return self._llm.invoke(schema=schema, system_message=system_message, input_text=input_text)
+        return self._llm.invoke(
+            schema=schema, system_message=system_message, input_text=input_text
+        )
 
     @abstractmethod
     def invoke(self, state: GraphState) -> GraphState:

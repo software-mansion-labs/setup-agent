@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from config import Config
 from shell import ShellRegistry
 
+
 # TODO: update workflow by adding condtional reverse edges
 def main():
     load_dotenv()
