@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
-from agents.runner import runner
+from agents.runner.agent import Runner
 from graph_state import GraphState, Node
 from nodes import GuidelinesRetrieverNode, TaskIdentifierNode
 from agents.installer.agent import Installer
@@ -22,6 +22,7 @@ def main():
     task_identifier_node = TaskIdentifierNode()
     planner_agent = Planner()
     installer_agent = Installer()
+    runner_agent = Runner()
 
     graph = StateGraph(GraphState)
     graph.add_node(
@@ -30,7 +31,7 @@ def main():
     graph.add_node(Node.TASK_IDENTIFIER_NODE.value, task_identifier_node.invoke)
     graph.add_node(Node.PLANNER_AGENT.value, planner_agent.invoke)
     graph.add_node(Node.INSTALLER_AGENT.value, installer_agent.invoke)
-    graph.add_node(Node.RUNNER_AGENT.value, runner)
+    graph.add_node(Node.RUNNER_AGENT.value, runner_agent.invoke)
 
     graph.add_edge(START, Node.GUIDELINES_RETRIEVER_NODE.value)
     graph.add_edge(
