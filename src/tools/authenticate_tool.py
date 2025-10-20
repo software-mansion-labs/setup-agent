@@ -31,5 +31,5 @@ def authenticate_tool(state: Annotated[CustomAgentState, InjectedState]) -> Stre
     logger = LoggerFactory.get_logger(name=name)
 
     logger.info("Prompting for sudo password")
-    passwd = getpass.getpass(f"\n[{name}] Enter your sudo password: ")
+    passwd = getpass.getpass(f"\n[AGENT > {name}] Enter your sudo password: ")
     return shell.stream_command(command=passwd.strip())

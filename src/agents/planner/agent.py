@@ -2,7 +2,7 @@ from collections import deque
 from agents.base_agent import BaseAgent
 from graph_state import GraphState, Step, Substep, WorkflowError, Node
 from shell import ShellRegistry
-from tools.websearch import get_websearch_tool
+from tools import get_websearch_tool
 from typing import List
 from config import Config
 from langchain_core.messages import HumanMessage

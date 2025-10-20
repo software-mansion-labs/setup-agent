@@ -3,10 +3,7 @@ from itertools import chain
 
 from graph_state import GraphState, FinishedStep, Node, WorkflowError, Step
 from langchain_core.messages import HumanMessage
-from tools.authenticate_tool import authenticate_tool
-from tools.websearch import get_websearch_tool
-from tools.run_command_tool import run_command_tool
-from tools.user_input_tool import user_input_tool
+from tools import authenticate_tool, get_websearch_tool, run_command_tool, user_input_tool, ask_user_tool
 from agents.base_agent import BaseAgent
 from shell import ShellRegistry
 from agents.installer.prompts import InstallerPrompts
@@ -26,8 +23,9 @@ class Installer(BaseAgent):
     It extends `BaseAgent` and uses tools such as:
     - Command execution (`run_command_tool`)
     - Web search (`get_websearch_tool`)
-    - Authentication
-    - User input interaction
+    - Authentication (`authenticate_tool`)
+    - User input interaction (`user_input_tool`)
+    - Asking user (`ask_user_tool`)
     """
     def __init__(self):
         self._shell_registry = ShellRegistry.get()
@@ -36,6 +34,7 @@ class Installer(BaseAgent):
             run_command_tool,
             authenticate_tool,
             user_input_tool,
+            ask_user_tool
         ]
         super().__init__(
             name=Node.INSTALLER_AGENT.value,
