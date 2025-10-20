@@ -9,6 +9,7 @@ from enum import Enum
 from typing import List, Optional
 import os
 from functools import lru_cache
+from utils.logger import LoggerFactory
 
 
 class SupportedExtension(str, Enum):
@@ -55,6 +56,7 @@ class SupportedExtension(str, Enum):
 class FileLoader:
     def __init__(self, project_root: str):
         self.project_root = project_root
+        self._logger = LoggerFactory.get_logger(name="FILE_LOADER")
 
     def _is_hidden_entry(self, path: str) -> bool:
         return path.startswith(".")
@@ -74,7 +76,7 @@ class FileLoader:
                     return f.read()
 
         except Exception as e:
-            print(f"[WARN] Failed to load {file_path}: {e}")
+            self._logger.warning(f"Failed to load {file_path}: {e}")
             return ""
 
     def list_supported_files(self, dir_root: Optional[str] = None) -> List[str]:
@@ -108,7 +110,7 @@ class FileLoader:
                 if not self._is_hidden_entry(entry) and os.path.isdir(full_path):
                     all_dirs.append(entry)
         except Exception as e:
-            print(f"[WARN] Failed to list subdirectories: {e}")
+            self._logger.warning(f"Failed to list subdirectories: {e}")
 
         return all_dirs
 
@@ -125,6 +127,6 @@ class FileLoader:
                         relative_path = os.path.relpath(full_path, self.project_root)
                         supported_files.append(relative_path)
         except Exception as e:
-            print(f"[WARN] Failed to list files in directory {dir_path}: {e}")
+            self._logger.warning(f"Failed to list files in directory {dir_path}: {e}")
 
         return supported_files
