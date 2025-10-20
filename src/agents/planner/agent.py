@@ -10,6 +10,7 @@ from agents.planner.types import ReadmeAnalysis
 from agents.planner.prompts import PlannerPrompts
 from InquirerPy.prompts.list import ListPrompt
 from InquirerPy.prompts.input import InputPrompt
+from InquirerPy.base.control import Choice
 from constants import FILE_SEPARATOR
 
 
@@ -41,8 +42,8 @@ class Planner(BaseAgent):
         websearch_tool = get_websearch_tool()
         tools = [websearch_tool]
         super().__init__(
-            name=Node.PLANNER_AGENT,
-            prompt=PlannerPrompts.AGENT_DESCRIPTION_PROMPT,
+            name=Node.PLANNER_AGENT.value,
+            prompt=PlannerPrompts.AGENT_DESCRIPTION_PROMPT.value,
             tools=tools,
         )
 
@@ -92,7 +93,7 @@ class Planner(BaseAgent):
 
         analysis: ReadmeAnalysis = self._invoke_structured_llm(
             ReadmeAnalysis,
-            PlannerPrompts.FIRST_GUIDELINES_ANALYSIS,
+            PlannerPrompts.FIRST_GUIDELINES_ANALYSIS.value,
             f"raw_texts: {guideline_files_merged_content}\nproject_root:{self.project_root}\n**GOAL**: {chosen_task}",
         )
 
@@ -116,7 +117,7 @@ class Planner(BaseAgent):
 
         analysis: ReadmeAnalysis = self._invoke_structured_llm(
             ReadmeAnalysis,
-            PlannerPrompts.HANDLE_ERRORS,
+            PlannerPrompts.HANDLE_ERRORS.value,
             input_text=f"errors: {list(errors)}",
         )
 
@@ -141,7 +142,7 @@ class Planner(BaseAgent):
 
         analysis: ReadmeAnalysis = self._invoke_structured_llm(
             ReadmeAnalysis,
-            PlannerPrompts.HANDLE_FAILED_STEPS,
+            PlannerPrompts.HANDLE_FAILED_STEPS.value,
             input_text=f"failed_steps: {list(failed_steps)}",
         )
 
@@ -182,13 +183,15 @@ class Planner(BaseAgent):
             GraphState: The same or updated state, possibly containing new error reports.
         """
         self.logger.info("Checking if installation succeeded...")
-        choice = ListPrompt(
+        choices = [Choice(value=True, name="Yes, everything worked"), Choice(value=False, name="No, there was a problem")]
+
+        is_installation_successful = ListPrompt(
             message="Did the installation/process achieve the desired goal?",
-            choices=["Yes, everything worked", "No, there was a problem"],
-            default="Yes, everything worked",
+            choices=choices,
+            default=True
         ).execute()
 
-        if choice == "Yes, everything worked":
+        if is_installation_successful:
             self.logger.info("User confirmed success.")
             return state
 
@@ -209,19 +212,23 @@ class Planner(BaseAgent):
         Returns:
             GraphState: Updated state with error information appended.
         """
+        self.logger.info("Collecting info about errors from user.")
+
         problem_description = InputPrompt(
             message="Please describe the problem or paste the error/output here:"
         ).execute()
 
         description = "User reported installation issue"
-        state["errors"].append(
+        errors = state.get("errors", [])
+
+        errors.append(
             WorkflowError(description=description, error=problem_description)
         )
 
         self.logger.info("Capturing clarifying details from the user...")
 
         while True:
-            system_prompt = PlannerPrompts.COLLECT_USER_ERRORS.format(
+            system_prompt = PlannerPrompts.COLLECT_USER_ERRORS.value.format(
                 problem_description=problem_description
             )
             try:
@@ -239,12 +246,13 @@ class Planner(BaseAgent):
             user_reply = InputPrompt(message=f"[Agent] {agent_question}\n=>").execute()
             if not user_reply.strip():
                 break
-
-            state["errors"].append(
+            
+            errors.append(
                 WorkflowError(
                     description=f"Clarification: {agent_question}", error=user_reply
                 )
             )
+        state["errors"] = errors
 
         self.logger.info("Error information collected successfully.")
         return state
@@ -292,7 +300,7 @@ class Planner(BaseAgent):
         state = self._handle_failed_steps(state)
 
         if len(state["plan"]) == 0:
-            self._ensure_installation_success(state)
+            state = self._ensure_installation_success(state)
 
         state = self._handle_errors(state)
         state = self._decide_next_agent(state)

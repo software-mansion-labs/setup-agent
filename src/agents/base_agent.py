@@ -35,7 +35,7 @@ class BaseAgent(BaseLLMNode):
             tools=tools,
             name=name,
             prompt=prompt,
-            state_schema=CustomAgentState,
+            state_schema=CustomAgentState
         )
 
     @abstractmethod

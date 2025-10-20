@@ -1,13 +1,15 @@
 from langchain_core.tools import tool
-from shell import get_interactive_shell, StreamToShellOutput
+from typing_extensions import Annotated
+from langgraph.prebuilt import InjectedState
+from agents.base_agent import CustomAgentState
+from uuid import UUID
+from shell import ShellRegistry, StreamToShellOutput
+from typing import Optional
 from utils.logger import LoggerFactory
+import getpass
 
-logger = LoggerFactory.get_logger(name="[Authenticate Tool]")
-interactive_shell = get_interactive_shell()
-
-
-@tool(parse_docstring=True)
-def authenticate_tool() -> StreamToShellOutput:
+@tool
+def authenticate_tool(state: Annotated[CustomAgentState, InjectedState]) -> StreamToShellOutput:
     """
     Prompt the user for a password and send it to the persistent interactive shell.
 
@@ -22,7 +24,12 @@ def authenticate_tool() -> StreamToShellOutput:
             - reason (Optional[str]): Description of the required action if applicable.
             - output (str): Full cleaned output of the shell response.
     """
+    shell_registry = ShellRegistry().get()
+    shell_id: Optional[UUID] = state["shell_id"]
+    shell = shell_registry.get_shell(shell_id)
+    name = f"AUTHENTICATE_TOOL - {shell._id}"
+    logger = LoggerFactory.get_logger(name=name)
 
-    logger.info("authenticate_tool called.")
-
-    return interactive_shell.authenticate()
+    logger.info("Prompting for sudo password")
+    passwd = getpass.getpass(f"\n[{name}] Enter your sudo password: ")
+    return shell.stream_command(command=passwd.strip())

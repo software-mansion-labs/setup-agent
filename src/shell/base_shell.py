@@ -112,7 +112,7 @@ class BaseShell(ABC):
         (e.g., "23.4%###").
         2. Spinner frames, consisting entirely of characters in `SPINNER_CHARS`.
         The set includes Braille spinners (⠏⠋⠙⠹⠸⠼⠴⠦⠧⠇) as well
-        as common ASCII spinners (|, /, -, \).
+        as common ASCII spinners (|, /, -, \\).
 
         Args:
             sequence (str): The string to check.

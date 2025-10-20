@@ -34,7 +34,7 @@ class TaskIdentifierNode(BaseLLMNode):
         """
         result: DeveloperTasks = self._invoke_structured_llm(
             DeveloperTasks,
-            TaskIdentifierPrompts.IDENTIFY_TASKS,
+            TaskIdentifierPrompts.IDENTIFY_TASKS.value,
             input_text=guideline_text,
         )
         return result.tasks
