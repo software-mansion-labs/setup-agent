@@ -2,8 +2,15 @@ from langgraph.graph import MessagesState
 from typing import Optional, List
 from pydantic import BaseModel
 from uuid import UUID
-from nodes import Node
 from typing import Deque
+from enum import Enum
+
+class Node(str, Enum):
+    PLANNER_AGENT = "PLANNER_AGENT"
+    INSTALLER_AGENT = "INSTALLER_AGENT"
+    RUNNER_AGENT = "RUNNER_AGENT"
+    GUIDELINES_RETRIEVER_NODE = "GUIDELINES_RETRIEVER_NODE"
+    TASK_IDENTIFIER_NODE = "TASK_IDENTIFIER_NODE"
 
 class Substep(BaseModel):
     description: str
@@ -30,12 +37,16 @@ class GuidelineFile(BaseModel):
     file: str
     content: str
 
+class WorkflowError(BaseModel):
+    description: str
+    error: str
+
 
 class GraphState(MessagesState):
     plan: Deque[Step]
     finished_steps: List[FinishedStep]
     failed_steps: List[FinishedStep]
-    errors: Optional[List[dict]]
+    errors: List[WorkflowError]
     next_node: Optional[Node]
     guideline_files: List[GuidelineFile]
     possible_tasks: List[str]

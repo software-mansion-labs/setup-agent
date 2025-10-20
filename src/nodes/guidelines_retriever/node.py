@@ -1,20 +1,18 @@
-from graph_state import GraphState
 from config import Config
 from typing import List
 import os
 from itertools import chain
-from graph_state import GuidelineFile
+from graph_state import GuidelineFile, Node, GraphState
 from InquirerPy.prompts import checkbox
 from nodes.base_llm_node import BaseLLMNode
 from utils.file_loader import FileLoader
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
 from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
-from nodes.nodes import WorkflowNode
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):
     def __init__(self):
-        super().__init__(name=WorkflowNode.GUIDELINES_RETRIEVER_NODE.value)
+        super().__init__(name=Node.GUIDELINES_RETRIEVER_NODE.value)
         config = Config.get()
         self._project_root = config.project_root
         self._file_loader = FileLoader(project_root=self._project_root)

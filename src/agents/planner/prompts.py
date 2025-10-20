@@ -19,8 +19,8 @@ class PlannerPrompts(str, Enum):
         - If the GOAL mentions “install dependencies and run tests,” skip steps that are irrelevant to those objectives.
 
         2. Each step must specify which agent executes it:
-        - installer_agent → sets up tools, dependencies, environment
-        - runner_agent → runs or starts the app
+        - INSTALLER_AGENT → sets up tools, dependencies, environment
+        - RUNNER_AGENT → runs or starts the app
 
         3. Substeps:
         - Include detailed substeps with suggested CLI commands.  
@@ -41,7 +41,7 @@ class PlannerPrompts(str, Enum):
         "plan": [
             {{
             "description": "High-level summary of the step",
-            "assigned_agent": "installer_agent" | "runner_agent",
+            "assigned_agent": "INSTALLER_AGENT" | "RUNNER_AGENT",
             "run_in_separate_shell": true | false,
             "substeps": [
                 {{
@@ -66,7 +66,7 @@ class PlannerPrompts(str, Enum):
         "plan": [
             {{
             "description": str,
-            "assigned_agent": "installer_agent" | "runner_agent",
+            "assigned_agent": "INSTALLER_AGENT" | "RUNNER_AGENT",
             "run_in_separate_shell": true | false,
             "substeps": [
                 {{ "description": str, "suggested_commands": [str] }}
@@ -87,7 +87,7 @@ class PlannerPrompts(str, Enum):
         "plan": [
             {{
             "description": str,
-            "assigned_agent": "installer_agent" | "runner_agent",
+            "assigned_agent": "INSTALLER_AGENT" | "RUNNER_AGENT",
             "run_in_separate_shell": true | false,
             "substeps": [
                 {{ "description": str, "suggested_commands": [str] }}
@@ -96,3 +96,11 @@ class PlannerPrompts(str, Enum):
         ]
         }}
     """
+    COLLECT_USER_ERRORS = (
+        "You are a planner agent helping fix installation issues.\n"
+        "The user reported the following problem:\n{problem_description}\n\n"
+        "Ask ONE concise clarifying question to understand the issue better.\n"
+        "- Do NOT suggest any fix.\n"
+        "- Do NOT output explanations.\n"
+        "- If you have no further questions, return an empty string."
+    )

@@ -1,16 +1,16 @@
 from collections import deque
-import json
 from agents.base_agent import BaseAgent
-from graph_state import GraphState, Step, Substep
+from graph_state import GraphState, Step, Substep, WorkflowError, Node
 from shell import ShellRegistry
 from tools.websearch import get_websearch_tool
 from typing import List
 from config import Config
-from InquirerPy import inquirer
 from langchain_core.messages import HumanMessage
 from agents.planner.types import ReadmeAnalysis
-from nodes import Node
 from agents.planner.prompts import PlannerPrompts
+from InquirerPy.prompts.list import ListPrompt
+from InquirerPy.prompts.input import InputPrompt
+from constants import FILE_SEPARATOR
 
 class Planner(BaseAgent):
     def __init__(self):
@@ -52,11 +52,7 @@ class Planner(BaseAgent):
             ])
             return state
         
-        FILE_SEPARATOR = "=" * 10 + "\n"
         guideline_files_merged_content = FILE_SEPARATOR.join([guideline.content for guideline in guideline_files])
-
-        with open("test.txt", "w") as f:
-            f.write(guideline_files_merged_content)
 
         analysis: ReadmeAnalysis = self._invoke_structured_llm(
             ReadmeAnalysis,
@@ -64,19 +60,8 @@ class Planner(BaseAgent):
             f"raw_texts: {guideline_files_merged_content}\nproject_root:{self.project_root}\n**GOAL**: {chosen_task}",
         )
 
-        output_file = "plan.json"
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(analysis.model_dump(), f, indent=2, ensure_ascii=False)
-
-        def assign_shell_ids(steps: List[Step]) -> List[Step]:
-            for step in steps:
-                if step.run_in_separate_shell:
-                    step.substeps = [self.cd_substep] + step.substeps
-                    step.shell_id = self.shell_registry.register_new_shell()
-            return steps
-
-        plan_steps = assign_shell_ids([self.cd_step] + analysis.plan)
-        state["plan"] = deque(plan_steps)
+        planned_steps = self._assign_shells([self.cd_step] + analysis.plan)
+        state["plan"] = deque(planned_steps)
         return state
 
     def _handle_errors(self, state: GraphState) -> GraphState:
@@ -90,18 +75,15 @@ class Planner(BaseAgent):
             input_text=f"errors: {list(errors)}",
         )
 
-        for step in analysis.plan:
-            if step.run_in_separate_shell:
-                step.substeps = [self.cd_substep] + step.substeps
-                step.shell_id = self.shell_registry.register_new_shell()
+        planned_steps = self._assign_shells(analysis.plan)
 
-        state["plan"] = deque(analysis.plan) + state.get("plan", deque())
+        state["plan"] = deque(planned_steps) + state["plan"]
         state["errors"] = []
         return state
 
     def _handle_failed_steps(self, state: GraphState) -> GraphState:
-        failed_steps = state.get("failed_steps")
-        if not failed_steps or len(failed_steps) == 0:
+        failed_steps = state.get("failed_steps", [])
+        if not failed_steps:
             return state
 
         analysis: ReadmeAnalysis = self._invoke_structured_llm(
@@ -110,73 +92,67 @@ class Planner(BaseAgent):
             input_text=f"failed_steps: {list(failed_steps)}",
         )
 
-        for step in analysis.plan:
+        planned_steps = self._assign_shells(analysis.plan)
+
+        state["plan"] = deque(planned_steps) + deque([failed_step.step for failed_step in failed_steps]) + state["plan"]
+        state["failed_steps"] = []
+        return state
+    
+    def _assign_shells(self, steps: List[Step]) -> List[Step]:
+        """Ensure each step that needs its own shell has one."""
+        for step in steps:
             if step.run_in_separate_shell:
                 step.substeps = [self.cd_substep] + step.substeps
                 step.shell_id = self.shell_registry.register_new_shell()
-
-        state["plan"] = deque(analysis.plan) + deque([failed_step.step for failed_step in failed_steps]) + state.get("plan", deque())
-        state["failed_steps"] = []
-        return state
+        return steps
 
     def _ensure_installation_success(self, state: GraphState) -> GraphState:
-        """
-        Ask the user if the installation/process succeeded.
-        If not, have a mini-chat with the user where the agent asks questions to clarify.
-        """
-
-        print("[Planner] Verifying if installation succeeded...")
-
-        user_choice = inquirer.select( # type: ignore
+        self.logger.info("Checking if installation succeeded...")
+        choice = ListPrompt(
             message="Did the installation/process achieve the desired goal?",
             choices=["Yes, everything worked", "No, there was a problem"],
             default="Yes, everything worked"
         ).execute()
 
-        if user_choice == "Yes, everything worked":
-            print("[Planner] User confirmed installation success.")
-            state["installation_success"] = True # type: ignore
+        if choice == "Yes, everything worked":
+            self.logger.info("User confirmed success.")
             return state
 
-        problem_description = inquirer.text( # type: ignore
+        return self._collect_user_error(state)
+    
+    def _collect_user_error(self, state: GraphState) -> GraphState:
+        """Interactively collect a structured WorkflowError from the user."""
+        problem_description = InputPrompt(
             message="Please describe the problem or paste the error/output here:"
         ).execute()
 
-        if "errors" not in state:
-            state["errors"] = []
-        state["errors"].append(problem_description) # type: ignore
+        description = "User reported installation issue"
+        state["errors"].append(WorkflowError(description=description, error=problem_description))
 
-        print("[Planner] Let’s clarify the problem with a few follow-up questions.")
+        self.logger.info("Capturing clarifying details from the user...")
 
-        continue_chat = True
-        while continue_chat:
-            system_prompt = (
-                "You are a planner agent helping a user fix installation issues. "
-                "The user reported the following problem:\n"
-                f"{problem_description}\n\n"
-                "Ask ONE concise clarifying question to understand the issue better. "
-                "Do NOT provide a solution, only ask."
-                "If you don't have any more questions, return empty string."
-            )
-
+        while True:
+            system_prompt = PlannerPrompts.COLLECT_USER_ERRORS.format(problem_description=problem_description)
             try:
                 result = self.agent.invoke({"messages": [HumanMessage(content=system_prompt)]})
                 agent_question = result["messages"][-1].content.strip()
             except Exception as e:
-                print(f"[Planner] Failed to generate agent question: {e}")
+                self.logger.error(f"LLM error during clarification: {e}")
                 break
 
             if not agent_question:
                 break
 
-            user_reply = inquirer.text(message=f"[Agent] {agent_question}\nYour answer:").execute() # type: ignore
+            user_reply = InputPrompt(message=f"[Agent] {agent_question}\n=>").execute()
             if not user_reply.strip():
                 break
 
-            state["errors"].append(user_reply) # type: ignore
-            state["plan"].appendleft(state["finished_steps"][-1].step) # type: ignore
+            state["errors"].append(WorkflowError(
+                description=f"Clarification: {agent_question}",
+                error=user_reply,
+            ))
 
-        print("[Planner] Problem details collected. Will adjust the plan accordingly.")
+        self.logger.info("Error information collected successfully.")
         return state
 
     def _decide_next_agent(self, state: GraphState) -> GraphState:
@@ -190,16 +166,15 @@ class Planner(BaseAgent):
         return state
 
     def invoke(self, state: GraphState) -> GraphState:
-        print("[Planner] Planning unified step sequence...")
+        self.logger.info("Planning unified step sequence...")
 
         if "plan" not in state:
             self._first_analysis(state)
-            
-        state = self._handle_failed_steps(state)
 
+        state = self._handle_failed_steps(state)
         if len(state["plan"]) == 0:
             self._ensure_installation_success(state)
-            state = self._handle_errors(state)
-
+        
+        state = self._handle_errors(state)
         state = self._decide_next_agent(state)
         return state

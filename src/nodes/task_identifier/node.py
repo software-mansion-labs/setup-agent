@@ -1,10 +1,10 @@
 from typing import List
 from InquirerPy.prompts.list import ListPrompt
-from graph_state import GraphState
+from graph_state import GraphState, Node
 from nodes.base_llm_node import BaseLLMNode
-from nodes.nodes import WorkflowNode
 from nodes.task_identifier.prompts import TaskIdentifierPrompts
 from nodes.task_identifier.types import DeveloperTasks
+from constants import FILE_SEPARATOR
 
 
 class TaskIdentifierNode(BaseLLMNode):
@@ -19,7 +19,7 @@ class TaskIdentifierNode(BaseLLMNode):
     """
 
     def __init__(self):
-        super().__init__(name=WorkflowNode.TASK_IDENTIFIER_NODE.value)
+        super().__init__(name=Node.TASK_IDENTIFIER_NODE.value)
 
     def _extract_possible_tasks(self, guideline_text: str) -> List[str]:
         """
@@ -78,7 +78,6 @@ class TaskIdentifierNode(BaseLLMNode):
             state["possible_tasks"] = []
             return state
 
-        FILE_SEPARATOR = "=" * 10 + "\n"
         merged_content = FILE_SEPARATOR.join(
             [guideline.content for guideline in guideline_files]
         )
