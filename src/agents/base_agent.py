@@ -8,10 +8,14 @@ from typing import Sequence
 from langchain.tools import BaseTool
 from typing import Optional
 from nodes.base_llm_node import BaseLLMNode
+from pydantic import BaseModel
+from typing import Type, TypeVar
 
+T = TypeVar("T", bound=BaseModel)
 
 class CustomAgentState(AgentState):
     shell_id: Optional[UUID]
+    structured_response: Optional[BaseModel]
 
 
 class BaseAgent(BaseLLMNode):
@@ -26,6 +30,7 @@ class BaseAgent(BaseLLMNode):
         prompt: str,
         tools: Sequence[BaseTool] = [],
         parallel_tool_calls: bool = False,
+        response_format: Optional[Type[T]] = None
     ):
         super().__init__(name=name)
         self.agent = create_react_agent(
@@ -35,7 +40,8 @@ class BaseAgent(BaseLLMNode):
             tools=tools,
             name=name,
             prompt=prompt,
-            state_schema=CustomAgentState
+            state_schema=CustomAgentState,
+            response_format=response_format
         )
 
     @abstractmethod
