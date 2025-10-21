@@ -15,7 +15,7 @@ def run(
         dir_okay=True,
     ),
     guideline_files: List[str] = typer.Option(
-        None,
+        [],
         "--guideline_files",
         help="Path to the guidelines file",
         exists=True,
