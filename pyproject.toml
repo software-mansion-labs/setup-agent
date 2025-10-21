@@ -16,6 +16,7 @@ dependencies = [
     "markdown>=3.9",
     "pexpect>=4.9.0",
     "pre-commit>=4.3.0",
+    "typer>=0.20.0",
     "unstructured>=0.18.15",
 ]
 
@@ -24,3 +25,9 @@ dev = [
     "mypy>=1.17.1",
     "ruff>=0.12.11",
 ]
+
+[tool.uv]
+package = true
+
+[project.scripts]
+devops-agent = "cli.cli:app"

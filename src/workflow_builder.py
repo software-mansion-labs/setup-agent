@@ -9,12 +9,13 @@ from agents.auditor.agent import Auditor
 from dotenv import load_dotenv
 from config import Config
 from shell import ShellRegistry
+from typing import List
 
 
 class WorkflowBuilder:
-    def __init__(self, project_root: str = "projects/expensify/App"):
+    def __init__(self, project_root: str = ".", guideline_files: List[str] = []):
         load_dotenv()
-        Config.init(project_root=project_root)
+        Config.init(project_root=project_root, guideline_files=guideline_files)
         ShellRegistry.init()
 
         self.guidelines_node = GuidelinesRetrieverNode()
@@ -74,16 +75,20 @@ class WorkflowBuilder:
 
     @staticmethod
     def route_planner(state: GraphState):
-        next_agent = state.get("next_agent")
-        if next_agent in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
-            return next_agent
+        next_node = state.get("next_node")
+        if not next_node:
+            return END
+        if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
+            return next_node
         return END
 
     @staticmethod
     def route_auditor(state: GraphState):
-        next_agent = state.get("next_agent")
-        if next_agent in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
-            return next_agent
+        next_node = state.get("next_node")
+        if not next_node:
+            return END
+        if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
+            return next_node
         return Node.PLANNER_AGENT.value
 
     def run(self, initial_message: str):
@@ -100,8 +105,3 @@ class WorkflowBuilder:
                 chosen_task="",
             )
         )
-
-
-if __name__ == "__main__":
-    builder = WorkflowBuilder()
-    builder.run("Install all required tools according to the provided guidelines.")
