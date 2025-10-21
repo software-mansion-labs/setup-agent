@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from llm.model import get_llm
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from typing import Type, TypeVar
 from langchain_core.language_models.chat_models import BaseChatModel
 
