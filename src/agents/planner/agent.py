@@ -245,7 +245,7 @@ class Planner(BaseAgent):
             if not agent_question:
                 break
 
-            user_reply = InputPrompt(message=f"[Agent] {agent_question}\n=>").execute()
+            user_reply = InputPrompt(message=f"[{self.name}] {agent_question}\n=>").execute()
             if not user_reply.strip():
                 break
 
