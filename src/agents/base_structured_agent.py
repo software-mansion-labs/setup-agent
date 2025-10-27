@@ -1,25 +1,25 @@
 from abc import abstractmethod
 
 from graph_state import GraphState
-from langgraph.prebuilt.chat_agent_executor import AgentState
-from langgraph.prebuilt import create_react_agent
 from uuid import UUID
 from typing import Sequence
 from langchain.tools import BaseTool
 from typing import Optional
-from nodes.base_llm_node import BaseLLMNode
 from pydantic import BaseModel
 from typing import Type, TypeVar
-
-class CustomAgentState(AgentState):
-    shell_id: Optional[UUID]
+from agents.base_agent import BaseAgent, CustomAgentState
 
 T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", bound=CustomAgentState)
 
-class BaseAgent(BaseLLMNode):
+class StructuredAgentState(CustomAgentState):
+    shell_id: Optional[UUID]
+    structured_response: Optional[BaseModel]
+
+
+class BaseStructuredAgent(BaseAgent):
     """
-    Abstract base class for all agents.
+    Abstract base class for all agents with structured output.
     Provides shared interface and utility methods.
     """
 
@@ -29,17 +29,14 @@ class BaseAgent(BaseLLMNode):
         prompt: str,
         tools: Sequence[BaseTool] = [],
         parallel_tool_calls: bool = False,
-        state_schema: Optional[Type[K]] = CustomAgentState,
+        state_schema: Optional[Type[K]] = StructuredAgentState,
         response_format: Optional[Type[T]] = None,
     ):
-        super().__init__(name=name)
-        self.agent = create_react_agent(
-            model=self._llm.get_raw_llm().bind_tools(
-                tools=tools, parallel_tool_calls=parallel_tool_calls
-            ),
-            tools=tools,
+        super().__init__(
             name=name,
             prompt=prompt,
+            tools=tools,
+            parallel_tool_calls=parallel_tool_calls,
             state_schema=state_schema,
             response_format=response_format
         )

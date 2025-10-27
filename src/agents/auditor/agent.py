@@ -4,7 +4,7 @@ from graph_state import GraphState, FinishedStep, FailedStep, Node
 from langchain_core.messages import HumanMessage
 from tools.run_command_tool import run_command_tool
 from tools import get_websearch_tool
-from agents.base_agent import BaseAgent
+from agents.base_structured_agent import BaseStructuredAgent
 from pydantic import BaseModel
 from agents.auditor.prompts import AuditorPrompts
 
@@ -16,7 +16,7 @@ class AuditorVerdict(BaseModel):
     guidance: str
 
 
-class Auditor(BaseAgent):
+class Auditor(BaseStructuredAgent):
     """Agent responsible for verifying the success of the last executed step.
 
     The Auditor examines the output of the last finished step and determines
