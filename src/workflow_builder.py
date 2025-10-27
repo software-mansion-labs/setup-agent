@@ -48,9 +48,9 @@ class WorkflowBuilder:
             Node.GUIDELINES_RETRIEVER_NODE.value, Node.TASK_IDENTIFIER_NODE.value
         )
         self.graph.add_edge(Node.TASK_IDENTIFIER_NODE.value, Node.PLANNER_AGENT.value)
-        self.graph.add_edge(Node.PLANNER_AGENT.value, Node.INSTALLER_AGENT.value)
         self.graph.add_edge(Node.INSTALLER_AGENT.value, Node.AUDITOR_AGENT.value)
         self.graph.add_edge(Node.RUNNER_AGENT.value, Node.AUDITOR_AGENT.value)
+        self.graph.add_edge(Node.AUDITOR_AGENT.value, Node.PLANNER_AGENT.value)
 
     def _add_conditional_edges(self):
         self.graph.add_conditional_edges(
@@ -63,33 +63,16 @@ class WorkflowBuilder:
             },
         )
 
-        self.graph.add_conditional_edges(
-            Node.AUDITOR_AGENT.value,
-            self.route_auditor,
-            {
-                Node.INSTALLER_AGENT.value: Node.INSTALLER_AGENT.value,
-                Node.RUNNER_AGENT.value: Node.RUNNER_AGENT.value,
-                Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
-            },
-        )
-
     @staticmethod
     def route_planner(state: GraphState):
         next_node = state.get("next_node")
+        print(next_node)
+
         if not next_node:
             return END
         if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
             return next_node
         return END
-
-    @staticmethod
-    def route_auditor(state: GraphState):
-        next_node = state.get("next_node")
-        if not next_node:
-            return END
-        if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
-            return next_node
-        return Node.PLANNER_AGENT.value
 
     def run(self, initial_message: str):
         self.workflow.invoke(
@@ -103,5 +86,10 @@ class WorkflowBuilder:
                 guideline_files=[],
                 possible_tasks=[],
                 chosen_task="",
-            )
+            ),
+            {"recursion_limit": 100}
         )
+
+if __name__ == "__main__":
+    builder = WorkflowBuilder(project_root="projects/expensify/App")
+    builder.run("Install all required tools according to the provided guidelines")
