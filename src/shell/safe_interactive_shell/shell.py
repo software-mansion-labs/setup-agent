@@ -25,7 +25,7 @@ class SafeInteractiveShell(InteractiveShell):
         super().__init__()
         self.logger.info("SafeInteractiveShell initialized.")
 
-    def run_command(self, command: str) -> StreamToShellOutput:
+    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Review a shell command with a language model before executing it.
 
@@ -38,8 +38,9 @@ class SafeInteractiveShell(InteractiveShell):
         Returns:
             StreamToShellOutput: The result of the executed command or an abort message.
         """
-        self.logger.info(f"Reviewing command before execution: {command}")
-        review = self._review_command(command)
+        command_to_display = "*" * len(command) if hide_input else command
+        self.logger.info(f"Reviewing command before execution: {command_to_display}")
+        review = self._review_command(command_to_display)
 
         self.logger.info(
             f"LLM review result - Description: '{review.description}', "
@@ -62,7 +63,7 @@ class SafeInteractiveShell(InteractiveShell):
             )
 
         self.logger.info("Executing command...")
-        return super().run_command(command)
+        return super().run_command(command, hide_input=hide_input)
 
     def _review_command(self, command: str) -> CommandReview:
         """

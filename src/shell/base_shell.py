@@ -29,13 +29,13 @@ class BaseShell(ABC):
         self.logger.info("Ready.")
 
     @abstractmethod
-    def stream_command(self, command: str) -> StreamToShellOutput:
+    def stream_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
         """Run a command in the shell and return structured results."""
         pass
 
     @abstractmethod
-    def run_command(self, command: str) -> StreamToShellOutput:
-        return self.stream_command(command=command)
+    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
+        return self.stream_command(command=command, hide_input=hide_input)
 
     def _remove_ansi_escape_characters(self, sequence: str) -> str:
         """

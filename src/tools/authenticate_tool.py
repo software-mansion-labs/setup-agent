@@ -35,4 +35,4 @@ def authenticate_tool(
 
     logger.info("Prompting for sudo password")
     passwd = getpass.getpass(f"\n[{name}] Enter your sudo password: ")
-    return shell.stream_command(command=passwd.strip())
+    return shell.stream_command(command=passwd.strip(), hide_input=True)
