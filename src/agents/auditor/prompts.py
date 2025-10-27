@@ -13,17 +13,31 @@ class AuditorPrompts(str, Enum):
 
         Instructions:
         - Analyze if the step succeeded or failed. Ignore warnings, just ensure no errors occurred.
+        - The output may be slightly malformed as it comes from manual reading bytes from the shell.
+        Please ignore that fact and analyze if everything is logically correct.
         - If output is unclear, you may use:
-        • run_command_tool - check system state or installation
-        • websearch_tool - research error messages
-        - Return a JSON object with exactly two keys:
-        1. "reason": short description of what went wrong, or empty if successful
-        2. "guidance": short description of next steps, or empty if successful
-        - Do not include explanations outside the JSON.
+            - run_command_tool - check system state or installation
+            - websearch_tool - research error messages
+        - Always return a JSON object in the following format:
 
-        Example valid output:
         {{
-            "reason": "",
-            "guidance": ""
+            "success": true or false,
+            "reason": "short description of what went wrong, empty if successful",
+            "guidance": "short description of next steps, empty if successful"
         }}
+
+        - If the step succeeded:
+            {{
+                "success": true,
+                "reason": "",
+                "guidance": ""
+            }}
+        - If the step failed:
+            {{
+                "success": false,
+                "reason": "Directory not found",
+                "guidance": "Verify the directory path and try again"
+            }}
+
+        - Do not include any explanations outside this JSON.
     """

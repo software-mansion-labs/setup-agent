@@ -11,7 +11,7 @@ from agents.auditor.prompts import AuditorPrompts
 
 class AuditorVerdict(BaseModel):
     """Structured response format for the Auditor agent."""
-
+    success: bool
     reason: str
     guidance: str
 
@@ -93,7 +93,7 @@ class Auditor(BaseStructuredAgent):
             if previous_steps
             else "none"
         )
-        step_output = last_step.output or "No output recorded."
+        step_output = last_step.output[-64_000:] if last_step.output is not None else "No output recorded."
 
         prompt = self._build_verification_prompt(
             last_step.step.description, previous_text, step_output
@@ -104,7 +104,7 @@ class Auditor(BaseStructuredAgent):
                 {"messages": [HumanMessage(content=prompt)]}
             )["structured_response"]
 
-            if response.reason or response.guidance:
+            if not response.success:
                 self.logger.error(
                     f"[Auditor] Step failed: {last_step.step.description}. Reason: {response.reason}, Guidance: {response.guidance}"
                 )
