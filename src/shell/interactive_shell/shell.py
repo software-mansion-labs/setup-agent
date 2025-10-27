@@ -5,6 +5,7 @@ from shell.types import (
     InteractionReviewLLMResponse,
     InteractionReview,
     StreamToShellOutput,
+    LongRunningShellInteractionReviewLLMResponse
 )
 from typing import Optional
 from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
@@ -110,7 +111,7 @@ class InteractiveShell(BaseShell):
         """
         self._buffer = ""
         self._send(command)
-
+        
         self.logger.info(f"Running command: {command}")
         llm_called = False
 
@@ -150,6 +151,21 @@ class InteractiveShell(BaseShell):
                             return StreamToShellOutput(
                                 **interaction_review.model_dump()
                             )
+                        
+                        if self._id != "MAIN":
+                            long_running_review = self._review_for_long_running(self._buffer.strip())
+                            if long_running_review.state.value == "running":
+                                return StreamToShellOutput(
+                                    needs_action=False,
+                                    reason="Long-running process is running stable and can be left unsupervised. " + long_running_review.reason,
+                                    output=self._buffer.strip()
+                                )
+                            if long_running_review.state.value == "error":
+                                return StreamToShellOutput(
+                                    needs_action=True,
+                                    reason=long_running_review.reason,
+                                    output=self._buffer.strip()
+                                )
 
                     except Exception as e:
                         self.logger.error(f"LLM invocation failed: {e}")
@@ -179,6 +195,39 @@ class InteractiveShell(BaseShell):
         if self._log_file is not None:
             with open(self._log_file, "a") as f:
                 f.write(sequence)
+
+    def _review_for_long_running(self, buffer: str) -> LongRunningShellInteractionReviewLLMResponse:
+        """
+        LLM review for long-running/background shells.
+        Determines process state: initializing, running, or error.
+
+        Args:
+            buffer (str): Shell output.
+
+        Returns:
+            InteractionReviewWithState: needs_action, reasoning, and process state.
+        """
+        long_running_review = self._llm.invoke(
+            schema=LongRunningShellInteractionReviewLLMResponse,
+            system_message="""
+                You are analyzing a long-running shell process.
+                Classify its current state as one of:
+                - "initializing": process is starting, logs still changing
+                - "running": process initialized successfully and stable
+                - "error": process failed or crashed
+
+                Also include:
+                - needs_action (bool)
+                - reason (why you chose this state)
+
+                Output must match LongRunningShellInteractionReviewLLMResponse schema with fields:
+                - reason
+                - state
+            """,
+            input_text=buffer,
+        )
+
+        return long_running_review
 
 
 @lru_cache(maxsize=1)
