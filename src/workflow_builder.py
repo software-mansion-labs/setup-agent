@@ -66,7 +66,6 @@ class WorkflowBuilder:
     @staticmethod
     def route_planner(state: GraphState):
         next_node = state.get("next_node")
-        print(next_node)
 
         if not next_node:
             return END

@@ -3,7 +3,7 @@ from agents.base_agent import BaseAgent
 from graph_state import GraphState, Step, Substep, WorkflowError, Node
 from shell import ShellRegistry
 from tools import get_websearch_tool
-from typing import List, Deque
+from typing import List
 from config import Config
 from langchain_core.messages import HumanMessage
 from agents.planner.types import ReadmeAnalysis
@@ -12,6 +12,7 @@ from InquirerPy.prompts.list import ListPrompt
 from InquirerPy.prompts.input import InputPrompt
 from InquirerPy.base.control import Choice
 from constants import FILE_SEPARATOR
+import json
 
 
 class Planner(BaseAgent):
@@ -96,6 +97,9 @@ class Planner(BaseAgent):
             PlannerPrompts.FIRST_GUIDELINES_ANALYSIS.value,
             f"raw_texts: {guideline_files_merged_content}\nproject_root:{self.project_root}\n**GOAL**: {chosen_task}",
         )
+
+        with open("plan.json", "w") as f:
+            json.dump(analysis.model_dump(mode="json"), f, indent=4)
 
         planned_steps = self._assign_shells([self.cd_step] + analysis.plan)
         state["plan"] = deque(planned_steps)

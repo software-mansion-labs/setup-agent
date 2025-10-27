@@ -8,7 +8,8 @@ from tools import (
     get_websearch_tool,
     run_command_tool,
     user_input_tool,
-    ask_user_tool,
+    prompt_user_input_tool,
+    prompt_user_selection_tool
 )
 from agents.base_agent import BaseAgent
 from shell import ShellRegistry
@@ -31,7 +32,6 @@ class Installer(BaseAgent):
     - Web search (`get_websearch_tool`)
     - Authentication (`authenticate_tool`)
     - User input interaction (`user_input_tool`)
-    - Asking user (`ask_user_tool`)
     """
 
     def __init__(self):
@@ -41,12 +41,13 @@ class Installer(BaseAgent):
             run_command_tool,
             authenticate_tool,
             user_input_tool,
-            ask_user_tool,
+            prompt_user_input_tool,
+            prompt_user_selection_tool
         ]
         super().__init__(
             name=Node.INSTALLER_AGENT.value,
             prompt=InstallerPrompts.INSTALLER_AGENT_DESCRIPTION.value,
-            tools=tools,
+            tools=tools
         )
 
     def invoke(self, state: GraphState) -> GraphState:
@@ -179,7 +180,7 @@ class Installer(BaseAgent):
         prompt = self._prepare_installation_prompt(step, finished_steps)
         try:
             self.agent.invoke(
-                {"messages": [HumanMessage(content=prompt)], "shell_id": step.shell_id}
+                {"messages": [HumanMessage(content=prompt)], "shell_id": step.shell_id, "agent_name": self.name}
             )
             finished_steps.append(
                 FinishedStep(step=step, output=shell.get_step_buffer())

@@ -35,10 +35,10 @@ def user_input_tool(
     shell_registry = ShellRegistry.get()
     shell_id: Optional[UUID] = state["shell_id"]
     shell: BaseShell = shell_registry.get_shell(shell_id)
-    name = f"USER_INPUT_TOOL - {shell._id}"
+    name = state.get("agent_name")
     logger = LoggerFactory.get_logger(name=name)
 
-    logger.info("Tool called with prompt: %s", prompt)
+    logger.info("user_input_tool called with prompt: %s", prompt)
 
-    user_response = input(f"[AGENT > {name}] {prompt}\n> ")
+    user_response = input(f"[{name}] {prompt}\n> ")
     return shell.stream_command(user_response)

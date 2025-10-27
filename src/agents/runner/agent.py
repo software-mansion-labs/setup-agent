@@ -2,7 +2,7 @@ from itertools import chain
 from typing import List
 
 from graph_state import FinishedStep, GraphState, Node, Step, WorkflowError
-from tools import run_command_tool, user_input_tool, authenticate_tool
+from tools import run_command_tool, user_input_tool, authenticate_tool, prompt_user_selection_tool, prompt_user_input_tool
 from agents.base_agent import BaseAgent
 from langchain_core.messages import HumanMessage
 from shell import ShellRegistry
@@ -22,10 +22,12 @@ class Runner(BaseAgent):
         - `run_command_tool`: Executes shell commands.
         - `user_input_tool`: Collects user input interactively.
         - `authenticate_tool`: Handles authentication during runtime operations.
+        - `prompt_user_selection_tool`: Ask user to select from list of predefined values
+        - `prompt_user_input_tool`: Ask user to input text value
     """
 
     def __init__(self):
-        tools = [run_command_tool, user_input_tool, authenticate_tool]
+        tools = [run_command_tool, user_input_tool, authenticate_tool, prompt_user_selection_tool, prompt_user_input_tool]
         super().__init__(
             name=Node.RUNNER_AGENT.value,
             prompt=RunnerPrompts.RUNNER_AGENT_DESCRIPTION.value,
@@ -161,7 +163,7 @@ class Runner(BaseAgent):
 
         try:
             self.agent.invoke(
-                {"messages": [HumanMessage(content=prompt)], "shell_id": step.shell_id}
+                {"messages": [HumanMessage(content=prompt)], "shell_id": step.shell_id, "agent_name": self.name}
             )
             step.assigned_agent = Node.RUNNER_AGENT
             finished_steps.append(

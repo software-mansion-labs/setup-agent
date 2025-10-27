@@ -31,9 +31,9 @@ def run_command_tool(
     shell_registry = ShellRegistry.get()
     shell_id: Optional[UUID] = state["shell_id"]
     shell: BaseShell = shell_registry.get_shell(shell_id)
-    name = f"RUN_COMMAND_TOOL - {shell._id}"
+    name = state.get("agent_name")
     logger = LoggerFactory.get_logger(name=name)
 
-    logger.info(f"Tool called with args: {command}.")
+    logger.info(f"run_command_tool called with args: {command}.")
     result = shell.run_command(command)
     return result

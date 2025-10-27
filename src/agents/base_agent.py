@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from typing import Type, TypeVar
 
 class CustomAgentState(AgentState):
+    agent_name: str
     shell_id: Optional[UUID]
 
 T = TypeVar("T", bound=BaseModel)

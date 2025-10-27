@@ -30,9 +30,9 @@ def authenticate_tool(
     shell_registry = ShellRegistry().get()
     shell_id: Optional[UUID] = state["shell_id"]
     shell = shell_registry.get_shell(shell_id)
-    name = f"AUTHENTICATE_TOOL - {shell._id}"
+    name = state.get("agent_name")
     logger = LoggerFactory.get_logger(name=name)
 
     logger.info("Prompting for sudo password")
-    passwd = getpass.getpass(f"\n[AGENT > {name}] Enter your sudo password: ")
+    passwd = getpass.getpass(f"\n[{name}] Enter your sudo password: ")
     return shell.stream_command(command=passwd.strip())
