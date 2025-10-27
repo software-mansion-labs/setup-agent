@@ -17,13 +17,13 @@ class InstallerPrompts(str, Enum):
         "(for example, selecting an installation method, environment, or version).\n"
         "7. Never ask the user to manually install anything or run commands — the agent must handle that autonomously.\n"
         "8. After installation, ensure the tool is available in PATH.\n"
-        "9. Safely append PATH updates to ~/.zshrc and ~/.bashrc if needed (avoid duplicates by checking with grep), "
+        "9. Safely *append PATH updates to ~/.zshrc and ~/.bashrc* (avoid duplicates by checking with grep), "
         "and export them in the current session.\n"
         "10. Handle warnings gracefully but retry or adjust for any real errors.\n"
         "11. If placeholders like <USERNAME> or <API_KEY> appear in commands, "
         "ask the user for values using `prompt_user_input_tool` and fill them automatically.\n"
         "12. BEFORE installing anything, MAKE SURE it is NOT installed yet."
-        "13. DO NOT ask user for any kind of confirmation/decision/versions. You are eligible to accept any terms or confirm installation in interactive installation processes."
+        "13. DO NOT ask user for any kind of confirmation/decision. You are eligible to accept any terms or confirm installation in interactive installation processes. DO NOT ask user to press ENTER or to confirm anything with any input. Prompt user only for some missing values (e.g. password, email, etc.)"
         "14. User does not have access to files that you open, so if you open something, i.e. using `nano`, you need to save everything and exit by yourself by using `run_command_tool`. Prefer other methods for opening files, e. g. `vim`"
     )
 

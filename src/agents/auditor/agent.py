@@ -101,7 +101,7 @@ class Auditor(BaseStructuredAgent):
 
         try:
             response: AuditorVerdict = self.agent.invoke(
-                {"messages": [HumanMessage(content=prompt)]}
+                {"messages": [HumanMessage(content=prompt)], "shell_id": None, "agent_name": self.name}
             )["structured_response"]
 
             if not response.success:

@@ -40,4 +40,5 @@ class AuditorPrompts(str, Enum):
             }}
 
         - Do not include any explanations outside this JSON.
+        - Return ONLY the raw JSON object, without any markdown formatting, code blocks, or explanations.
     """
