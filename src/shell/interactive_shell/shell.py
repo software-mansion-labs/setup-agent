@@ -29,9 +29,9 @@ class InteractiveShell(BaseShell):
         self,
         id: Optional[UUID] = None,
         log_file: Optional[str] = None,
-        init_timeout: int = 65536,
-        read_buffer_size: int = 2,
-        read_timeout: int = 10,
+        init_timeout: int = 10,
+        read_buffer_size: int = 65536,
+        read_timeout: int = 2,
     ) -> None:
         """
         Initialize the interactive shell and set up environment.
@@ -122,6 +122,7 @@ class InteractiveShell(BaseShell):
                 clean_chunk = self._clean_chunk(chunk)
 
                 self._buffer += clean_chunk
+                self._step_buffer += clean_chunk
 
                 if not self._is_progress_noise(clean_chunk):
                     self._log_to_file(clean_chunk)
