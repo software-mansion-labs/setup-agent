@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 from config import Config
 from shell import ShellRegistry
 from typing import List
+import sys
+from utils.logger import LoggerFactory
 
 
 class WorkflowBuilder:
@@ -18,12 +20,14 @@ class WorkflowBuilder:
         Config.init(project_root=project_root, guideline_files=guideline_files)
         ShellRegistry.init()
 
+        self.shell_registry = ShellRegistry.get()
         self.guidelines_node = GuidelinesRetrieverNode()
         self.task_node = TaskIdentifierNode()
         self.planner_agent = Planner()
         self.installer_agent = Installer()
         self.runner_agent = Runner()
         self.auditor_agent = Auditor()
+        self.logger = LoggerFactory.get_logger(name="WORKFLOW_BUILDER")
 
         self.graph = StateGraph(GraphState)
         self._add_nodes()
@@ -74,20 +78,26 @@ class WorkflowBuilder:
         return END
 
     def run(self, initial_message: str):
-        self.workflow.invoke(
-            GraphState(
-                messages=[HumanMessage(content=initial_message)],
-                plan=None,
-                finished_steps=[],
-                failed_steps=[],
-                errors=[],
-                next_node=Node.GUIDELINES_RETRIEVER_NODE,
-                guideline_files=[],
-                possible_tasks=[],
-                chosen_task="",
-            ),
-            {"recursion_limit": 100}
-        )
+        try:
+            self.workflow.invoke(
+                GraphState(
+                    messages=[HumanMessage(content=initial_message)],
+                    plan=None,
+                    finished_steps=[],
+                    failed_steps=[],
+                    errors=[],
+                    next_node=Node.GUIDELINES_RETRIEVER_NODE,
+                    guideline_files=[],
+                    possible_tasks=[],
+                    chosen_task="",
+                ),
+                {"recursion_limit": 100}
+            )
+        except KeyboardInterrupt:
+            self.logger.error("\nInterrupted by user. Cleaning up to exit gracefully...")
+        finally:
+            self.shell_registry.cleanup()
+            sys.exit(0)
 
 if __name__ == "__main__":
     builder = WorkflowBuilder(project_root="projects/expensify/App")

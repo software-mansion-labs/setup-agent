@@ -122,7 +122,7 @@ class InteractiveShell(BaseShell):
 
                 llm_called = False
 
-                if clean_chunk.strip().endswith("$"):
+                if clean_chunk.rstrip().endswith("$"):
                     self.logger.info("Detected shell prompt; command finished.")
                     break
 
@@ -135,7 +135,7 @@ class InteractiveShell(BaseShell):
 
                     try:
                         interaction_review = self._review_for_interaction(
-                            self._buffer.strip()
+                            self._buffer
                         )
 
                         if interaction_review.needs_action:
@@ -147,18 +147,18 @@ class InteractiveShell(BaseShell):
                             )
                         
                         if self._id != "MAIN":
-                            long_running_review = self._review_for_long_running(self._buffer.strip())
+                            long_running_review = self._review_for_long_running(self._buffer)
                             if long_running_review.state.value == "running":
                                 return StreamToShellOutput(
                                     needs_action=False,
                                     reason="Long-running process is running stable and can be left unsupervised. " + long_running_review.reason,
-                                    output=self._buffer.strip()
+                                    output=self._buffer
                                 )
                             if long_running_review.state.value == "error":
                                 return StreamToShellOutput(
                                     needs_action=True,
                                     reason=long_running_review.reason,
-                                    output=self._buffer.strip()
+                                    output=self._buffer
                                 )
 
                     except Exception as e:
@@ -176,7 +176,7 @@ class InteractiveShell(BaseShell):
         
         self._log_to_file("\n")
         self.logger.info("Command finished")
-        return StreamToShellOutput(needs_action=False, output=self._buffer.strip())
+        return StreamToShellOutput(needs_action=False, output=self._buffer)
 
     def _log_to_file(self, sequence: str):
         """

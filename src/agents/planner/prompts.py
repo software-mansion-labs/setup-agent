@@ -77,6 +77,7 @@ class PlannerPrompts(str, Enum):
     """
     HANDLE_FAILED_STEPS = """
         The following steps failed during execution. Adjust the unified plan to fix these failures.
+        Except for new steps that will fix theses errors/issues/failures, *DO NOT FORGET to include original (failed) step in the plan.
 
         Rules for 'run_in_separate_shell':
         - Only use `true` for commands that will block the main shell (e.g., Metro bundler, running the app).

@@ -154,7 +154,6 @@ class Planner(BaseAgent):
         planned_steps = self._assign_shells(analysis.plan)
         state["plan"] = (
             deque(planned_steps)
-            + deque([failed_step.step for failed_step in failed_steps])
             + plan
         )
 

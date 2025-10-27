@@ -13,8 +13,8 @@ from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
 class GuidelinesRetrieverNode(BaseLLMNode):
     def __init__(self):
         super().__init__(name=Node.GUIDELINES_RETRIEVER_NODE.value)
-        config = Config.get()
-        self._project_root = config.project_root
+        self._config = Config.get()
+        self._project_root = self._config.project_root
         self._file_loader = FileLoader(project_root=self._project_root)
 
     def _filter_non_relevant_subdirectories(self, subdir_paths: List[str]) -> List[str]:
@@ -106,11 +106,17 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         selected = [gf for gf in guideline_files if gf.file in selected_files]
         return selected
 
+    def _get_guideline_files(self) -> List[GuidelineFile]:
+        if self._config.guideline_files:
+            return [GuidelineFile(file=file, content=self._file_loader.load_document(file)) for file in self._config.guideline_files]
+        else:
+            supported_files = self._collect_supported_files()
+            relevant_files = self._filter_non_relevant_files(supported_files)
+            return self._pick_guideline_files_from_content(relevant_files)
+
     def invoke(self, state: GraphState) -> GraphState:
         self.logger.info("Retrieving guidelines from the project")
-        supported_files = self._collect_supported_files()
-        relevant_files = self._filter_non_relevant_files(supported_files)
-        guideline_files = self._pick_guideline_files_from_content(relevant_files)
+        guideline_files = self._get_guideline_files()
         selected_files = self._prompt_user_selection(guideline_files=guideline_files)
         state["guideline_files"] = selected_files
 

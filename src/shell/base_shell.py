@@ -159,7 +159,7 @@ class BaseShell(ABC):
             self._remove_carriage_character,
             self._apply_backspaces,
         ]
-        return reduce(lambda acc, func: func(acc), cleaning_pipeline, chunk).strip()
+        return reduce(lambda acc, func: func(acc), cleaning_pipeline, chunk)
 
     def _write_log(self, text: str, fname: str = "logs.txt") -> None:
         with open(fname, "a") as f:
