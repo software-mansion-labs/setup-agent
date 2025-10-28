@@ -8,6 +8,7 @@ dependencies = [
     "dotenv>=0.9.9",
     "inquirerpy>=0.3.4",
     "langchain==0.3.27",
+    "langchain-anthropic>=0.3.22",
     "langchain-community>=0.3.31",
     "langchain-core>=0.3.75",
     "langchain-openai>=0.3.32",
