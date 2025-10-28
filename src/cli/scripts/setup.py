@@ -30,7 +30,12 @@ def run(
     model: str = typer.Option(
         "anthropic:claude-sonnet-4-5",
         "--model",
-        help="LLM model to be used. Defaults to Claude Sonnet 4.5",
+        help="LLM model to be used.",
+    ),
+    log_file: str = typer.Option(
+        None,
+        "--log_file",
+        help="Path the log file where all shells outputs will be saved"
     )
 ):
     """Run the workflow builder."""
@@ -38,6 +43,7 @@ def run(
         project_root=project_root,
         guideline_files=guideline_files,
         task=task,
-        model=model
+        model=model,
+        log_file=log_file
     )
     builder.run("Install all required tools according to the provided guidelines.")

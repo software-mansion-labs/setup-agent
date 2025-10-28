@@ -6,9 +6,10 @@ from utils.singleton_meta import SingletonMeta
 
 
 class ShellRegistry(metaclass=SingletonMeta):
-    def __init__(self):
+    def __init__(self, log_file: Optional[str] = None):
         self.shell_registry: Dict[UUID, BaseShell] = {}
-        self.main_shell = InteractiveShell()
+        self.log_file = log_file
+        self.main_shell = InteractiveShell(log_file=self.log_file)
 
     def register_new_shell(self) -> UUID:
         """
@@ -20,7 +21,7 @@ class ShellRegistry(metaclass=SingletonMeta):
         while uuid in self.shell_registry:
             uuid = uuid1()
 
-        shell = InteractiveShell(uuid)
+        shell = InteractiveShell(uuid, log_file=self.log_file)
         self.shell_registry[uuid] = shell
 
         return uuid
@@ -34,11 +35,15 @@ class ShellRegistry(metaclass=SingletonMeta):
             return self.shell_registry[uuid]
 
         return self.main_shell
+    
+    def cleanup(self) -> None:
+        for shell in self.shell_registry.values():
+            shell.child.close()
 
     @classmethod
-    def init(cls) -> ShellRegistry:
+    def init(cls, log_file: Optional[str] = None) -> ShellRegistry:
         """Explicitly initialize the singleton."""
-        return cls()
+        return cls(log_file)
 
     @classmethod
     def get(cls) -> ShellRegistry:

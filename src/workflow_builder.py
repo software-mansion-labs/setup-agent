@@ -21,11 +21,12 @@ class WorkflowBuilder:
             project_root: str = ".",
             guideline_files: List[str] = [],
             task: Optional[str] = None,
-            model: str = "anthropic:claude-sonnet-4-5"
+            model: str = "anthropic:claude-sonnet-4-5",
+            log_file: Optional[str] = None
         ):
         load_dotenv()
         Config.init(project_root=project_root, guideline_files=guideline_files, task=task)
-        ShellRegistry.init()
+        ShellRegistry.init(log_file=log_file)
         LLMManager.init(model=model)
 
         self.shell_registry = ShellRegistry.get()
