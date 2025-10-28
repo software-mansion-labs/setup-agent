@@ -21,8 +21,23 @@ def run(
         exists=True,
         file_okay=True,
         dir_okay=False
+    ),
+    task: str = typer.Option(
+        None,
+        "--task",
+        help="Predefined task for the agent",
+    ),
+    model: str = typer.Option(
+        "anthropic:claude-sonnet-4-5",
+        "--model",
+        help="LLM model to be used. Defaults to Claude Sonnet 4.5",
     )
 ):
     """Run the workflow builder."""
-    builder = WorkflowBuilder(project_root=project_root, guideline_files=guideline_files)
+    builder = WorkflowBuilder(
+        project_root=project_root,
+        guideline_files=guideline_files,
+        task=task,
+        model=model
+    )
     builder.run("Install all required tools according to the provided guidelines.")

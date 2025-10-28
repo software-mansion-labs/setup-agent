@@ -9,16 +9,24 @@ from agents.auditor.agent import Auditor
 from dotenv import load_dotenv
 from config import Config
 from shell import ShellRegistry
-from typing import List
+from typing import List, Optional
 import sys
 from utils.logger import LoggerFactory
+from llm.model import LLMManager
 
 
 class WorkflowBuilder:
-    def __init__(self, project_root: str = ".", guideline_files: List[str] = []):
+    def __init__(
+            self,
+            project_root: str = ".",
+            guideline_files: List[str] = [],
+            task: Optional[str] = None,
+            model: str = "anthropic:claude-sonnet-4-5"
+        ):
         load_dotenv()
-        Config.init(project_root=project_root, guideline_files=guideline_files)
+        Config.init(project_root=project_root, guideline_files=guideline_files, task=task)
         ShellRegistry.init()
+        LLMManager.init(model=model)
 
         self.shell_registry = ShellRegistry.get()
         self.guidelines_node = GuidelinesRetrieverNode()

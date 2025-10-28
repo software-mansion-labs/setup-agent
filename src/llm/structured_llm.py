@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from llm.model import get_llm
+from llm.model import LLMManager
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Type, TypeVar
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -14,7 +14,8 @@ class StructuredLLM:
     """
 
     def __init__(self):
-        self._raw_llm = get_llm()
+        llm_manager = LLMManager.get()
+        self._raw_llm = llm_manager.get_llm()
 
     def invoke(self, schema: Type[T], system_message: str, input_text: str) -> T:
         """

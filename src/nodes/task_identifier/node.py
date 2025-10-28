@@ -5,6 +5,7 @@ from nodes.base_llm_node import BaseLLMNode
 from nodes.task_identifier.prompts import TaskIdentifierPrompts
 from nodes.task_identifier.types import DeveloperTasks
 from constants import FILE_SEPARATOR
+from config import Config
 
 
 class TaskIdentifierNode(BaseLLMNode):
@@ -20,6 +21,7 @@ class TaskIdentifierNode(BaseLLMNode):
 
     def __init__(self):
         super().__init__(name=Node.TASK_IDENTIFIER_NODE.value)
+        self._config = Config.get()
 
     def _extract_possible_tasks(self, guideline_text: str) -> List[str]:
         """
@@ -71,6 +73,11 @@ class TaskIdentifierNode(BaseLLMNode):
             GraphState: Updated state containing possible tasks and the chosen task.
         """
         self.logger.info("Analyzing documentation to identify developer tasks.")
+
+        user_task = self._config.task
+        if user_task is not None:
+            state["chosen_task"] = user_task
+            return state
 
         guideline_files = state.get("guideline_files", [])
         if not guideline_files:
