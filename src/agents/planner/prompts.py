@@ -57,9 +57,25 @@ class PlannerPrompts(str, Enum):
         The following errors occurred while executing previous steps.
         Adjust the plan accordingly.
 
-        Rules for 'run_in_separate_shell':
-        - Only use `true` for long-running commands (Metro bundler, running the app, etc.).
-        - Do NOT use separate shells for simple install commands, fixes, or CLI checks.
+        Instructions:
+        1. Analyze the provided error messages carefully and determine the most probable causes.  
+        - Only modify or add steps necessary to fix the errors.  
+        - Do NOT remove other unrelated steps unless they are clearly redundant or incorrect.
+
+        2. Each step must specify which agent executes it:
+        - INSTALLER_AGENT → sets up tools, dependencies, environment
+        - RUNNER_AGENT → runs or starts the app
+
+        3. Substeps:
+        - Include detailed substeps with suggested CLI commands.  
+        - Commands must be idempotent (safe to re-run).  
+        - Prefer CLI commands over Docker or GUI actions.  
+        - If a command starts a long-running process (e.g., emulator, Metro bundler, app launch), set `run_in_separate_shell: true`; otherwise, use `false`.  
+
+        4. Include **implicit prerequisites** not mentioned in the README but necessary for success.  
+        - Examples: installing Java before building Android, starting Metro Bundler before launching React Native, installing Node.js before running npm commands.
+
+        5. Maintain correct execution order.
 
         Return structured JSON:
         {{
@@ -77,11 +93,26 @@ class PlannerPrompts(str, Enum):
     """
     HANDLE_FAILED_STEPS = """
         The following steps failed during execution. Adjust the unified plan to fix these failures.
-        Except for new steps that will fix theses errors/issues/failures, *DO NOT FORGET to include original (failed) step in the plan.
+        Except for new steps that will fix theses errors/issues/failures, *DO NOT FORGET to include original (failed) step* in the plan.
 
-        Rules for 'run_in_separate_shell':
-        - Only use `true` for commands that will block the main shell (e.g., Metro bundler, running the app).
-        - Do NOT use separate shells for installation or dependency fixes.
+        1. Carefully review the failed steps and understand why they failed.  
+        - You must include both the original (failed) step **and** any new steps required to fix the issue.  
+        - The fix should appear immediately before or after the original failed step, depending on logical order.
+
+        2. Each step must specify which agent executes it:
+        - INSTALLER_AGENT → sets up tools, dependencies, environment
+        - RUNNER_AGENT → runs or starts the app
+
+        3. Substeps:
+        - Include detailed substeps with suggested CLI commands.  
+        - Commands must be idempotent (safe to re-run).  
+        - Prefer CLI commands over Docker or GUI actions.  
+        - If a command starts a long-running process (e.g., emulator, Metro bundler, app launch), set `run_in_separate_shell: true`; otherwise, use `false`.  
+
+        4. Include **implicit prerequisites** not mentioned in the README but necessary for success.  
+        - Examples: installing Java before building Android, starting Metro Bundler before launching React Native, installing Node.js before running npm commands.
+
+        5. Maintain correct execution order.
 
         Output strictly:
         {{
