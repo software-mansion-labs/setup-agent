@@ -13,6 +13,7 @@ from typing import List, Optional
 import sys
 from utils.logger import LoggerFactory
 from llm.model import LLMManager
+from pathlib import Path
 
 
 class WorkflowBuilder:
@@ -24,7 +25,7 @@ class WorkflowBuilder:
             model: str = "anthropic:claude-sonnet-4-5",
             log_file: Optional[str] = None
         ):
-        load_dotenv()
+        load_dotenv(dotenv_path=Path.cwd() / ".env")
         Config.init(project_root=project_root, guideline_files=guideline_files, task=task)
         LLMManager.init(model=model)
         ShellRegistry.init(log_file=log_file)
