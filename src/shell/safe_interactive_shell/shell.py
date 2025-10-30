@@ -1,4 +1,3 @@
-from functools import lru_cache
 from shell.interactive_shell.shell import InteractiveShell
 from shell.types import StreamToShellOutput
 from shell.safe_interactive_shell.types import CommandReview
@@ -94,17 +93,3 @@ class SafeInteractiveShell(InteractiveShell):
             )
 
         return review
-
-
-@lru_cache(maxsize=1)
-def get_safe_interactive_shell() -> SafeInteractiveShell:
-    """
-    Return a shared instance of SafeInteractiveShell, initialized lazily.
-
-    Uses an LRU cache to ensure that only one instance is created and reused
-    throughout the application.
-
-    Returns:
-        SafeInteractiveShell: A singleton instance of the safe shell.
-    """
-    return SafeInteractiveShell()

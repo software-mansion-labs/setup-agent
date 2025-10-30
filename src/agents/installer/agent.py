@@ -18,7 +18,7 @@ from typing import List
 from constants import FILE_SEPARATOR
 from InquirerPy.prompts.list import ListPrompt
 from shell import BaseShell
-
+from agents.installer.types import StepExplanation
 
 class Installer(BaseAgent):
     """Agent responsible for managing installation steps within a workflow.
@@ -151,11 +151,40 @@ class Installer(BaseAgent):
             finished_steps.append(
                 FinishedStep(step=step, output="Command skipped by user", skipped=True)
             )
+
         elif choice == "Learn more":
-            pass
-            # TODO: integrate LLM for safety review
+            explanation = self._learn_more_about_step(step)
+            print("\n=== Step Explanation ===")
+            print(explanation)
+            print("========================\n")
+            next_choice = self._choose_action()
+            if next_choice == "Continue":
+                shell = self._shell_registry.get_shell(step.shell_id)
+                return self._execute_commands(step, shell, finished_steps, state.get("errors", []), state)
+            else:
+                return self._handle_non_continue_choice(next_choice, step, finished_steps, state)
+
         state["finished_steps"] = finished_steps
         return state
+
+    def _learn_more_about_step(self, step: Step) -> str:
+        """Explain what this installation step does and if it’s safe."""
+        try:
+            response: StepExplanation = self._llm.invoke(
+                StepExplanation,
+                InstallerPrompts.STEP_EXPLANATION_PROMPT.value,
+                f"Step description: {step.description}\nSuggested commands: {self._get_suggested_commands(step)}"
+            )
+
+            return (
+                f"Purpose: {response.purpose}\n"
+                f"Actions: {response.actions}\n"
+                f"Safe to run: {response.safe}"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error explaining step '{step.description}': {e}")
+            return f"Could not retrieve explanation: {e}"
 
     def _execute_commands(
         self,

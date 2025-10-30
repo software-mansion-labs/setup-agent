@@ -10,6 +10,7 @@ from InquirerPy.prompts.list import ListPrompt
 from agents.runner.prompts import RunnerPrompts
 from shell import BaseShell
 from constants import FILE_SEPARATOR
+from agents.runner.types import StepExplanation
 
 
 class Runner(BaseAgent):
@@ -117,16 +118,16 @@ class Runner(BaseAgent):
         finished_steps: List[FinishedStep],
         state: GraphState,
     ) -> GraphState:
-        """Handle user actions other than 'Continue' (Skip or Learn more).
+        """Handle user choices other than 'Continue'.
 
         Args:
-            choice (str): User's chosen action.
-            step (Step): The current step being processed.
-            finished_steps (List[FinishedStep]): List of finished steps so far.
+            choice (str): User's choice ("Skip" or "Learn more").
+            step (Step): Current step being processed.
+            finished_steps (List[FinishedStep]): List of completed steps.
             state (GraphState): Current workflow state.
 
         Returns:
-            GraphState: Updated workflow state.
+            GraphState: Updated workflow state after processing the user's decision.
         """
         if choice == "Skip":
             self.logger.info(f"Skipping step: {step.description}")
@@ -134,10 +135,38 @@ class Runner(BaseAgent):
                 FinishedStep(step=step, output="Command skipped by user", skipped=True)
             )
         elif choice == "Learn more":
-            # TODO: Add LLM or web search review for runtime safety
-            pass
+            explanation = self._learn_more_about_step(step)
+            print("\n=== Step Explanation ===")
+            print(explanation)
+            print("========================\n")
+            next_choice = self._choose_action()
+            if next_choice == "Continue":
+                shell = self._shell_registry.get_shell(step.shell_id)
+                return self._execute_commands(step, shell, finished_steps, state.get("errors", []), state)
+            else:
+                return self._handle_non_continue_choice(next_choice, step, finished_steps, state)
+
         state["finished_steps"] = finished_steps
         return state
+
+    def _learn_more_about_step(self, step: Step) -> str:
+        """Explain what this installation step does and if it’s safe."""
+        try:
+            response: StepExplanation = self._llm.invoke(
+                StepExplanation,
+                RunnerPrompts.STEP_EXPLANATION_PROMPT.value,
+                f"Step description: {step.description}\nSuggested commands: {self._get_suggested_commands(step)}"
+            )
+
+            return (
+                f"Purpose: {response.purpose}\n"
+                f"Actions: {response.actions}\n"
+                f"Safe to run: {response.safe}"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error explaining step '{step.description}': {e}")
+            return f"Could not retrieve explanation: {e}"
 
     def _execute_commands(
         self,

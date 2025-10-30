@@ -5,7 +5,7 @@ class InstallerPrompts(str, Enum):
         "You are responsible for installing required tools on macOS.\n\n"
         "Follow these rules carefully:\n"
         "1. Wait for each tool to finish before moving to the next.\n"
-        "2. Use `run_command_tool` for executing shell commands.\n"
+        "2. Use `run_command_tool` to execute shell commands and to pass any characters directly to the shell.\n"
         "3. Use `authenticate_tool` when a password prompt appears (e.g., sudo, password).\n"
         "4. Use `user_input_tool` when a running shell process expects input "
         "(for example some configuration token) that should be passed directly to the shell.\n"
@@ -35,6 +35,7 @@ class InstallerPrompts(str, Enum):
         "Rules:\n"
         "1. Always wait for each tool to complete and return output before proceeding.\n"
         "2. Use `run_command_tool` for running shell commands.\n"
+        "If a command is awaiting a simple keypress (like Enter or any single character), send the **RAW character** (string that will simulate this) directly with `run_command_tool`, do not use `echo` in this case.\n"
         "3. Use `authenticate_tool` when the shell requests a password (e.g., sudo) so the password is sent directly to the shell and the process is continued.\n"
         "4. Use `user_input_tool` if a command is awaiting input in the shell. DO NOT ask user for any confirmation or details with this tool.\n"
         "5. Use `prompt_user_input_tool` to collect textual information (e.g., username, API key, or directory path) "
@@ -48,3 +49,15 @@ class InstallerPrompts(str, Enum):
         "11. Never print commands for the user to execute manually — always use the tools above.\n"
         "12. Be as autonomous as possible — automatically accept non-destructive prompts such as confirmations (y/n), license agreements, or default options required to continue installations or configurations."
     )
+    STEP_EXPLANATION_PROMPT = """
+        You are a helpful assistant explaining installation steps.
+        You are given step description and suggested commands for this step.
+
+        Provide brief explanation of the step, return JSON matching this schema:
+
+        {{
+            "purpose": "string",  # What the step is for
+            "actions": "string",  # What this step will do
+            "safe": "string"  # Whether these commands are safe to run
+        }}
+    """

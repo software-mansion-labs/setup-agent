@@ -8,7 +8,7 @@ class RunnerPrompts(str, Enum):
         "Follow these rules carefully:\n"
         "1. Execute each step strictly in the order provided.\n"
         "2. Use tools correctly and only as intended:\n"
-        "   - Use `run_command_tool` to execute shell commands.\n"
+        "   - Use `run_command_tool` to execute shell commands and to pass any characters directly to the shell.\n"
         "   - Use `authenticate_tool` when a password prompt appears (e.g., sudo, system password).\n"
         "   - Use `user_input_tool` only when a running command explicitly expects non-sensitive input directly in the shell.\n"
         "   - Use `prompt_user_input_tool` to collect textual information from the user that should NOT be passed directly "
@@ -36,6 +36,7 @@ class RunnerPrompts(str, Enum):
         "Rules:\n"
         "1. Execute each command sequentially and wait for its output before proceeding.\n"
         "2. Use `run_command_tool` to run shell commands.\n"
+        "If a command is awaiting a simple keypress (like Enter or any single character), send the **RAW character** (string that will simulate this) directly with `run_command_tool`, do not use `echo` in this case.\n"
         "3. Use `authenticate_tool` if a password prompt appears (e.g., sudo or system authentication).\n"
         "4. Use `user_input_tool` when the shell expects non-sensitive input directly (e.g., pressing Enter or typing a value).\n"
         "5. Use `prompt_user_input_tool` to gather textual information (e.g., usernames, API keys, or placeholders) "
@@ -50,3 +51,15 @@ class RunnerPrompts(str, Enum):
         "10. Never print or output commands for manual execution.\n"
         "11. After executing all commands, return the results strictly in the required JSON format with fields for `results`, `errors`, and `status` (no extra text)."
     )
+    STEP_EXPLANATION_PROMPT = """
+        You are a helpful assistant explaining project running steps.
+        You are given step description and suggested commands for this step.
+
+        Provide brief explanation of the step, return JSON matching this schema:
+
+        {{
+            "purpose": "string",  # What the step is for
+            "actions": "string",  # What this step will do
+            "safe": "string"  # Whether these commands are safe to run
+        }}
+    """

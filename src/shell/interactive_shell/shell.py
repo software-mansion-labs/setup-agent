@@ -1,6 +1,4 @@
 import pexpect
-import getpass
-from functools import lru_cache
 from shell.types import (
     InteractionReviewLLMResponse,
     InteractionReview,
@@ -224,18 +222,3 @@ class InteractiveShell(BaseShell):
         )
 
         return long_running_review
-
-
-@lru_cache(maxsize=1)
-def get_interactive_shell() -> InteractiveShell:
-    """
-    Return a shared instance of `InteractiveShell`, initialized lazily.
-
-    This function ensures that only one instance of `InteractiveShell` is
-    created and reused throughout the application, improving efficiency
-    and maintaining consistent state across shell interactions.
-
-    Returns:
-        InteractiveShell: A singleton instance of the interactive shell.
-    """
-    return InteractiveShell()
