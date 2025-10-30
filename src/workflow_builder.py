@@ -26,8 +26,8 @@ class WorkflowBuilder:
         ):
         load_dotenv()
         Config.init(project_root=project_root, guideline_files=guideline_files, task=task)
-        ShellRegistry.init(log_file=log_file)
         LLMManager.init(model=model)
+        ShellRegistry.init(log_file=log_file)
 
         self.shell_registry = ShellRegistry.get()
         self.guidelines_node = GuidelinesRetrieverNode()
