@@ -11,19 +11,20 @@ class LLMManager(metaclass=SingletonMeta):
     Lazily initializes the model, and allows re-initialization via CLI or code.
     """
 
-    def __init__(self, model: str = "anthropic:claude-sonnet-4-5") -> None:
+    def __init__(self, model: str = "anthropic:claude-sonnet-4-5", max_tokens: int = 32000) -> None:
         self._model_name = model
         self._llm: Optional[BaseChatModel] = None
+        self._max_tokens = max_tokens
 
     @classmethod
-    def init(cls, model: str = "anthropic:claude-sonnet-4-5") -> LLMManager:
+    def init(cls, model: str = "anthropic:claude-sonnet-4-5", max_tokens: int = 32000) -> LLMManager:
         """
         Initialize or reinitialize the singleton with a specific model.
         Returns the shared LLMManager instance.
         """
         instance = cls(model)
         instance._model_name = model
-        instance._llm = init_chat_model(model=model)
+        instance._llm = init_chat_model(model=model, max_tokens=max_tokens)
         return instance
 
     @classmethod
@@ -41,7 +42,7 @@ class LLMManager(metaclass=SingletonMeta):
         Return the underlying LLM instance, lazily initializing if needed.
         """
         if self._llm is None:
-            self._llm = init_chat_model(model=self._model_name)
+            self._llm = init_chat_model(model=self._model_name, max_tokens=self._max_tokens)
         return self._llm
 
     @property

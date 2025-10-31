@@ -95,7 +95,7 @@ class Planner(BaseAgent):
         analysis: ReadmeAnalysis = self._invoke_structured_llm(
             ReadmeAnalysis,
             PlannerPrompts.FIRST_GUIDELINES_ANALYSIS.value,
-            f"raw_texts: {guideline_files_merged_content}\nproject_root:{self.project_root}\n**GOAL**: {chosen_task}",
+            f"raw_texts:\n{guideline_files_merged_content}\n\nproject_root:\n{self.project_root}\n\n**GOAL**:\n{chosen_task}",
         )
 
         with open("plan.json", "w") as f:
