@@ -9,7 +9,7 @@ from utils.logger import LoggerFactory
 import getpass
 
 
-@tool
+@tool(parse_docstring=True)
 def authenticate_tool(
     state: Annotated[CustomAgentState, InjectedState],
 ) -> StreamToShellOutput:
@@ -35,4 +35,4 @@ def authenticate_tool(
 
     logger.info("Prompting for sudo password")
     passwd = getpass.getpass(f"\n[{name}] Enter your sudo password: ")
-    return shell.stream_command(command=passwd.strip(), hide_input=True)
+    return shell.run_command(command=passwd.strip(), hide_input=True)
