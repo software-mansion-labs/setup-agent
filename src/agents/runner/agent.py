@@ -26,6 +26,7 @@ class Runner(BaseAgent):
         - `prompt_user_selection_tool`: Ask user to select from list of predefined values
         - `prompt_user_input_tool`: Ask user to input text value
         - `use_arrow_keys_sequence`: Use arrow keys
+        - `use_keyboard_keys`: Use special keyboard keys
     """
 
     def __init__(self):

@@ -35,6 +35,7 @@ class Installer(BaseAgent):
     - Authentication (`authenticate_tool`)
     - User input interaction (`user_input_tool`)
     - Use arrow keys (`use_arrow_keys_sequence`)
+    - Use special keyboard keys (`use_keyboard_keys`)
     """
 
     def __init__(self):
