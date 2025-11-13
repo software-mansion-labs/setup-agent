@@ -14,7 +14,6 @@ K = TypeVar("K", bound=CustomAgentState)
 
 class StructuredAgentState(CustomAgentState):
     shell_id: Optional[UUID]
-    structured_response: Optional[BaseModel]
 
 
 class BaseStructuredAgent(BaseAgent):
