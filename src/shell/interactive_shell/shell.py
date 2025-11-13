@@ -131,39 +131,40 @@ class InteractiveShell(BaseShell):
                     llm_called = True
                     self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
 
-                    try:
-                        interaction_review = self._review_for_interaction(
-                            self._buffer
-                        )
 
-                        if interaction_review.needs_action:
-                            self.logger.info("Shell awaits interaction")
-                            self._log_to_file("\n")
-
-                            return StreamToShellOutput(
-                                needs_action=interaction_review.needs_action,
-                                reason=interaction_review.reason,
-                                output=self._buffer
+                    if self._buffer:
+                        try:
+                            interaction_review = self._review_for_interaction(
+                                self._buffer
                             )
-                        
-                        if self._id != "MAIN":
-                            long_running_review = self._review_for_long_running(self._buffer)
-                            if long_running_review.state.value == "running":
+
+                            if interaction_review.needs_action:
+                                self.logger.info("Shell awaits interaction")
+                                self._log_to_file("\n")
+
                                 return StreamToShellOutput(
-                                    needs_action=False,
-                                    reason="Long-running process is running stable and can be left unsupervised. " + long_running_review.reason,
+                                    needs_action=interaction_review.needs_action,
+                                    reason=interaction_review.reason,
                                     output=self._buffer
                                 )
-                            if long_running_review.state.value == "error":
-                                return StreamToShellOutput(
-                                    needs_action=True,
-                                    reason=long_running_review.reason,
-                                    output=self._buffer
-                                )
+                            
+                            if self._id != "MAIN":
+                                long_running_review = self._review_for_long_running(self._buffer)
+                                if long_running_review.state.value == "running":
+                                    return StreamToShellOutput(
+                                        needs_action=False,
+                                        reason="Long-running process is running stable and can be left unsupervised. " + long_running_review.reason,
+                                        output=self._buffer
+                                    )
+                                if long_running_review.state.value == "error":
+                                    return StreamToShellOutput(
+                                        needs_action=True,
+                                        reason=long_running_review.reason,
+                                        output=self._buffer
+                                    )
 
-                    except Exception as e:
-                        self.logger.error(f"LLM invocation failed: {e}")
-
+                        except Exception as e:
+                            self.logger.error(f"LLM invocation failed: {e}")
             except pexpect.EOF:
                 self.logger.error("EOF reached; shell closed.")
                 break
