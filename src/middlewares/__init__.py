@@ -1,3 +1,4 @@
 from middlewares.parallel_tool_calls_middleware import ParallelToolCallsMiddleware
+from middlewares.personal_information_middleware import PersonalInformationMiddleware
 
-__all__ = ["ParallelToolCallsMiddleware"]
+__all__ = ["ParallelToolCallsMiddleware", "PersonalInformationMiddleware"]

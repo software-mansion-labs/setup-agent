@@ -10,8 +10,10 @@ from nodes.base_llm_node import BaseLLMNode
 from pydantic import BaseModel
 from typing import Type, TypeVar
 from langchain.agents.middleware import AgentState
-from middlewares import ParallelToolCallsMiddleware
-
+from middlewares import ParallelToolCallsMiddleware, PersonalInformationMiddleware
+from langchain.agents import AgentState
+from typing import Sequence
+from langchain.agents.middleware import PIIMiddleware
 
 class CustomAgentState(AgentState):
     agent_name: str
@@ -45,7 +47,10 @@ class BaseAgent(BaseLLMNode):
             system_prompt=prompt,
             state_schema=state_schema,
             response_format=response_format,
-            middleware=[ParallelToolCallsMiddleware(parallel_tool_calls=parallel_tool_calls)]
+            middleware=[
+                ParallelToolCallsMiddleware(parallel_tool_calls=parallel_tool_calls),
+                PersonalInformationMiddleware()
+            ]
         )
         
     @abstractmethod
