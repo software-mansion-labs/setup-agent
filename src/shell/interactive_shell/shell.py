@@ -41,16 +41,20 @@ class InteractiveShell(BaseShell):
         self._read_buffer_size = read_buffer_size
         self._read_timeout = read_timeout
 
-    def _send(self, text: str, hide_input: bool = False) -> None:
-        """
-        Send a raw command or input string to the shell process.
+    def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        self._buffer = ""
+        self.child.send(sequence)
+        return self.stream_command(sequence, hide_input=hide_input)
 
-        Args:
-            text (str): The command or input to send to the shell.
-        """
-        display_text = "*" * len(text) if hide_input else text
-        self.logger.info(f"Sending to shell: {display_text}")
-        self.child.sendline(text)
+    def sendline(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        self._buffer = ""
+        self.child.sendline(sequence)
+        return self.stream_command(sequence, hide_input=hide_input)
+    
+    def sendcontrol(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        self._buffer = ""
+        self.child.sendcontrol(sequence)
+        return self.stream_command(sequence, hide_input=hide_input)
 
     def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
         """
@@ -62,7 +66,7 @@ class InteractiveShell(BaseShell):
         Returns:
             StreamToShellOutput: The final shell output or an LLM decision if interaction is required.
         """
-        return self.stream_command(command=command, hide_input=hide_input)
+        return self.sendline(sequence=command, hide_input=hide_input)
 
     def _review_for_interaction(self, buffer: str) -> InteractionReview:
         """
@@ -85,7 +89,7 @@ class InteractiveShell(BaseShell):
             output=buffer,
         )
 
-    def stream_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
+    def stream_command(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Run a command in the shell, stream output, and use the LLM to detect
         if user interaction is required.
@@ -97,10 +101,7 @@ class InteractiveShell(BaseShell):
             StreamToShellOutput: Either the final shell output (needs_action=False) or
                                  an LLM decision indicating that interaction is required.
         """
-        self._buffer = ""
-        self._send(command, hide_input=hide_input)
-        
-        command_to_display = command.replace(command, "*" * len(command)) if hide_input else command
+        command_to_display = self._mask_sequence(sequence=sequence, hide_input=hide_input)
         
         self.logger.info(f"Running command: {command_to_display}")
         llm_called = False
@@ -128,8 +129,7 @@ class InteractiveShell(BaseShell):
                 if not llm_called:
                     self.logger.info("Output stable for 2s; invoking LLM...")
                     llm_called = True
-                    if hide_input:
-                        self._buffer = self._buffer.replace(command, "*" * len(command))
+                    self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
 
                     try:
                         interaction_review = self._review_for_interaction(
@@ -141,7 +141,9 @@ class InteractiveShell(BaseShell):
                             self._log_to_file("\n")
 
                             return StreamToShellOutput(
-                                **interaction_review.model_dump()
+                                needs_action=interaction_review.needs_action,
+                                reason=interaction_review.reason,
+                                output=self._buffer
                             )
                         
                         if self._id != "MAIN":
@@ -168,9 +170,8 @@ class InteractiveShell(BaseShell):
             except Exception as e:
                 self.logger.error(f"Unexpected exception: {e}")
                 break
-
-        if hide_input:
-            self._buffer = self._buffer.replace(command, "*" * len(command))
+            
+        self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
         
         self._log_to_file("\n")
         self.logger.info("Command finished")
@@ -203,21 +204,7 @@ class InteractiveShell(BaseShell):
         """
         long_running_review = self._llm.invoke(
             schema=LongRunningShellInteractionReviewLLMResponse,
-            system_message="""
-                You are analyzing a long-running shell process.
-                Classify its current state as one of:
-                - "initializing": process is starting, logs still changing
-                - "running": process initialized successfully and stable
-                - "error": process failed or crashed
-
-                Also include:
-                - needs_action (bool)
-                - reason (why you chose this state)
-
-                Output must match LongRunningShellInteractionReviewLLMResponse schema with fields:
-                - reason
-                - state
-            """,
+            system_message=BaseInteractiveShellPrompts.LONG_RUNNING_SHELL_REVIEW,
             input_text=buffer,
         )
 

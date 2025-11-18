@@ -24,3 +24,18 @@ class BaseInteractiveShellPrompts(str, Enum):
             "reason": "The shell displays 'Enter your choice:' indicating it is waiting for user input."
         }}
     """
+    LONG_RUNNING_SHELL_REVIEW = """
+        You are analyzing a long-running shell process.
+        Classify its current state as one of:
+        - "initializing": process is starting, logs still changing
+        - "running": process initialized successfully and stable
+        - "error": process failed or crashed
+
+        Also include:
+        - needs_action (bool)
+        - reason (why you chose this state)
+
+        Output must match LongRunningShellInteractionReviewLLMResponse schema with fields:
+        - reason
+        - state
+    """
