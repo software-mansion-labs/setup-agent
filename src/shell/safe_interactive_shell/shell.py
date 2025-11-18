@@ -37,7 +37,7 @@ class SafeInteractiveShell(InteractiveShell):
         Returns:
             StreamToShellOutput: The result of the executed command or an abort message.
         """
-        command_to_display = "*" * len(command) if hide_input else command
+        command_to_display = self._mask_sequence(sequence=command, hide_input=hide_input)
         self.logger.info(f"Reviewing command before execution: {command_to_display}")
         review = self._review_command(command_to_display)
 
