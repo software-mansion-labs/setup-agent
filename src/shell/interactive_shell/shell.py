@@ -130,6 +130,7 @@ class InteractiveShell(BaseShell):
                     self.logger.info("Output stable for 2s; invoking LLM...")
                     llm_called = True
                     self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
+                    self._buffer = self._redact_text(self._buffer)
 
                     try:
                         interaction_review = self._review_for_interaction(
@@ -172,6 +173,7 @@ class InteractiveShell(BaseShell):
                 break
             
         self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
+        self._buffer = self._redact_text(self._buffer)
         
         self._log_to_file("\n")
         self.logger.info("Command finished")

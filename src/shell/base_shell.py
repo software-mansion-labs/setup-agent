@@ -7,6 +7,7 @@ from shell.types import StreamToShellOutput
 from functools import reduce
 from utils.logger import LoggerFactory
 from llm import StructuredLLM
+from utils.secrets_redactor import SecretsRedactor
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 PROGRESS_RE = re.compile(r"\d{1,3}\.\d%#+\s*")
@@ -34,7 +35,7 @@ class BaseShell(ABC):
         pass
 
     @abstractmethod
-    def send(self, sequence: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Send a sequence of input to the shell.
 
@@ -48,7 +49,7 @@ class BaseShell(ABC):
         pass
 
     @abstractmethod
-    def sendline(self, sequence: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def sendline(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Send a sequence of input to the shell, followed by a newline (Enter).
 
@@ -62,7 +63,7 @@ class BaseShell(ABC):
         pass
     
     @abstractmethod
-    def sendcontrol(self, sequence: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def sendcontrol(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Send a control sequence (e.g., Ctrl+C, Ctrl+D) to the shell.
 
@@ -76,7 +77,7 @@ class BaseShell(ABC):
         pass
 
     @abstractmethod
-    def run_command(self, command: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Execute a command in the shell and return its output after completion.
 
@@ -115,6 +116,18 @@ class BaseShell(ABC):
             str: The text with the sequence masked or unchanged if hide_input is False.
         """
         return text.replace(sequence, "*" * len(sequence)) if hide_input else text
+    
+    def _redact_text(self, text: str) -> str:
+        """
+        Redact all secrets and personal information in the text by applying mask.
+
+        Args:
+            text (str): The text that should be scanned for secrets and redacted.
+
+        Returns:
+            str: The redacted text.
+        """
+        return SecretsRedactor.mask_secrets_in_text(text)
 
     def _remove_ansi_escape_characters(self, sequence: str) -> str:
         """
