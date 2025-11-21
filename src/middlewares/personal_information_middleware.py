@@ -1,6 +1,5 @@
 from langchain.agents.middleware import AgentMiddleware
 from typing import Callable
-
 from langchain_core.messages import ToolMessage
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
