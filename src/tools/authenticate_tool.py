@@ -21,7 +21,7 @@ def authenticate_tool(
     requires sudo or other password input.
 
     Args:
-        state (CustomAgentState): The current state of the agent, containing shell_id and agent_name, injected automatically.
+        state (CustomAgentState): The agent's current state, injected automatically.
 
     Returns:
         StreamToShellOutput: Structured output from the shell after providing the password,

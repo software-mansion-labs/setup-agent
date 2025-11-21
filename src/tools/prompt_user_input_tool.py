@@ -19,7 +19,7 @@ def prompt_user_input_tool(prompt: str, state: Annotated[CustomAgentState, Injec
 
     Args:
         prompt (str): The question or instruction to show to the user.
-        state (CustomAgentState): The current state of the agent, containing shell_id and agent_name, injected automatically.
+        state (CustomAgentState): The agent's current state, injected automatically.
 
     Returns:
         str: The user's response, returned directly to the agent.
