@@ -1,14 +1,18 @@
 from langchain_core.tools import tool
-from shell.interactive_shell import get_interactive_shell
-from shell.types import StreamToShellOutput
 from utils.logger import LoggerFactory
-
-logger = LoggerFactory.get_logger(name="[User Input Tool]")
-interactive_shell = get_interactive_shell()
+from shell import BaseShell, StreamToShellOutput
+from typing_extensions import Annotated
+from langgraph.prebuilt import InjectedState
+from shell import ShellRegistry
+from uuid import UUID
+from agents.base_agent import CustomAgentState
+from typing import Optional
 
 
 @tool(parse_docstring=True)
-def user_input_tool(prompt: str) -> StreamToShellOutput:
+def user_input_tool(
+    prompt: str, state: Annotated[CustomAgentState, InjectedState]
+) -> StreamToShellOutput:
     """
     Prompt the user for input and send the response to the persistent interactive shell.
 
@@ -27,7 +31,14 @@ def user_input_tool(prompt: str) -> StreamToShellOutput:
     Raises:
         Exception: If an error occurs while sending the input to the shell.
     """
+
+    shell_registry = ShellRegistry.get()
+    shell_id: Optional[UUID] = state["shell_id"]
+    shell: BaseShell = shell_registry.get_shell(shell_id)
+    name = state.get("agent_name")
+    logger = LoggerFactory.get_logger(name=name)
+
     logger.info("user_input_tool called with prompt: %s", prompt)
 
-    user_response = input(f"[Agent] {prompt}\n> ")
-    return interactive_shell.stream_command(user_response)
+    user_response = input(f"[{name}] {prompt}\n> ")
+    return shell.stream_command(user_response)

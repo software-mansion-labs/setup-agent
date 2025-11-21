@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-
+from enum import Enum
 
 class InteractionReviewLLMResponse(BaseModel):
     """
@@ -14,6 +14,22 @@ class InteractionReviewLLMResponse(BaseModel):
     needs_action: bool
     reason: str
 
+class ProcessState(str, Enum):
+    INITIALIZING = "initializing"
+    RUNNING = "running"
+    ERROR = "error"
+
+class LongRunningShellInteractionReviewLLMResponse(BaseModel):
+    """
+    Structured response from the LLM analyzing long-running shell output for interaction needs.
+
+    Attributes:
+        needs_action (bool): True if the shell is awaiting user input, False otherwise.
+        reason (str): Explanation of why the shell requires or does not require interaction.
+
+    """
+    state: ProcessState = ProcessState.INITIALIZING
+    reason: str
 
 class InteractionReview(InteractionReviewLLMResponse):
     """
