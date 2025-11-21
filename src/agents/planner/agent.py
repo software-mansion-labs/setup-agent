@@ -98,9 +98,6 @@ class Planner(BaseAgent):
             f"raw_texts:\n{guideline_files_merged_content}\n\nproject_root:\n{self.project_root}\n\n**GOAL**:\n{chosen_task}",
         )
 
-        with open("plan.json", "w") as f:
-            json.dump(analysis.model_dump(mode="json"), f, indent=4)
-
         planned_steps = self._assign_shells([self.cd_step] + analysis.plan)
         state["plan"] = deque(planned_steps)
         return state
