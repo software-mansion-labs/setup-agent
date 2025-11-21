@@ -5,14 +5,9 @@ will result in false positives. This filter efficiently processes this through t
 use of the Aho-Corasick algorithm.
 """
 from functools import lru_cache
-from typing import Any
 
-from ..settings import get_settings
-from .util import compute_file_hash
-
-
-Automaton = Any
-
+from detect_secrets.settings import get_settings
+import ahocorasick
 
 def is_feature_enabled() -> bool:
     try:
@@ -22,18 +17,11 @@ def is_feature_enabled() -> bool:
         return False
 
 
-def initialize(wordlist_filename: str, min_length: int = 3, file_hash: str = '') -> Automaton:
+def initialize(wordlist_filename: str, min_length: int = 3) -> ahocorasick.Automation:
     """
     :param min_length: if words are too small, the automaton will flag too many
         words. As a result, our recall will decrease without a precision boost.
         Tweak this value to customize it based on your own findings.
-
-    :param file_hash: this is currently used for baseline reporting purposes only, rather than
-        engine's functionality. One can imagine a future where this automaton model is
-        cached and keyed off the hash, and thus, this file_hash can be used to see if the
-        cache needs to be invalidated.
-
-        But alas, this functionality has yet to be implemented.
     """
     # See https://pyahocorasick.readthedocs.io/en/latest/ for more information.
     automaton = get_automaton()
@@ -50,7 +38,6 @@ def initialize(wordlist_filename: str, min_length: int = 3, file_hash: str = '')
     get_settings().filters[path] = {
         'min_length': min_length,
         'file_name': wordlist_filename,
-        'file_hash': compute_file_hash(wordlist_filename),
     }
 
     automaton.make_automaton()
@@ -67,6 +54,5 @@ def should_exclude_secret(secret: str) -> bool:
 
 
 @lru_cache(maxsize=1)
-def get_automaton() -> Automaton:
-    import ahocorasick
+def get_automaton() -> ahocorasick.Automation:
     return ahocorasick.Automaton()

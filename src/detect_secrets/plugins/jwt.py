@@ -20,7 +20,7 @@ class JwtTokenDetector(RegexBasedDetector):
             re.compile(r'eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*?'),
         ]
 
-    def analyze_string(self, string: str) -> Generator[str, None, None]:
+    def analyze_string(self, string: str, **kwargs) -> Generator[str, None, None]:
         yield from filter(
             self.is_formally_valid,
             super().analyze_string(string),

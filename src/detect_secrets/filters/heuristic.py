@@ -1,4 +1,3 @@
-import os
 import re
 import string
 from functools import lru_cache
@@ -48,10 +47,8 @@ def is_sequential_string(secret: str) -> bool:
 
     return False
 
-
 def is_potential_uuid(secret: str) -> bool:
     return bool(_get_uuid_regex().search(secret))
-
 
 @lru_cache(maxsize=1)
 def _get_uuid_regex() -> Pattern:
@@ -59,7 +56,6 @@ def _get_uuid_regex() -> Pattern:
         r'[a-f0-9]{8}\-[a-f0-9]{4}\-[a-f0-9]{4}\-[a-f0-9]{4}\-[a-f0-9]{12}',
         re.IGNORECASE,
     )
-
 
 def is_likely_id_string(secret: str, line: str, plugin: Optional[BasePlugin] = None) -> bool:
     try:
@@ -69,7 +65,6 @@ def is_likely_id_string(secret: str, line: str, plugin: Optional[BasePlugin] = N
 
     return (not plugin or not isinstance(plugin, RegexBasedDetector)) \
         and bool(_get_id_detector_regex().search(line, pos=0, endpos=index))
-
 
 @lru_cache(maxsize=1)
 def _get_id_detector_regex() -> Pattern:
@@ -81,63 +76,6 @@ def _get_id_detector_regex() -> Pattern:
     [^a-z0-9]         -> Non-letter/numeric character
     """
     return re.compile(r'(^(id|myid|userid)|_id)s?[^a-z0-9]', re.IGNORECASE)
-
-
-def is_non_text_file(filename: str) -> bool:
-    _, ext = os.path.splitext(filename)
-    return ext in IGNORED_FILE_EXTENSIONS
-
-
-# We don't scan files with these extensions.
-# Note: We might be able to do this better with
-#       `subprocess.check_output(['file', filename])`
-#       and look for "ASCII text", but that might be more expensive.
-#
-#       Definitely something to look into, if this list gets unruly long.
-IGNORED_FILE_EXTENSIONS = set(
-    (
-        '.7z',
-        '.bin',
-        '.bmp',
-        '.bz2',
-        '.class',
-        '.css',
-        '.dmg',
-        '.doc',
-        '.eot',
-        '.exe',
-        '.gif',
-        '.gz',
-        '.ico',
-        '.iml',
-        '.ipr',
-        '.iws',
-        '.jar',
-        '.jpg',
-        '.jpeg',
-        '.lock',
-        '.map',
-        '.mo',
-        '.pdf',
-        '.png',
-        '.prefs',
-        '.psd',
-        '.rar',
-        '.realm',
-        '.s7z',
-        '.sum',
-        '.svg',
-        '.tar',
-        '.tif',
-        '.tiff',
-        '.ttf',
-        '.webp',
-        '.woff',
-        '.xls',
-        '.xlsx',
-        '.zip',
-    ),
-)
 
 
 def is_templated_secret(secret: str) -> bool:
@@ -158,14 +96,12 @@ def is_templated_secret(secret: str) -> bool:
 
     return False
 
-
 def is_prefixed_with_dollar_sign(secret: str) -> bool:
     # NOTE: This is broken out into its own function since it has more chance of increasing
     # false negatives than `is_templated_secret` (e.g. secrets that actually start with a $).
     # This is best used with files that actually use this as a means of referencing variables.
     # TODO: More intelligent filetype handling?
     return bool(secret) and secret[0] == '$'
-
 
 def is_indirect_reference(line: str) -> bool:
     """
@@ -183,7 +119,6 @@ def is_indirect_reference(line: str) -> bool:
         return False
     return bool(_get_indirect_reference_regex().search(line))
 
-
 @lru_cache(maxsize=1)
 def _get_indirect_reference_regex() -> Pattern:
     # Regex details:
@@ -199,39 +134,9 @@ def _get_indirect_reference_regex() -> Pattern:
     #   )
     return re.compile(r'([^\v=!:]*)\s*(:=?|[!=]{1,3})\s*([\w.-]+[\[\(][^\v]*[\]\)])')
 
-
-def is_lock_file(filename: str) -> bool:
-    return os.path.basename(filename) in {
-        'Brewfile.lock.json',
-        'Cartfile.resolved',
-        'composer.lock',
-        'Gemfile.lock',
-        'Package.resolved',
-        'package-lock.json',
-        'Podfile.lock',
-        'yarn.lock',
-        'Pipfile.lock',
-        'poetry.lock',
-        'Cargo.lock',
-        'packages.lock.json',
-    }
-
-
 def is_not_alphanumeric_string(secret: str) -> bool:
     """
     This assumes that secrets should have at least ONE letter in them.
     This helps avoid clear false positives, like `*****`.
     """
     return not bool(set(string.ascii_letters) & set(secret))
-
-
-def is_swagger_file(filename: str) -> bool:
-    """
-    Filters swagger files and paths, like swagger-ui.html or /swagger/.
-    """
-    return bool(_get_swagger_regex().search(filename))
-
-
-@lru_cache(maxsize=1)
-def _get_swagger_regex() -> Pattern:
-    return re.compile(r'.*swagger.*')

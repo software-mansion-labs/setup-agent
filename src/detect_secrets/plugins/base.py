@@ -15,7 +15,6 @@ import requests
 
 from detect_secrets.constants import VerifiedResult
 from detect_secrets.core.potential_secret import PotentialSecret
-from detect_secrets.util.inject import call_function_with_arguments
 
 class PotentialSecretResult(TypedDict):
     is_secret: bool
@@ -38,7 +37,7 @@ class BasePlugin(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def analyze_string(self, string: str) -> Generator[str, None, None]:
+    def analyze_string(self, string: str, **kwargs) -> Generator[str, None, None]:
         """Yields all the raw secret values within a supplied string."""
         raise NotImplementedError
 
@@ -62,10 +61,7 @@ class BasePlugin(metaclass=ABCMeta):
                 in get_settings().filters
             ):
                 try:
-                    verified_result = call_function_with_arguments(
-                        self.verify,
-                        secret=match,
-                    )
+                    verified_result = self.verify(secret=match)
                     is_verified = True if verified_result == VerifiedResult.VERIFIED_TRUE else False
                 except requests.exceptions.RequestException:
                     is_verified = False
@@ -172,7 +168,7 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
     def denylist(self) -> Iterable[Pattern]:
         raise NotImplementedError
 
-    def analyze_string(self, string: str) -> Generator[str, None, None]:
+    def analyze_string(self, string: str, **kwargs) -> Generator[str, None, None]:
         for regex in self.denylist:
             for match in regex.findall(string):
                 if isinstance(match, tuple):

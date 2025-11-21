@@ -32,22 +32,6 @@ def get_logger(name: Optional[str] = None, format_string: Optional[str] = None) 
 
     return cast(CustomLogger, log)
 
-
-def _set_debug_level(self: logging.Logger, debug_level: int) -> None:
-    """
-    :param debug_level: between 0-2, configure verbosity of log
-    """
-    mapping = {
-        0: logging.ERROR,
-        1: logging.INFO,
-        2: logging.DEBUG,
-    }
-
-    self.setLevel(
-        mapping[min(debug_level, 2)],
-    )
-
-
 class CustomLogger(logging.Logger):
     def set_debug_level(self, debug_level: int) -> None:
         """

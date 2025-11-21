@@ -240,24 +240,6 @@ QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP = {
     FOLLOWED_BY_QUOTES_AND_SEMICOLON_REGEX: 3,
     FOLLOWED_BY_ARROW_FUNCTION_SIGN_QUOTES_REQUIRED_REGEX: 4,
 }
-REGEX_BY_FILETYPE = {
-    FileType.GO: GOLANG_DENYLIST_REGEX_TO_GROUP,
-    FileType.OBJECTIVE_C: COMMON_C_DENYLIST_REGEX_TO_GROUP,
-    FileType.C_SHARP: COMMON_C_DENYLIST_REGEX_TO_GROUP,
-    FileType.C: COMMON_C_DENYLIST_REGEX_TO_GROUP,
-    FileType.C_PLUS_PLUS: C_PLUS_PLUS_REGEX_TO_GROUP,
-    FileType.CLS: QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP,
-    FileType.JAVA: QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP,
-    FileType.JAVASCRIPT: QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP,
-    FileType.PYTHON: QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP,
-    FileType.SWIFT: QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP,
-    FileType.TERRAFORM: QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP,
-    FileType.YAML: CONFIG_DENYLIST_REGEX_TO_GROUP,
-    FileType.CONFIG: CONFIG_DENYLIST_REGEX_TO_GROUP,
-    FileType.INI: CONFIG_DENYLIST_REGEX_TO_GROUP,
-    FileType.PROPERTIES: CONFIG_DENYLIST_REGEX_TO_GROUP,
-    FileType.TOML: CONFIG_DENYLIST_REGEX_TO_GROUP,
-}
 
 
 class KeywordDetector(BasePlugin):
@@ -313,14 +295,11 @@ class KeywordDetector(BasePlugin):
         context: Optional[CodeSnippet] = None,
         **kwargs: Any,
     ) -> Set[PotentialSecret]:
-        filetype = determine_file_type(filename)
-        denylist_regex_to_group = REGEX_BY_FILETYPE.get(filetype, QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP)  # noqa: E501
         return super().analyze_line(
             filename=filename,
             line=line,
             line_number=line_number,
-            context=context,
-            denylist_regex_to_group=denylist_regex_to_group,
+            context=context
         )
 
     def json(self) -> Dict[str, Any]:

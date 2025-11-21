@@ -19,12 +19,3 @@ class SecretNotFoundOnSpecifiedLineError(Exception):
             'ERROR: Secret not found on line {}!\n'.format(line)
             + 'Try recreating your baseline to fix this issue.',
         )
-
-
-class NoLineNumberError(Exception):
-    def __init__(self) -> None:
-        super().__init__(
-            'ERROR: No line numbers found in baseline! Line numbers are needed '
-            'for auditing secret occurrences. Try recreating your baseline to fix '
-            'this issue.',
-        )

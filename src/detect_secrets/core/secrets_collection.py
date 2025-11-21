@@ -7,16 +7,7 @@ from detect_secrets.core import scan
 from detect_secrets.plugins.base import PotentialSecretResult
 from detect_secrets.util.path import convert_local_os_path
 from detect_secrets.core.potential_secret import PotentialSecret
-from detect_secrets.settings import configure_settings_from_baseline, get_settings, get_plugins
-
-
-class PatchedFile:
-    """This exists so that we can do typecasting, without importing unidiff."""
-    path: str
-
-    def __iter__(self) -> Generator:
-        yield
-
+from detect_secrets.settings import get_plugins
 
 class SecretsCollection:
     def __init__(self, root: str = '') -> None:
@@ -42,46 +33,6 @@ class SecretsCollection:
     @property
     def files(self) -> Set[str]:
         return set(self.data.keys())
-
-    def scan_files(self, *filenames: str, num_processors: Optional[int] = None) -> None:
-        """Just like scan_file, but optimized through parallel processing."""
-        if len(filenames) == 1:
-            self.scan_file(filenames[0])
-            return
-
-        if not num_processors:
-            num_processors = mp.cpu_count()
-
-        child_process_settings = get_settings().json()
-
-        with mp.Pool(
-            processes=num_processors,
-            initializer=configure_settings_from_baseline,
-            initargs=(child_process_settings,),
-        ) as p:
-            for secrets in p.imap_unordered(
-                _scan_file_and_serialize,
-                [os.path.join(self.root, filename) for filename in filenames],
-            ):
-                for secret in secrets:
-                    self[os.path.relpath(secret.filename, self.root)].add(secret)
-
-    def scan_file(self, filename: str) -> None:
-        for secret in scan.scan_file(os.path.join(self.root, convert_local_os_path(filename))):
-            self[convert_local_os_path(filename)].add(secret)
-
-    def scan_diff(self, diff: str) -> None:
-        """
-        :raises: UnidiffParseError
-        """
-        try:
-            for secret in scan.scan_diff(diff):
-                self[secret.filename].add(secret)
-        except ImportError:
-            raise NotImplementedError(
-                'SecretsCollection.scan_diff requires `unidiff` to work. Try pip '
-                'installing that package, and try again.',
-            )
         
     def scan_text(self, text: str) -> List[PotentialSecretResult]:
         plugins = get_plugins()
@@ -316,8 +267,3 @@ class SecretsCollection:
     def __len__(self) -> int:
         """Returns the total number of secrets in the collection."""
         return sum(len(secrets) for secrets in self.data.values())
-
-
-def _scan_file_and_serialize(filename: str) -> List[PotentialSecret]:
-    """Used for multiprocessing, since lambdas can't be serialized."""
-    return list(scan.scan_file(filename))

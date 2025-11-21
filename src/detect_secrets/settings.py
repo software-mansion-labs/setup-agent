@@ -1,10 +1,9 @@
-from contextlib import contextmanager
+from __future__ import annotations
 from copy import deepcopy
 from functools import lru_cache
 from importlib import import_module
 from typing import Any
 from typing import Dict
-from typing import Generator
 from typing import List
 from urllib.parse import urlparse
 from detect_secrets.plugins.base import BasePlugin
@@ -12,9 +11,39 @@ from detect_secrets.plugins.base import BasePlugin
 from .exceptions import InvalidFile
 from .util.importlib import import_file_as_module
 
+from detect_secrets.plugins import (
+    ArtifactoryDetector,
+    AWSKeyDetector,
+    AzureStorageKeyDetector,
+    Base64HighEntropyString,
+    BasicAuthDetector,
+    CloudantDetector,
+    DiscordBotTokenDetector,
+    GitHubTokenDetector,
+    GitLabTokenDetector,
+    HexHighEntropyString,
+    IbmCloudIamDetector,
+    IbmCosHmacDetector,
+    IPPublicDetector,
+    JwtTokenDetector,
+    KeywordDetector,
+    MailchimpDetector,
+    NpmDetector,
+    OpenAIDetector,
+    PrivateKeyDetector,
+    PypiTokenDetector,
+    SendGridDetector,
+    SlackDetector,
+    SoftlayerDetector,
+    SquareOAuthDetector,
+    StripeDetector,
+    TelegramBotTokenDetector,
+    TwilioKeyDetector,
+)
+
 
 @lru_cache(maxsize=1)
-def get_settings() -> 'Settings':
+def get_settings() -> Settings:
     """
     This is essentially a singleton pattern, that allows for (controlled) global access
     to common variables.
@@ -22,7 +51,7 @@ def get_settings() -> 'Settings':
     return Settings()
 
 
-def configure_settings_from_baseline(baseline: Dict[str, Any], filename: str = '') -> 'Settings':
+def configure_settings_from_baseline(baseline: Dict[str, Any], filename: str = '') -> Settings:
     """
     :raises: KeyError
     """
@@ -37,18 +66,17 @@ def configure_settings_from_baseline(baseline: Dict[str, Any], filename: str = '
         if 'detect_secrets.filters.wordlist.should_exclude_secret' in settings.filters:
             config = settings.filters['detect_secrets.filters.wordlist.should_exclude_secret']
 
-            from detect_secrets import filters
-            filters.wordlist.initialize(
+            from detect_secrets.filters import wordlist
+            wordlist.initialize(
                 wordlist_filename=config['file_name'],
                 min_length=config['min_length'],
-                file_hash=config['file_hash'],
             )
 
         if 'detect_secrets.filters.gibberish.should_exclude_secret' in settings.filters:
             config = settings.filters['detect_secrets.filters.gibberish.should_exclude_secret']
 
-            from detect_secrets import filters
-            filters.gibberish.initialize(
+            from detect_secrets.filters import gibberish
+            gibberish.initialize(
                 model_path=config.get('model'),
                 limit=config['limit'],
             )
@@ -60,76 +88,8 @@ def configure_settings_from_baseline(baseline: Dict[str, Any], filename: str = '
 
     return settings
 
-
-@contextmanager
-def default_settings() -> Generator['Settings', None, None]:
-    """Convenience function to enable all plugins and default filters."""
-    from .core.plugins.util import get_mapping_from_secret_type_to_class
-
-    with transient_settings({
-        'plugins_used': [
-            {'name': plugin_type.__name__}
-            for plugin_type in get_mapping_from_secret_type_to_class().values()
-        ],
-    }) as settings:
-        yield settings
-
-
-@contextmanager
-def transient_settings(config: Dict[str, Any]) -> Generator['Settings', None, None]:
-    """Allows the customizability of non-global settings per invocation."""
-    original_settings = get_settings().json()
-
-    cache_bust()
-    try:
-        yield configure_settings_from_baseline(config)
-    finally:
-        cache_bust()
-        configure_settings_from_baseline(original_settings)
-
-
-def cache_bust() -> None:
-    get_plugins.cache_clear()
-
-    get_filters.cache_clear()
-    for path, config in get_settings().filters.items():
-        # Need to also clear the individual caches (e.g. cached regex patterns).
-        parts = urlparse(path)
-        if not parts.scheme:
-            module_path, _ = path.rsplit('.', 1)
-            try:
-                module = import_module(module_path)
-            except ModuleNotFoundError:
-                continue
-        elif parts.scheme == 'file':
-            file_path = path[len('file://'):].split('::')[0]
-            try:
-                module = import_file_as_module(file_path)
-            except (FileNotFoundError, InvalidFile):
-                continue
-            module_path = file_path
-        else:
-            continue
-
-        for item_key in dir(module):
-            item = getattr(module, item_key)
-            try:
-                if item.__module__ != module_path:
-                    # Make sure we only clear the cache specific to the module.
-                    raise AttributeError
-
-                item.cache_clear()
-            except AttributeError:
-                pass
-
-    get_settings.cache_clear()
-
-
 class Settings:
-    DEFAULT_FILTERS = {
-        'detect_secrets.filters.common.is_invalid_file',
-        'detect_secrets.filters.heuristic.is_non_text_file',
-    }
+    from detect_secrets.filters.heuristic import is_sequential_string
 
     def __init__(self) -> None:
         self.clear()
@@ -142,8 +102,6 @@ class Settings:
         self.filters: Dict[str, Dict[str, Any]] = {
             path: {}
             for path in {
-                *self.DEFAULT_FILTERS,
-                'detect_secrets.filters.allowlist.is_line_allowlisted',
                 'detect_secrets.filters.heuristic.is_sequential_string',
                 'detect_secrets.filters.heuristic.is_potential_uuid',
                 'detect_secrets.filters.heuristic.is_likely_id_string',
@@ -155,10 +113,6 @@ class Settings:
                 'detect_secrets.filters.heuristic.is_swagger_file',
             }
         }
-
-    def set(self, other: 'Settings') -> None:
-        self.plugins = other.plugins
-        self.filters = other.filters
 
     def configure_plugins(self, config: List[Dict[str, Any]]) -> 'Settings':
         """
@@ -197,10 +151,7 @@ class Settings:
                 }
             ]
         """
-        self.filters = {
-            path: {}
-            for path in self.DEFAULT_FILTERS
-        }
+        self.filters = {}
 
         # Make a copy, so we don't affect the original.
         filter_configs = deepcopy(config)
@@ -218,77 +169,9 @@ class Settings:
         get_filters.cache_clear()
         return self
 
-    def json(self) -> Dict[str, Any]:
-        plugins_used = []
-        for plugin in get_plugins():
-            # NOTE: We use the initialized plugin's JSON representation (rather than using
-            # the configured settings) to deal with cases where plugins define their own
-            # default variables, that is not necessarily carried through the
-            # settings object.
-            serialized_plugin = plugin.json()
-
-            plugins_used.append({
-                # We want this to appear first.
-                'name': serialized_plugin['name'],
-
-                # NOTE: We still need to use the saved settings configuration though, since
-                # there are keys specifically in the settings object that we need to carry over
-                # (e.g. `path` for custom plugins).
-                **self.plugins[serialized_plugin['name']],
-
-                # Finally, this comes last so that it overrides any values that are saved in
-                # the settings object.
-                **serialized_plugin,
-            })
-
-        return {
-            'plugins_used': sorted(
-                plugins_used,
-                key=lambda x: str(x['name'].lower()),
-            ),
-            'filters_used': sorted(
-                [
-                    {
-                        'path': path,
-                        **config,
-                    }
-                    for path, config in self.filters.items()
-                    if path not in self.DEFAULT_FILTERS
-                ],
-                key=lambda x: str(x['path'].lower()),
-            ),
-        }
-
 
 @lru_cache(maxsize=1)
 def get_plugins() -> List[BasePlugin]:
-    from detect_secrets.plugins.artifactory import ArtifactoryDetector
-    from detect_secrets.plugins.aws import AWSKeyDetector
-    from detect_secrets.plugins.azure_storage_key import AzureStorageKeyDetector
-    from detect_secrets.plugins.basic_auth import BasicAuthDetector
-    from detect_secrets.plugins.cloudant import CloudantDetector
-    from detect_secrets.plugins.discord import DiscordBotTokenDetector
-    from detect_secrets.plugins.github_token import GitHubTokenDetector
-    from detect_secrets.plugins.gitlab_token import GitLabTokenDetector
-    from detect_secrets.plugins.high_entropy_strings import Base64HighEntropyString, HexHighEntropyString
-    from detect_secrets.plugins.ibm_cloud_iam import IbmCloudIamDetector
-    from detect_secrets.plugins.ibm_cos_hmac import IbmCosHmacDetector
-    from detect_secrets.plugins.ip_public import IPPublicDetector
-    from detect_secrets.plugins.jwt import JwtTokenDetector
-    from detect_secrets.plugins.keyword import KeywordDetector
-    from detect_secrets.plugins.mailchimp import MailchimpDetector
-    from detect_secrets.plugins.npm import NpmDetector
-    from detect_secrets.plugins.openai import OpenAIDetector
-    from detect_secrets.plugins.private_key import PrivateKeyDetector
-    from detect_secrets.plugins.pypi_token import PypiTokenDetector
-    from detect_secrets.plugins.sendgrid import SendGridDetector
-    from detect_secrets.plugins.slack import SlackDetector
-    from detect_secrets.plugins.softlayer import SoftlayerDetector
-    from detect_secrets.plugins.square_oauth import SquareOAuthDetector
-    from detect_secrets.plugins.stripe import StripeDetector
-    from detect_secrets.plugins.telegram_token import TelegramBotTokenDetector
-    from detect_secrets.plugins.twilio import TwilioKeyDetector
-
     return [
         ArtifactoryDetector(),
         AWSKeyDetector(),

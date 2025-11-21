@@ -1,18 +1,16 @@
 import os
 import string
 from functools import lru_cache
-from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Union
 
-from ...core.plugins import Plugin
-from ...plugins.private_key import PrivateKeyDetector
-from ...settings import get_settings
-from ..util import compute_file_hash
-
-
-Model = Any
+from detect_secrets.plugins import BasePlugin
+from detect_secrets.plugins.private_key import PrivateKeyDetector
+from detect_secrets.settings import get_settings
+from gibberish_detector import serializer
+from gibberish_detector.model import Model
+from gibberish_detector.exceptions import ParsingError
 
 
 def is_feature_enabled() -> bool:
@@ -36,8 +34,6 @@ def initialize(model_path: Optional[str] = None, limit: float = 3.7) -> None:
 
     model = get_model()
 
-    from gibberish_detector import serializer
-    from gibberish_detector.exceptions import ParsingError
     with open(path) as f:
         try:
             model.update(serializer.deserialize(f.read()))
@@ -49,13 +45,12 @@ def initialize(model_path: Optional[str] = None, limit: float = 3.7) -> None:
     }
     if model_path:
         config['model'] = model_path
-        config['file_hash'] = compute_file_hash(model_path)
 
     path = f'{__name__}.should_exclude_secret'
     get_settings().filters[path] = config
 
 
-def should_exclude_secret(secret: str, plugin: Optional[Plugin] = None) -> bool:
+def should_exclude_secret(secret: str, plugin: Optional[BasePlugin] = None) -> bool:
     """
     :param plugin: optional, for easier testing. The dependency injection system
         will populate its proper value on complete runs.
@@ -90,6 +85,5 @@ def should_exclude_secret(secret: str, plugin: Optional[Plugin] = None) -> bool:
 
 
 @lru_cache(maxsize=1)
-def get_model() -> 'Model':
-    from gibberish_detector.model import Model
+def get_model() -> Model:
     return Model(charset='')
