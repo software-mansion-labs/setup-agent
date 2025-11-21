@@ -21,6 +21,7 @@ def user_input_tool(
 
     Args:
         prompt (str): The message to show the user when requesting input.
+        state (CustomAgentState): The agent's current state, injected automatically.
 
     Returns:
         StreamToShellOutput: Structured output from the shell after sending the user's input, containing:

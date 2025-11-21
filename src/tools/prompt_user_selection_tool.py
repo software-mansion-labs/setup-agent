@@ -18,6 +18,7 @@ def prompt_user_selection_tool(prompt: str, choices: List[str], state: Annotated
     Args:
         prompt (str): The question or instruction to show to the user.
         choices (list[str]): The list of possible choices the user can select from.
+        state (CustomAgentState): The agent's current state, injected automatically.
 
     Returns:
         str: The value selected by the user.
