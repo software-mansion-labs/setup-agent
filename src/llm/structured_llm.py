@@ -24,7 +24,7 @@ class StructuredLLM:
         Returns a parsed Pydantic object (schema).
         """
         structured_llm = self._raw_llm.with_structured_output(
-            schema, method="json_mode"
+            schema, method="json_schema"
         )
 
         system_message = (

@@ -20,6 +20,9 @@ def authenticate_tool(
     interactive shell for authentication. It should be used whenever a command
     requires sudo or other password input.
 
+    Args:
+        state (CustomAgentState): The current state of the agent, containing shell_id and agent_name, injected automatically.
+
     Returns:
         StreamToShellOutput: Structured output from the shell after providing the password,
         containing:

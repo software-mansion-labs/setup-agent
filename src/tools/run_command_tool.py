@@ -21,6 +21,7 @@ def run_command_tool(
 
     Args:
         command (str): The shell command to execute.
+        state (CustomAgentState): The current state of the agent, containing shell_id and agent_name, injected automatically.
 
     Returns:
         StreamToShellOutput: Structured output from the executed command, containing:
