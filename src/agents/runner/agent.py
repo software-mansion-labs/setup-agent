@@ -6,7 +6,7 @@ from tools import run_command_tool, user_input_tool, authenticate_tool, prompt_u
 from agents.base_agent import BaseAgent
 from langchain_core.messages import HumanMessage
 from shell import ShellRegistry
-from InquirerPy.prompts.list import ListPrompt
+from questionary import select
 from agents.runner.prompts import RunnerPrompts
 from shell import BaseShell
 from constants import FILE_SEPARATOR
@@ -115,11 +115,11 @@ class Runner(BaseAgent):
         Returns:
             str: User-selected action ("Continue", "Skip", or "Learn more").
         """
-        return ListPrompt(
+        return select(
             message="Choose an action:",
             choices=["Continue", "Skip", "Learn more"],
             default="Continue",
-        ).execute()
+        ).ask()
 
     def _handle_non_continue_choice(
         self,

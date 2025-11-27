@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
 from agents.base_agent import CustomAgentState
 from utils.logger import LoggerFactory
-from InquirerPy.prompts.list import ListPrompt
+from questionary import select
 from typing import List
 from typing_extensions import Annotated
 from langgraph.prebuilt import InjectedState
@@ -34,11 +34,11 @@ def prompt_user_selection_tool(prompt: str, choices: List[str], state: Annotated
         if not choices:
             raise ValueError("No choices provided for selection.")
 
-        selection: str = ListPrompt(
+        selection: str = select(
             message=f"[{name}] {prompt}",
             choices=choices,
             default=choices[0] if choices else None,
-        ).execute()
+        ).ask()
 
         return selection.strip()
     except Exception as e:

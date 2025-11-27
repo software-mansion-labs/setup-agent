@@ -1,5 +1,5 @@
 from typing import List
-from InquirerPy.prompts.list import ListPrompt
+from questionary import select
 from graph_state import GraphState, Node
 from nodes.base_llm_node import BaseLLMNode
 from nodes.task_identifier.prompts import TaskIdentifierPrompts
@@ -55,11 +55,11 @@ class TaskIdentifierNode(BaseLLMNode):
             self.logger.warning("No tasks found.")
             return ""
 
-        return ListPrompt(
+        return select(
             message="Which task would you like to perform?",
             choices=tasks,
-            cycle=True,
-        ).execute()
+            default=tasks[0]
+        ).ask()
 
     def invoke(self, state: GraphState) -> GraphState:
         """

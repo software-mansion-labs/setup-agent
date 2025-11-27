@@ -18,7 +18,7 @@ from shell import ShellRegistry
 from agents.installer.prompts import InstallerPrompts
 from typing import List
 from constants import FILE_SEPARATOR
-from InquirerPy.prompts.list import ListPrompt
+from questionary import select
 from shell import BaseShell
 from agents.installer.types import StepExplanation
 
@@ -129,11 +129,11 @@ class Installer(BaseAgent):
         Returns:
             str: User's selected action.
         """
-        return ListPrompt(
+        return select(
             message="Choose an action:",
             choices=["Continue", "Skip", "Learn more"],
             default="Continue",
-        ).execute()
+        ).ask()
 
     def _handle_non_continue_choice(
         self,

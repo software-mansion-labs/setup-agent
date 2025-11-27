@@ -3,7 +3,7 @@ from typing import List
 import os
 from itertools import chain
 from graph_state import GuidelineFile, Node, GraphState
-from InquirerPy.prompts import checkbox
+from questionary import checkbox, Choice, path
 from nodes.base_llm_node import BaseLLMNode
 from utils.file_loader import FileLoader
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
@@ -92,19 +92,39 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             self.logger.warning("No guideline files found.")
             return []
 
-        choices = sorted(
-            [gf.file for gf in guideline_files], key=lambda file: len(file.split("/"))
-        )
+        sorted_guideline_files = sorted(guideline_files, key=lambda gf: len(gf.file.split("/")))
+        OTHER_OPTION = "Other: (Enter manual path)"
+        choices = [*[gf.file for gf in sorted_guideline_files], OTHER_OPTION]
 
-        selected_files = checkbox.CheckboxPrompt(
-            message="Select guideline files to use (↑↓ to move, space to toggle, enter to confirm):",
+        selected_files = checkbox(
+            message="Select guideline files to use",
             choices=choices,
-            cycle=True,
-            default=[choices[0]] if choices else [],
-        ).execute()
+            default=choices[0] if choices else None,
+            validate=lambda c: True if len(c) > 0 else "You must choose at least one option."
+        ).ask()
 
-        selected = [gf for gf in guideline_files if gf.file in selected_files]
-        return selected
+        manual_paths = []      
+        if OTHER_OPTION in selected_files:
+            selected_files.remove(OTHER_OPTION)
+            
+            custom_path = path(
+                message="Please enter the file path:",
+                validate=lambda val: len(selected_files) > 0 or len(val.strip()) > 0 or "You must choose at least one valid file."
+            ).ask()
+            
+            if custom_path:
+                manual_paths.append(custom_path)
+
+        final_selection = [gf for gf in guideline_files if gf.file in selected_files]
+        for manual_path in manual_paths:
+            if manual_path in final_selection:
+                continue
+            content = self._file_loader.load_document(manual_path)
+            if not content:
+                continue
+            final_selection.append(GuidelineFile(file=manual_path, content=content))
+
+        return final_selection
 
     def _get_guideline_files(self) -> List[GuidelineFile]:
         if self._config.guideline_files:
