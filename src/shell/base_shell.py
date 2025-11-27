@@ -30,11 +30,21 @@ class BaseShell(ABC):
 
     @abstractmethod
     def stream_command(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
-        """Run a command in the shell and return structured results."""
+        """
+        Run a command in the shell, stream output, and use the LLM to detect
+        if user interaction is required.
+
+        Args:
+            sequence (str): Command to execute in the shell.
+            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: Either the final shell output (needs_action=False) or an LLM decision indicating that interaction is required.
+        """
         pass
 
     @abstractmethod
-    def send(self, sequence: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Send a sequence of input to the shell.
 
@@ -48,7 +58,7 @@ class BaseShell(ABC):
         pass
 
     @abstractmethod
-    def sendline(self, sequence: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def send_line(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Send a sequence of input to the shell, followed by a newline (Enter).
 
@@ -62,7 +72,7 @@ class BaseShell(ABC):
         pass
     
     @abstractmethod
-    def sendcontrol(self, sequence: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def send_control(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Send a control sequence (e.g., Ctrl+C, Ctrl+D) to the shell.
 
@@ -76,7 +86,7 @@ class BaseShell(ABC):
         pass
 
     @abstractmethod
-    def run_command(self, command: str, hide_input: bool = False) -> "StreamToShellOutput":
+    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
         """
         Execute a command in the shell and return its output after completion.
 
