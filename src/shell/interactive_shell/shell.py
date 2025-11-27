@@ -182,13 +182,13 @@ class InteractiveShell(BaseShell):
         return StreamToShellOutput(needs_action=False, output=self._buffer)
     
     def _evaluate_buffer_state(self) -> Optional[StreamToShellOutput]:
-        """
-        Analyze the current shell buffer to determine if user action is required,
-        or if a long-running process is stable or has failed.
+        """Evaluates the buffer to detect interaction prompts or process states.
+
+        Checks if the shell is waiting for user input or if a long-running process is stable or has failed.
 
         Returns:
-            StreamToShellOutput if a decision is made (interaction or error),
-            or None if no action is required yet.
+            Optional[StreamToShellOutput]: Output object if the shell awaits interaction,
+            or if a background process is stable/failed, containing output buffer and justification. Otherwise, None.
         """
         if not self._buffer:
             return None
@@ -240,7 +240,7 @@ class InteractiveShell(BaseShell):
         Args:
             sequence (str): The text or command output to log.
         """
-        if self._log_file is not None:
+        if self._log_file:
             with open(self._log_file, "a") as f:
                 f.write(sequence)
 
