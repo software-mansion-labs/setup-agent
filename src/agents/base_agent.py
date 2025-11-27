@@ -1,8 +1,7 @@
 from abc import abstractmethod
 
 from graph_state import GraphState
-from langgraph.prebuilt.chat_agent_executor import AgentState
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from uuid import UUID
 from typing import Sequence
 from langchain.tools import BaseTool
@@ -10,6 +9,9 @@ from typing import Optional
 from nodes.base_llm_node import BaseLLMNode
 from pydantic import BaseModel
 from typing import Type, TypeVar
+from langchain.agents import AgentState
+from middlewares import ParallelToolCallsMiddleware
+
 
 class CustomAgentState(AgentState):
     agent_name: str
@@ -17,6 +19,7 @@ class CustomAgentState(AgentState):
 
 T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", bound=CustomAgentState)
+
 
 class BaseAgent(BaseLLMNode):
     """
@@ -32,19 +35,19 @@ class BaseAgent(BaseLLMNode):
         parallel_tool_calls: bool = False,
         state_schema: Optional[Type[K]] = CustomAgentState,
         response_format: Optional[Type[T]] = None,
-    ):
+    ) -> None:
         super().__init__(name=name)
-        self.agent = create_react_agent(
-            model=self._llm.raw_llm.bind_tools(
-                tools=tools, parallel_tool_calls=parallel_tool_calls
-            ),
+
+        self.agent = create_agent(
+            model=self._llm.raw_llm,
             tools=tools,
             name=name,
-            prompt=prompt,
+            system_prompt=prompt,
             state_schema=state_schema,
-            response_format=response_format
+            response_format=response_format,
+            middleware=[ParallelToolCallsMiddleware(parallel_tool_calls=parallel_tool_calls)]
         )
-
+        
     @abstractmethod
     def invoke(self, state: GraphState) -> GraphState:
         """

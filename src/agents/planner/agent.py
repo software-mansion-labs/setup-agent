@@ -12,7 +12,6 @@ from InquirerPy.prompts.list import ListPrompt
 from InquirerPy.prompts.input import InputPrompt
 from InquirerPy.base.control import Choice
 from constants import FILE_SEPARATOR
-import json
 
 
 class Planner(BaseAgent):
@@ -33,7 +32,7 @@ class Planner(BaseAgent):
         cd_step (Step): Step that ensures the working directory is correct before running commands.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the Planner agent.
 
@@ -97,9 +96,6 @@ class Planner(BaseAgent):
             PlannerPrompts.FIRST_GUIDELINES_ANALYSIS.value,
             f"raw_texts:\n{guideline_files_merged_content}\n\nproject_root:\n{self.project_root}\n\n**GOAL**:\n{chosen_task}",
         )
-
-        with open("plan.json", "w") as f:
-            json.dump(analysis.model_dump(mode="json"), f, indent=4)
 
         planned_steps = self._assign_shells([self.cd_step] + analysis.plan)
         state["plan"] = deque(planned_steps)
