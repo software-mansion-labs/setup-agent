@@ -9,7 +9,9 @@ from tools import (
     run_command_tool,
     user_input_tool,
     prompt_user_input_tool,
-    prompt_user_selection_tool
+    prompt_user_selection_tool,
+    use_arrow_keys_sequence,
+    use_keyboard_keys
 )
 from agents.base_agent import BaseAgent
 from shell import ShellRegistry
@@ -32,6 +34,8 @@ class Installer(BaseAgent):
     - Web search (`get_websearch_tool`)
     - Authentication (`authenticate_tool`)
     - User input interaction (`user_input_tool`)
+    - Use arrow keys (`use_arrow_keys_sequence`)
+    - Use special keyboard keys (`use_keyboard_keys`)
     """
 
     def __init__(self):
@@ -42,7 +46,9 @@ class Installer(BaseAgent):
             authenticate_tool,
             user_input_tool,
             prompt_user_input_tool,
-            prompt_user_selection_tool
+            prompt_user_selection_tool,
+            use_arrow_keys_sequence,
+            use_keyboard_keys
         ]
         super().__init__(
             name=Node.INSTALLER_AGENT.value,
@@ -168,7 +174,16 @@ class Installer(BaseAgent):
         return state
 
     def _learn_more_about_step(self, step: Step) -> str:
-        """Explain what this installation step does and if it’s safe."""
+        """
+        Explain what this installation step does and if it's safe.
+
+        Args:
+            step (Step): step to be explained based on description and suggested commands.
+        
+        Returns:
+            str: Explanation of the step with it's purpose, possible effects and verdict if it's safe to be performed.
+        
+        """
         try:
             response: StepExplanation = self._llm.invoke(
                 StepExplanation,
@@ -198,7 +213,7 @@ class Installer(BaseAgent):
 
         Args:
             step (Step): Current step containing installation commands.
-            shell: Active shell session used to run commands.
+            shell (BaseShell): Active shell session used to run commands.
             finished_steps (List[FinishedStep]): Completed steps so far.
             errors (List[WorkflowError]): Recorded workflow errors.
             state (GraphState): Current workflow state.

@@ -2,7 +2,7 @@ from itertools import chain
 from typing import List
 
 from graph_state import FinishedStep, GraphState, Node, Step, WorkflowError
-from tools import run_command_tool, user_input_tool, authenticate_tool, prompt_user_selection_tool, prompt_user_input_tool
+from tools import run_command_tool, user_input_tool, authenticate_tool, prompt_user_selection_tool, prompt_user_input_tool, use_arrow_keys_sequence, use_keyboard_keys
 from agents.base_agent import BaseAgent
 from langchain_core.messages import HumanMessage
 from shell import ShellRegistry
@@ -25,10 +25,20 @@ class Runner(BaseAgent):
         - `authenticate_tool`: Handles authentication during runtime operations.
         - `prompt_user_selection_tool`: Ask user to select from list of predefined values
         - `prompt_user_input_tool`: Ask user to input text value
+        - `use_arrow_keys_sequence`: Use arrow keys
+        - `use_keyboard_keys`: Use special keyboard keys
     """
 
     def __init__(self):
-        tools = [run_command_tool, user_input_tool, authenticate_tool, prompt_user_selection_tool, prompt_user_input_tool]
+        tools = [
+            run_command_tool,
+            user_input_tool,
+            authenticate_tool,
+            prompt_user_selection_tool,
+            prompt_user_input_tool,
+            use_arrow_keys_sequence,
+            use_keyboard_keys
+        ]
         super().__init__(
             name=Node.RUNNER_AGENT.value,
             prompt=RunnerPrompts.RUNNER_AGENT_DESCRIPTION.value,

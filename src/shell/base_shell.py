@@ -29,13 +29,102 @@ class BaseShell(ABC):
         self.logger.info("Ready.")
 
     @abstractmethod
-    def stream_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
-        """Run a command in the shell and return structured results."""
+    def stream_command(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        """
+        Run a command in the shell, stream output, and use the LLM to detect
+        if user interaction is required.
+
+        Args:
+            sequence (str): Command to execute in the shell.
+            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: Either the final shell output (needs_action=False) or an LLM decision indicating that interaction is required.
+        """
+        pass
+
+    @abstractmethod
+    def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        """
+        Send a sequence of input to the shell.
+
+        Args:
+            sequence (str): The input sequence to send.
+            hide_input (bool, optional): If True, masks the input in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: A structured object representing the shell's response.
+        """
+        pass
+
+    @abstractmethod
+    def send_line(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        """
+        Send a sequence of input to the shell, followed by a newline (Enter).
+
+        Args:
+            sequence (str): The input sequence to send.
+            hide_input (bool, optional): If True, masks the input in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: A structured object representing the shell's response.
+        """
+        pass
+    
+    @abstractmethod
+    def send_control(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        """
+        Send a control sequence (e.g., Ctrl+C, Ctrl+D) to the shell.
+
+        Args:
+            sequence (str): The control sequence to send.
+            hide_input (bool, optional): If True, masks the sequence in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: A structured object representing the shell's response.
+        """
         pass
 
     @abstractmethod
     def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
-        return self.stream_command(command=command, hide_input=hide_input)
+        """
+        Execute a command in the shell and return its output after completion.
+
+        Args:
+            command (str): The shell command to execute.
+            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: A structured object representing the command output.
+        """
+        pass
+    
+    def _mask_sequence(self, sequence: str, hide_input: bool = False) -> str:
+        """
+        Mask a sequence of characters with asterisks if hide_input is True.
+
+        Args:
+            sequence (str): The sequence to potentially mask.
+            hide_input (bool, optional): Whether to mask the sequence. Defaults to False.
+
+        Returns:
+            str: The masked sequence or the original sequence if hide_input is False.
+        """
+        return "*" * len(sequence) if hide_input else sequence
+    
+    def _mask_sequence_in_text(self, text: str, sequence: str, hide_input: bool = False) -> str:
+        """
+        Replace all occurrences of a sequence in a text with asterisks if hide_input is True.
+
+        Args:
+            text (str): The text in which to mask the sequence.
+            sequence (str): The sequence to mask.
+            hide_input (bool, optional): Whether to mask the sequence. Defaults to False.
+
+        Returns:
+            str: The text with the sequence masked or unchanged if hide_input is False.
+        """
+        return text.replace(sequence, "*" * len(sequence)) if hide_input else text
 
     def _remove_ansi_escape_characters(self, sequence: str) -> str:
         """
@@ -164,9 +253,6 @@ class BaseShell(ABC):
     def _write_log(self, text: str, fname: str = "logs.txt") -> None:
         with open(fname, "a") as f:
             f.write(text)
-
-    def send(self, text: str) -> None:
-        self.child.sendline(text)
 
     def clean_step_buffer(self) -> None:
         self._step_buffer = ""
