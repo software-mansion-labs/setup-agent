@@ -57,7 +57,7 @@ def run(
         "--max_retries",
         help="Maximum number of retry attempts for failed requests."
     )
-):
+) -> None:
     """Run the workflow builder."""
     builder = WorkflowBuilder(
         project_root=project_root,
