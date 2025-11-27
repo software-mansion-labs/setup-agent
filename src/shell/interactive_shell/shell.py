@@ -42,31 +42,62 @@ class InteractiveShell(BaseShell):
         self._read_timeout = read_timeout
 
     def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        """
+        Send a sequence of input to the shell.
+
+        Args:
+            sequence (str): The input sequence to send.
+            hide_input (bool, optional): If True, masks the input in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: A structured object representing the shell's response.
+        """
         self._buffer = ""
         self.child.send(sequence)
         return self.stream_command(sequence, hide_input=hide_input)
 
-    def sendline(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+    def send_line(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        """
+        Send a sequence of input to the shell, followed by a newline (Enter).
+
+        Args:
+            sequence (str): The input sequence to send.
+            hide_input (bool, optional): If True, masks the input in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: A structured object representing the shell's response.
+        """
         self._buffer = ""
         self.child.sendline(sequence)
         return self.stream_command(sequence, hide_input=hide_input)
     
-    def sendcontrol(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+    def send_control(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+        """
+        Send a control sequence (e.g., Ctrl+C, Ctrl+D) to the shell.
+
+        Args:
+            sequence (str): The control sequence to send.
+            hide_input (bool, optional): If True, masks the sequence in logs/output. Defaults to False.
+
+        Returns:
+            StreamToShellOutput: A structured object representing the shell's response.
+        """
         self._buffer = ""
         self.child.sendcontrol(sequence)
         return self.stream_command(sequence, hide_input=hide_input)
 
     def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
         """
-        Run a shell command and stream its output with optional LLM analysis.
+        Execute a command in the shell and return its output after completion.
 
         Args:
-            command (str): The shell command to run.
+            command (str): The shell command to execute.
+            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
 
         Returns:
-            StreamToShellOutput: The final shell output or an LLM decision if interaction is required.
+            StreamToShellOutput: A structured object representing the command output.
         """
-        return self.sendline(sequence=command, hide_input=hide_input)
+        return self.send_line(sequence=command, hide_input=hide_input)
 
     def _review_for_interaction(self, buffer: str) -> InteractionReview:
         """
@@ -95,7 +126,8 @@ class InteractiveShell(BaseShell):
         if user interaction is required.
 
         Args:
-            command (str): Command to execute in the shell.
+            sequence (str): Command to execute in the shell.
+            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
 
         Returns:
             StreamToShellOutput: Either the final shell output (needs_action=False) or
@@ -177,7 +209,7 @@ class InteractiveShell(BaseShell):
         self.logger.info("Command finished")
         return StreamToShellOutput(needs_action=False, output=self._buffer)
 
-    def _log_to_file(self, sequence: str):
+    def _log_to_file(self, sequence: str) -> None:
         """
         Append a sequence of text to the shell's log file if logging is enabled.
 
@@ -200,7 +232,7 @@ class InteractiveShell(BaseShell):
             buffer (str): Shell output.
 
         Returns:
-            InteractionReviewWithState: needs_action, reasoning, and process state.
+            LongRunningShellInteractionReviewLLMResponse: needs_action, reasoning, and process state.
         """
         long_running_review = self._llm.invoke(
             schema=LongRunningShellInteractionReviewLLMResponse,
