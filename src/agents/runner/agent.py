@@ -29,7 +29,7 @@ class Runner(BaseAgent):
         - `use_keyboard_keys`: Use special keyboard keys
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         tools = [
             run_command_tool,
             user_input_tool,

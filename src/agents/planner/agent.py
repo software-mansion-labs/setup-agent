@@ -12,7 +12,6 @@ from InquirerPy.prompts.list import ListPrompt
 from InquirerPy.prompts.input import InputPrompt
 from InquirerPy.base.control import Choice
 from constants import FILE_SEPARATOR
-import json
 
 
 class Planner(BaseAgent):
@@ -33,7 +32,7 @@ class Planner(BaseAgent):
         cd_step (Step): Step that ensures the working directory is correct before running commands.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the Planner agent.
 

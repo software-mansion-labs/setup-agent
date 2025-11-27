@@ -28,7 +28,7 @@ class Auditor(BaseAgent):
         response_format: Pydantic model defining the structured response.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Auditor agent with appropriate tools and prompt."""
         websearch_tool = get_websearch_tool()
         tools = [websearch_tool, run_command_tool]
