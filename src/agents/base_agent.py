@@ -37,9 +37,8 @@ class BaseAgent(BaseLLMNode):
         response_format: Optional[Type[T]] = None,
     ):
         super().__init__(name=name)
-
         self.agent = create_agent(
-            model=self._llm.get_raw_llm(),
+            model=self._llm.raw_llm,
             tools=tools,
             name=name,
             system_prompt=prompt,

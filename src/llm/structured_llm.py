@@ -20,8 +20,13 @@ class StructuredLLM:
     def invoke(self, schema: Type[T], system_message: str, input_text: str) -> T:
         """
         Invoke the LLM with a structured output schema.
-        Accepts a Pydantic model class (Type[BaseModel]).
-        Returns a parsed Pydantic object (schema).
+        Args:
+            schema (Type[T]): The Pydantic model class defining the expected output structure.
+            system_message (str): The system prompt to guide the LLM's behavior and context.
+            input_text (str): The actual input text or query to be processed by the LLM.
+
+        Returns:
+            T: An instance of the provided Pydantic model class populated with the LLM's response.
         """
         structured_llm = self._raw_llm.with_structured_output(
             schema, method="json_schema"
@@ -46,5 +51,6 @@ class StructuredLLM:
         else:
             raise TypeError(f"Unexpected return type: {type(raw_result)}")
 
-    def get_raw_llm(self) -> BaseChatModel:
+    @property
+    def raw_llm(self) -> BaseChatModel:
         return self._raw_llm

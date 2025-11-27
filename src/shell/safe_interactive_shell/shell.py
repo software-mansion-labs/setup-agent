@@ -32,10 +32,11 @@ class SafeInteractiveShell(InteractiveShell):
         Pressing Enter executes the command; typing anything else aborts it.
 
         Args:
-            command (str): The shell command to review and execute.
+            command (str): The shell command to execute.
+            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
 
         Returns:
-            StreamToShellOutput: The result of the executed command or an abort message.
+            StreamToShellOutput: A structured object representing the command output.
         """
         command_to_display = self._mask_sequence(sequence=command, hide_input=hide_input)
         self.logger.info(f"Reviewing command before execution: {command_to_display}")
