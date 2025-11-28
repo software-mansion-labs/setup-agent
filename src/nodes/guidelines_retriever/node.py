@@ -1,9 +1,9 @@
 from config import Config
-from typing import List
+from typing import List, Literal
 import os
 from itertools import chain
 from graph_state import GuidelineFile, Node, GraphState
-from InquirerPy.prompts import checkbox
+from questionary import checkbox, path
 from nodes.base_llm_node import BaseLLMNode
 from utils.file_loader import FileLoader
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
@@ -11,13 +11,22 @@ from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name=Node.GUIDELINES_RETRIEVER_NODE.value)
         self._config = Config.get()
         self._project_root = self._config.project_root
         self._file_loader = FileLoader(project_root=self._project_root)
 
     def _filter_non_relevant_subdirectories(self, subdir_paths: List[str]) -> List[str]:
+        """
+        Filters out subdirectories that are likely not relevant for guidelines based on their names.
+
+        Args:
+            subdir_paths (List[str]): A list of subdirectory paths to evaluate.
+
+        Returns:
+            List[str]: A list of subdirectory paths deemed relevant by the LLM.
+        """
         formatted_subdirs = "\n".join(f"- {s}" for s in subdir_paths)
 
         result: PickedEntries = self._invoke_structured_llm(
@@ -29,6 +38,15 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         return result.picked_entries
 
     def _filter_non_relevant_files(self, files: List[str]) -> List[str]:
+        """
+        Filters out files that are likely not relevant for guidelines based on their names.
+
+        Args:
+            files (List[str]): A list of file paths to evaluate.
+
+        Returns:
+            List[str]: A list of file paths deemed relevant by the LLM.
+        """
         formatted_files = "\n".join(f"- {s}" for s in files)
 
         result: PickedEntries = self._invoke_structured_llm(
@@ -42,6 +60,15 @@ class GuidelinesRetrieverNode(BaseLLMNode):
     def _pick_guideline_files_from_content(
         self, files: List[str]
     ) -> List[GuidelineFile]:
+        """
+        Analyzes file content to identify actual guideline documents.
+
+        Args:
+            files (List[str]): A list of candidate file paths.
+
+        Returns:
+            List[GuidelineFile]: A list of GuidelineFile objects containing the path and content of confirmed guidelines.
+        """
         guideline_files: List[GuidelineFile] = []
 
         for file in files:
@@ -65,7 +92,12 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         return guideline_files
 
     def _collect_supported_files(self) -> List[str]:
-        """Discover all potentially relevant files (based on extensions and subdirs)."""
+        """
+        Discover all potentially relevant files (based on extensions and subdirs).
+
+        Returns:
+            List[str]: A list of all supported file paths found in relevant directories.
+        """
         direct_subdirs = self._file_loader.list_direct_subdirectories()
         relevant_subdirs = self._filter_non_relevant_subdirectories(direct_subdirs)
         direct_files = self._file_loader.list_direct_files(self._project_root)
@@ -84,29 +116,107 @@ class GuidelinesRetrieverNode(BaseLLMNode):
 
         self.logger.info(f"Supported files found: {len(supported_files)}")
         return supported_files
+    
+    def _validate_checkbox_selection(self, choices: List[str]) -> Literal[True] | str:
+        """
+        Validate that at least one option is selected in the checkbox.
+
+        Args:
+            choices (List[str]): List of selected choices.
+
+        Returns:
+            Literal[True] | str: True if valid, error message otherwise.
+        """
+        if len(choices) > 0:
+            return True
+        return "You must choose at least one option."
+
+    def _validate_custom_path(self, selected_files: List[str], manual_files: List[str], path: str) -> Literal[True] | str:
+        """
+        Create a validator function for custom path input.
+        Returns a closure that captures the selected_files list.
+
+        Args:
+            selected_files (List[str]): List of files already selected from checkbox.
+            manual_files (List[str]): List of files already manually entered.
+            path (str): The current path input to validate.
+
+        Returns:
+            Literal[True] | str: True if valid, error message otherwise.
+        """
+        if len(selected_files) > 0 or len(manual_files) > 0:
+            return True
+        if len(path.strip()) > 0:
+            return True
+        return "You must choose at least one valid file."
+        
 
     def _prompt_user_selection(
         self, guideline_files: List[GuidelineFile]
     ) -> List[GuidelineFile]:
+        """
+        Prompts the user to select specific guideline files from the detected list.
+
+        Allows the user to select from detected files via a checkbox interface and 
+        optionally manually enter paths for other files.
+
+        Args:
+            guideline_files (List[GuidelineFile]): A list of detected guideline files.
+
+        Returns:
+            List[GuidelineFile]: The final list of guideline files selected or added by the user.
+        """
         if not guideline_files:
             self.logger.warning("No guideline files found.")
             return []
 
-        choices = sorted(
-            [gf.file for gf in guideline_files], key=lambda file: len(file.split("/"))
-        )
+        sorted_guideline_files = sorted(guideline_files, key=lambda gf: len(gf.file.split("/")))
+        OTHER_OPTION = "Other: (Enter manual path)"
+        choices = [*[gf.file for gf in sorted_guideline_files], OTHER_OPTION]
 
-        selected_files = checkbox.CheckboxPrompt(
-            message="Select guideline files to use (↑↓ to move, space to toggle, enter to confirm):",
+        selected_files = checkbox(
+            message="Select guideline files to use",
             choices=choices,
-            cycle=True,
-            default=[choices[0]] if choices else [],
-        ).execute()
+            default=choices[0] if choices else None,
+            validate=self._validate_checkbox_selection
+        ).ask()
 
-        selected = [gf for gf in guideline_files if gf.file in selected_files]
-        return selected
+        manual_paths = []      
+        if OTHER_OPTION in selected_files:
+            selected_files.remove(OTHER_OPTION)
+            
+            while True:
+                custom_path = path(
+                    message="Please enter the file path (or press Enter to finish):",
+                    validate=lambda path: self._validate_custom_path(selected_files, manual_paths, path)
+                ).ask()
+                
+                if not custom_path or not custom_path.strip():
+                    break
+                
+                manual_paths.append(custom_path.strip())
+
+        final_selection = [gf for gf in guideline_files if gf.file in selected_files]
+        for manual_path in manual_paths:
+            if any(gf.file == manual_path for gf in final_selection):
+                continue
+            content = self._file_loader.load_document(manual_path)
+            if not content:
+                continue
+            final_selection.append(GuidelineFile(file=manual_path, content=content))
+
+        return final_selection
 
     def _get_guideline_files(self) -> List[GuidelineFile]:
+        """
+        Retrieves the list of guideline files to be processed.
+
+        Sources files either directly from the configuration (if provided) or by 
+        scanning the project structure and filtering for relevant content.
+
+        Returns:
+            List[GuidelineFile]: A list of GuidelineFile objects.
+        """
         if self._config.guideline_files:
             return [GuidelineFile(file=file, content=self._file_loader.load_document(file)) for file in self._config.guideline_files]
         else:
@@ -115,6 +225,17 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             return self._pick_guideline_files_from_content(relevant_files)
 
     def invoke(self, state: GraphState) -> GraphState:
+        """
+        Executes the main logic of the Guidelines Retriever Node.
+
+        Retrieves guidelines, prompts for user selection, and updates the state.
+
+        Args:
+            state (GraphState): The current state of the execution graph.
+
+        Returns:
+            GraphState: The updated state containing the selected guideline files.
+        """
         self.logger.info("Retrieving guidelines from the project")
         guideline_files = self._get_guideline_files()
         selected_files = self._prompt_user_selection(guideline_files=guideline_files)

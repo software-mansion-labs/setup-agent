@@ -3,7 +3,7 @@ from agents.base_agent import CustomAgentState
 from utils.logger import LoggerFactory
 from typing_extensions import Annotated
 from langgraph.prebuilt import InjectedState
-from InquirerPy.prompts.input import InputPrompt
+from questionary import text
 
 
 @tool(parse_docstring=True)
@@ -32,9 +32,9 @@ def prompt_user_input_tool(prompt: str, state: Annotated[CustomAgentState, Injec
     logger.info(f"prompt_user_input_tool called with prompt: {prompt}")
 
     try:
-        user_input: str = InputPrompt(
+        user_input: str = text(
             message=f"\n[{name}] {prompt}",
-        ).execute()
+        ).unsafe_ask()
 
         return user_input.strip()
     except Exception as e:
