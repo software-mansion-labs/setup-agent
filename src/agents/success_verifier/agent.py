@@ -3,7 +3,7 @@ from graph_state import GraphState, WorkflowError, Node
 from langchain_core.messages import HumanMessage, SystemMessage
 from agents.planner.prompts import PlannerPrompts
 from questionary import text, select, Choice
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph
 from agents.success_verifier.types import ShutdownDecision, VerifierAgentNode, VerifierState, VerificationOutcome
 from agents.success_verifier.prompts import SuccessVerifierPrompts
 
@@ -11,7 +11,7 @@ from agents.success_verifier.prompts import SuccessVerifierPrompts
 class SuccessVerifier(BaseCustomAgent):
     def __init__(self):
         super().__init__(
-            name=Node.SUCCESS_VERIFIER.value,
+            name=Node.SUCCESS_VERIFIER_AGENT.value,
         )
         self.subgraph = self._build_agent_workflow().compile()
         self.max_questions = 5
