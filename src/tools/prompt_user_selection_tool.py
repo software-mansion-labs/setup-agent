@@ -38,7 +38,7 @@ def prompt_user_selection_tool(prompt: str, choices: List[str], state: Annotated
             message=f"[{name}] {prompt}",
             choices=choices,
             default=choices[0] if choices else None,
-        ).ask()
+        ).unsafe_ask()
 
         return selection.strip()
     except Exception as e:

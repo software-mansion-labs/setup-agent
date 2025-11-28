@@ -134,7 +134,7 @@ class Installer(BaseReactAgent):
             message="Choose an action:",
             choices=["Continue", "Skip", "Learn more"],
             default="Continue",
-        ).ask()
+        ).unsafe_ask()
 
     def _handle_non_continue_choice(
         self,

@@ -179,7 +179,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             choices=choices,
             default=choices[0] if choices else None,
             validate=self._validate_checkbox_selection
-        ).ask()
+        ).unsafe_ask()
 
         manual_paths = []      
         if OTHER_OPTION in selected_files:
@@ -189,7 +189,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
                 custom_path = path(
                     message="Please enter the file path (or press Enter to finish):",
                     validate=lambda path: self._validate_custom_path(selected_files, manual_paths, path)
-                ).ask()
+                ).unsafe_ask()
                 
                 if not custom_path or not custom_path.strip():
                     break
