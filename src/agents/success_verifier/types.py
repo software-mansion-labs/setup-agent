@@ -23,6 +23,9 @@ class VerifierState(AgentState):
     outcome: Optional[VerificationOutcome]
     should_continue: bool
     errors: List[WorkflowError]
+    question_count: int
+    current_error_description: str
+    user_stopped_questioning: bool
 
 class VerifierAgentNode(str, Enum):
     CHECK_OUTCOME = "check_outcome"

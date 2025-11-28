@@ -40,9 +40,8 @@ class SuccessVerifier(BaseCustomAgent):
             VerifierAgentNode.ASK_CLARIFICATION.value,
             self._route_after_clarification,
             {
-                "continue": VerifierAgentNode.ASK_CLARIFICATION.value,
+                VerifierAgentNode.ASK_CLARIFICATION.value: VerifierAgentNode.ASK_CLARIFICATION.value,
                 VerifierAgentNode.SHOULD_CONTINUE.value: VerifierAgentNode.SHOULD_CONTINUE.value,
-                VerifierAgentNode.END.value: VerifierAgentNode.END.value
             }
         )
         
@@ -50,14 +49,15 @@ class SuccessVerifier(BaseCustomAgent):
             VerifierAgentNode.SHOULD_CONTINUE.value,
             self._route_final,
             {
-                "end": VerifierAgentNode.END.value,
-                "continue": VerifierAgentNode.COLLECT_ERROR.value
+                VerifierAgentNode.END.value: VerifierAgentNode.END.value,
+                VerifierAgentNode.COLLECT_ERROR.value: VerifierAgentNode.COLLECT_ERROR.value
             }
         )
         
         return workflow
 
     def _check_outcome_node(self, state: VerifierState) -> VerifierState:
+        """Node: Check the installation/execution outcome with user"""
         self.logger.info("Checking installation outcome...")
         
         outcome = select(
@@ -71,6 +71,42 @@ class SuccessVerifier(BaseCustomAgent):
         ).ask()
         
         state["outcome"] = outcome
+        return state
+
+    def _collect_error_node(self, state: VerifierState) -> VerifierState:
+        self.logger.info("Collecting error details...")
+        
+        errors = state.get("errors", [])
+        outcome = state.get("outcome") or VerificationOutcome.FAILURE
+        
+        error_category = select(
+            message="What is the nature of the problem?",
+            choices=[
+                "Terminal error (Exception/Traceback)",
+                "Missing expected file/directory",
+                "Application does not start (hang/freeze)",
+                "Incorrect output/logic",
+                "Other issue"
+            ]
+        ).ask()
+
+        problem_description = text(
+            message="Please describe the details or paste the error log:",
+        ).ask()
+        
+        if not problem_description:
+            problem_description = "User provided no details."
+
+        full_description = f"[{outcome.upper()}] Category: {error_category}. Details: {problem_description}"        
+        errors.append(
+            WorkflowError(
+                description="User reported issue after whole process finished",
+                error=full_description
+            )
+        )
+        state["errors"] = errors
+        state["current_error_description"] = full_description
+        
         return state
 
     def _ask_clarification_node(self, state: VerifierState) -> VerifierState:
@@ -94,9 +130,10 @@ class SuccessVerifier(BaseCustomAgent):
             if not agent_question:
                 self.logger.info("No more questions generated.")
                 state["should_continue"] = False
+                state["question_count"] = question_count + 1
                 return state
             
-            print(f"\n[{self.name}]Clarifying question ({question_count + 1}/{self.max_questions}):")
+            print(f"\n[{self.name}] Clarifying question ({question_count + 1}/{self.max_questions}):")
             print(f"   \"{agent_question}\"\n")
 
             user_choice = select(
@@ -108,8 +145,11 @@ class SuccessVerifier(BaseCustomAgent):
                 ]
             ).ask()
 
+            state["question_count"] = question_count + 1
+
             if user_choice == "stop":
                 state["should_continue"] = False
+                state["user_stopped_questioning"] = True
                 return state
             
             if user_choice == "skip":
@@ -126,103 +166,64 @@ class SuccessVerifier(BaseCustomAgent):
                     )
                 )
                 state["errors"] = errors
+                messages_list = state.get("messages", [])
+                messages_list.append(HumanMessage(content=f"Q: {agent_question}\nA: {user_reply}"))
+                state["messages"] = messages_list
             
         except Exception as e:
             self.logger.error(f"Error during clarification: {e}")
             state["should_continue"] = False
-        
-        return state
-
-    def _collect_error_node(self, state: VerifierState) -> VerifierState:
-        """Node: Collect error details from user"""
-        self.logger.info("Collecting error details...")
-        
-        errors = state.get("errors", [])
-        outcome = state["outcome"] or VerificationOutcome.FAILURE
-        
-        error_category = select(
-            message="What is the nature of the problem?",
-            choices=[
-                "Terminal error (Exception/Traceback)",
-                "Missing expected file/directory",
-                "Application does not start (hang/freeze)",
-                "Incorrect output/logic",
-                "Other issue"
-            ]
-        ).ask()
-
-        problem_description = text(
-            message="Please describe the details or paste the error log:",
-        ).ask()
-        
-        if not problem_description:
-            problem_description = "User provided no details."
-
-        full_description = f"[{outcome.value.upper()}] Category: {error_category}. Details: {problem_description}"        
-        errors.append(WorkflowError(description="User reported issue after whole process finished", error=full_description))
-        state["errors"] = errors
+            state["question_count"] = question_count + 1
         
         return state
 
     def _check_continuation_node(self, state: VerifierState) -> VerifierState:
-        """Node: Check if conversation should end using LLM"""
+        """Check if we should continue asking questions or end the verification"""
+        
+        if state.get("user_stopped_questioning", False):
+            self.logger.info("User explicitly stopped questioning - ending verification")
+            state["should_continue"] = False
+            return state
+        
         if len(state.get("messages", [])) < 2:
+            state["should_continue"] = True
             return state
         
         recent_messages = state["messages"][-6:]
         
-        decision: ShutdownDecision = self._llm.invoke_with_messages_list(
-            ShutdownDecision,
-            recent_messages + [HumanMessage(content=SuccessVerifierPrompts.SHOULD_END_CONVERSATION.value)],
-        )
-        
-        self.logger.info(f"Shutdown decision: {decision.decision} -- {decision.reason}")
-        state["should_continue"] = (decision.decision == "continue")
+        try:
+            decision: ShutdownDecision = self._llm.invoke_with_messages_list(
+                ShutdownDecision,
+                recent_messages + [HumanMessage(content=SuccessVerifierPrompts.SHOULD_END_CONVERSATION.value)],
+            )
+            
+            self.logger.info(f"Shutdown decision: {decision.decision} -- {decision.reason}")
+            state["should_continue"] = (decision.decision == "continue")
+        except Exception as e:
+            self.logger.error(f"Error in continuation check: {e}")
+            state["should_continue"] = False
             
         return state
 
-    def _route_after_outcome(self, state: VerifierState) -> VerifierAgentNode:
-        """Route based on outcome check"""
+    def _route_after_outcome(self, state: VerifierState) -> str:
         if state["outcome"] == VerificationOutcome.SUCCESS:
-            return VerifierAgentNode.END
-        return VerifierAgentNode.COLLECT_ERROR
+            return VerifierAgentNode.END.value
+        return VerifierAgentNode.COLLECT_ERROR.value
 
-    def _route_after_clarification(self, state: VerifierState) -> VerifierAgentNode:
-        """Route after asking clarification"""
-        should_continue = state["should_continue"]
-        if not should_continue:
-            return VerifierAgentNode.SHOULD_CONTINUE
+    def _route_after_clarification(self, state: VerifierState) -> str:
+        if not state.get("should_continue", True):
+            return VerifierAgentNode.SHOULD_CONTINUE.value
         
-        user_choice = state.get("user_choice", "")
-        if user_choice == "stop":
-            return VerifierAgentNode.SHOULD_CONTINUE
+        if state.get("question_count", 0) >= self.max_questions:
+            self.logger.info(f"Reached max questions ({self.max_questions})")
+            return VerifierAgentNode.SHOULD_CONTINUE.value
         
-        if self._should_end_conversation(state):
-            self.logger.info("Intelligent shutdown detected.")
-            return VerifierAgentNode.END
-        
-        if state.get("question_count", 0) < self.max_questions:
-            return VerifierAgentNode.ASK_CLARIFICATION
-        
-        return VerifierAgentNode.SHOULD_CONTINUE
+        return VerifierAgentNode.ASK_CLARIFICATION.value
 
     def _route_final(self, state: VerifierState) -> str:
-        if state.get("should_continue", True):
-            return "continue"
-        return "end"
-
-    def _should_end_conversation(self, state: VerifierState) -> bool:
-        if len(state.get("messages", [])) < 2:
-            return False
-        
-        try:
-            recent_messages = state["messages"][-6:]
-            messages = [HumanMessage(content=SuccessVerifierPrompts.SHOULD_END_CONVERSATION.value)] + recent_messages
-            result = self._llm.invoke_with_messages_list(ShutdownDecision, messages)
-            return result.decision == "end"
-        except Exception as e:
-            self.logger.error(f"Error in quick shutdown check: {e}")
-            return False
+        if not state.get("should_continue", True) or state.get("user_stopped_questioning", False):
+            return VerifierAgentNode.END.value
+        return VerifierAgentNode.COLLECT_ERROR.value
         
     def _create_execution_context(self, state: GraphState) -> str:
         """
@@ -266,7 +267,10 @@ class SuccessVerifier(BaseCustomAgent):
                 messages=context_messages,
                 outcome=None,
                 should_continue=True,
-                errors=[]
+                errors=[],
+                question_count=0,
+                current_error_description="",
+                user_stopped_questioning=False
             )
         ) # type: ignore
 
