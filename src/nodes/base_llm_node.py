@@ -2,13 +2,16 @@ from pydantic import BaseModel
 from llm.structured_llm import StructuredLLM
 from typing import Type, TypeVar
 from abc import abstractmethod, ABC
-from graph_state import GraphState
 from utils.logger import LoggerFactory
+from langchain.agents import AgentState
+from langgraph.graph import MessagesState
+from typing import Union, Generic
 
 T = TypeVar("T", bound=BaseModel)
+K = TypeVar("K", bound=Union[AgentState, MessagesState])
 
 
-class BaseLLMNode(ABC):
+class BaseLLMNode(ABC, Generic[K]):
     """
     Abstract base class for all agents.
     Provides shared interface and utility methods.
@@ -30,11 +33,11 @@ class BaseLLMNode(ABC):
         return self._llm.invoke(
             schema=schema, system_message=system_message, input_text=input_text
         )
-
+    
     @abstractmethod
-    def invoke(self, state: GraphState) -> GraphState:
+    def invoke(self, state: K) -> K:
         """
         Abstract method that must be implemented by subclasses.
-        Executes the node logic using the provided GraphState and returns the updated GraphState.
+        Executes the node logic using the provided state and returns the updated state.
         """
         pass
