@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Literal
 from questionary import select, text
 from graph_state import GraphState, Node
 from nodes.base_llm_node import BaseLLMNode
@@ -43,7 +43,7 @@ class TaskIdentifierNode(BaseLLMNode):
         )
         return result.tasks
 
-    def _validate_custom_task(self, task_input: str) -> bool | str:
+    def _validate_custom_task(self, task_input: str) -> Literal[True] | str:
         """
         Validate that custom task input is not empty.
 
@@ -51,7 +51,7 @@ class TaskIdentifierNode(BaseLLMNode):
             task_input (str): The custom task string entered by the user.
 
         Returns:
-            bool | str: True if valid, error message otherwise.
+            Literal[True] | str: True if valid, error message otherwise.
         """
         if task_input and task_input.strip():
             return True
