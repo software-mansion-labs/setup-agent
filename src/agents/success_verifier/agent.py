@@ -68,7 +68,7 @@ class SuccessVerifier(BaseCustomAgent):
                 Choice("Failure - critical error occurred", value=VerificationOutcome.FAILURE.value),
             ],
             default=VerificationOutcome.SUCCESS.value
-        ).ask()
+        ).unsafe_ask()
         
         state["outcome"] = outcome
         return state
@@ -87,11 +87,11 @@ class SuccessVerifier(BaseCustomAgent):
                 "Incorrect output/logic",
                 "Other issue"
             ]
-        ).ask()
+        ).unsafe_ask()
 
         problem_description = text(
             message="Please describe the details or paste the error log:",
-        ).ask()
+        ).unsafe_ask()
         
         if not problem_description:
             problem_description = "User provided no details."
@@ -135,7 +135,7 @@ class SuccessVerifier(BaseCustomAgent):
                     Choice("Skip this question", value="skip"),
                     Choice("Stop questioning and start fixing", value="stop")
                 ]
-            ).ask()
+            ).unsafe_ask()
 
             state["question_count"] = question_count + 1
 
@@ -147,7 +147,7 @@ class SuccessVerifier(BaseCustomAgent):
             if user_choice == "skip":
                 return state
 
-            user_reply = text(message="Your answer:").ask()
+            user_reply = text(message="Your answer:").unsafe_ask()
             
             if user_reply:
                 messages_list = state.get("messages", [])
