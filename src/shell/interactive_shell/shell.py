@@ -159,43 +159,15 @@ class InteractiveShell(BaseShell):
 
             except pexpect.TIMEOUT:
                 if not llm_called:
-                    self.logger.info("Output stable for 2s; invoking LLM...")
+                    self.logger.info(f"Output stable for {self._read_timeout}s; invoking LLM...")
                     llm_called = True
-                    self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
+                    self._buffer = self._mask_sequence_in_text(
+                        self._buffer, sequence=sequence, hide_input=hide_input
+                    )
 
-                    try:
-                        interaction_review = self._review_for_interaction(
-                            self._buffer
-                        )
-
-                        if interaction_review.needs_action:
-                            self.logger.info("Shell awaits interaction")
-                            self._log_to_file("\n")
-
-                            return StreamToShellOutput(
-                                needs_action=interaction_review.needs_action,
-                                reason=interaction_review.reason,
-                                output=self._buffer
-                            )
-                        
-                        if self._id != "MAIN":
-                            long_running_review = self._review_for_long_running(self._buffer)
-                            if long_running_review.state.value == "running":
-                                return StreamToShellOutput(
-                                    needs_action=False,
-                                    reason="Long-running process is running stable and can be left unsupervised. " + long_running_review.reason,
-                                    output=self._buffer
-                                )
-                            if long_running_review.state.value == "error":
-                                return StreamToShellOutput(
-                                    needs_action=True,
-                                    reason=long_running_review.reason,
-                                    output=self._buffer
-                                )
-
-                    except Exception as e:
-                        self.logger.error(f"LLM invocation failed: {e}")
-
+                    result = self._evaluate_buffer_state()
+                    if result:
+                        return result
             except pexpect.EOF:
                 self.logger.error("EOF reached; shell closed.")
                 break
@@ -208,6 +180,55 @@ class InteractiveShell(BaseShell):
         self._log_to_file("\n")
         self.logger.info("Command finished")
         return StreamToShellOutput(needs_action=False, output=self._buffer)
+    
+    def _evaluate_buffer_state(self) -> Optional[StreamToShellOutput]:
+        """Evaluates the buffer to detect interaction prompts or process states.
+
+        Checks if the shell is waiting for user input or if a long-running process is stable or has failed.
+
+        Returns:
+            Optional[StreamToShellOutput]: Output object if the shell awaits interaction,
+            or if a background process is stable/failed, containing output buffer and justification. Otherwise, None.
+        """
+        if not self._buffer:
+            return None
+
+        try:
+            interaction_review = self._review_for_interaction(self._buffer)
+
+            if interaction_review.needs_action:
+                self.logger.info("Shell awaits interaction")
+                self._log_to_file("\n")
+                return StreamToShellOutput(
+                    needs_action=True,
+                    reason=interaction_review.reason,
+                    output=self._buffer
+                )
+
+            if self._id != "MAIN":
+                long_running_review = self._review_for_long_running(self._buffer)
+
+                if long_running_review.state.value == "running":
+                    return StreamToShellOutput(
+                        needs_action=False,
+                        reason=(
+                            "Long-running process is stable and can be left unsupervised. "
+                            + long_running_review.reason
+                        ),
+                        output=self._buffer,
+                    )
+
+                if long_running_review.state.value == "error":
+                    return StreamToShellOutput(
+                        needs_action=True,
+                        reason=long_running_review.reason,
+                        output=self._buffer,
+                    )
+
+        except Exception as e:
+            self.logger.error(f"LLM invocation failed: {e}")
+
+        return None
 
     def _log_to_file(self, sequence: str) -> None:
         """
@@ -219,7 +240,7 @@ class InteractiveShell(BaseShell):
         Args:
             sequence (str): The text or command output to log.
         """
-        if self._log_file is not None:
+        if self._log_file:
             with open(self._log_file, "a") as f:
                 f.write(sequence)
 

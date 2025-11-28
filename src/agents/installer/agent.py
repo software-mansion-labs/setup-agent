@@ -38,10 +38,11 @@ class Installer(BaseReactAgent):
     - Use special keyboard keys (`use_keyboard_keys`)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._shell_registry = ShellRegistry.get()
+        websearch_tool = get_websearch_tool()
         tools = [
-            get_websearch_tool(),
+            websearch_tool,
             run_command_tool,
             authenticate_tool,
             user_input_tool,

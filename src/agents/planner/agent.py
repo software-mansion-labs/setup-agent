@@ -28,7 +28,7 @@ class Planner(BaseReactAgent):
         cd_step (Step): Step that ensures the working directory is correct before running commands.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the Planner agent.
 
