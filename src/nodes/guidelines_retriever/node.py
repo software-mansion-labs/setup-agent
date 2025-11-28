@@ -3,7 +3,7 @@ from typing import List
 import os
 from itertools import chain
 from graph_state import GuidelineFile, Node, GraphState
-from questionary import checkbox, Choice, path
+from questionary import checkbox, path
 from nodes.base_llm_node import BaseLLMNode
 from utils.file_loader import FileLoader
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
@@ -84,6 +84,38 @@ class GuidelinesRetrieverNode(BaseLLMNode):
 
         self.logger.info(f"Supported files found: {len(supported_files)}")
         return supported_files
+    
+    def _validate_checkbox_selection(self, choices: List[str]) -> bool | str:
+        """
+        Validate that at least one option is selected in the checkbox.
+
+        Args:
+            choices (List[str]): List of selected choices.
+
+        Returns:
+            bool | str: True if valid, error message otherwise.
+        """
+        if len(choices) > 0:
+            return True
+        return "You must choose at least one option."
+
+    def _validate_custom_path(self, selected_files: List[str], manual_files: List[str], path: str) -> bool | str:
+        """
+        Create a validator function for custom path input.
+        Returns a closure that captures the selected_files list.
+
+        Args:
+            selected_files (List[str]): List of files already selected from checkbox.
+
+        Returns:
+            bool | str: True if valid, error message otherwise.
+        """
+        if len(selected_files) > 0 or len(manual_files) > 0:
+            return True
+        if len(path.strip()) > 0:
+            return True
+        return "You must choose at least one valid file."
+        
 
     def _prompt_user_selection(
         self, guideline_files: List[GuidelineFile]
@@ -100,7 +132,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             message="Select guideline files to use",
             choices=choices,
             default=choices[0] if choices else None,
-            validate=lambda c: True if len(c) > 0 else "You must choose at least one option."
+            validate=self._validate_checkbox_selection
         ).ask()
 
         manual_paths = []      
@@ -110,7 +142,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             while True:
                 custom_path = path(
                     message="Please enter the file path (or press Enter to finish):",
-                    validate=lambda path: len(selected_files) > 0 or len(path.strip()) > 0 or "You must choose at least one valid file."
+                    validate=lambda path: self._validate_custom_path(selected_files, manual_paths, path)
                 ).ask()
                 
                 if not custom_path or not custom_path.strip():
