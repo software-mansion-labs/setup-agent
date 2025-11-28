@@ -11,13 +11,22 @@ from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name=Node.GUIDELINES_RETRIEVER_NODE.value)
         self._config = Config.get()
         self._project_root = self._config.project_root
         self._file_loader = FileLoader(project_root=self._project_root)
 
     def _filter_non_relevant_subdirectories(self, subdir_paths: List[str]) -> List[str]:
+        """
+        Filters out subdirectories that are likely not relevant for guidelines based on their names.
+
+        Args:
+            subdir_paths (List[str]): A list of subdirectory paths to evaluate.
+
+        Returns:
+            List[str]: A list of subdirectory paths deemed relevant by the LLM.
+        """
         formatted_subdirs = "\n".join(f"- {s}" for s in subdir_paths)
 
         result: PickedEntries = self._invoke_structured_llm(
@@ -29,6 +38,15 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         return result.picked_entries
 
     def _filter_non_relevant_files(self, files: List[str]) -> List[str]:
+        """
+        Filters out files that are likely not relevant for guidelines based on their names.
+
+        Args:
+            files (List[str]): A list of file paths to evaluate.
+
+        Returns:
+            List[str]: A list of file paths deemed relevant by the LLM.
+        """
         formatted_files = "\n".join(f"- {s}" for s in files)
 
         result: PickedEntries = self._invoke_structured_llm(
@@ -42,6 +60,15 @@ class GuidelinesRetrieverNode(BaseLLMNode):
     def _pick_guideline_files_from_content(
         self, files: List[str]
     ) -> List[GuidelineFile]:
+        """
+        Analyzes file content to identify actual guideline documents.
+
+        Args:
+            files (List[str]): A list of candidate file paths.
+
+        Returns:
+            List[GuidelineFile]: A list of GuidelineFile objects containing the path and content of confirmed guidelines.
+        """
         guideline_files: List[GuidelineFile] = []
 
         for file in files:
@@ -65,7 +92,12 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         return guideline_files
 
     def _collect_supported_files(self) -> List[str]:
-        """Discover all potentially relevant files (based on extensions and subdirs)."""
+        """
+        Discover all potentially relevant files (based on extensions and subdirs).
+
+        Returns:
+            List[str]: A list of all supported file paths found in relevant directories.
+        """
         direct_subdirs = self._file_loader.list_direct_subdirectories()
         relevant_subdirs = self._filter_non_relevant_subdirectories(direct_subdirs)
         direct_files = self._file_loader.list_direct_files(self._project_root)
@@ -106,6 +138,8 @@ class GuidelinesRetrieverNode(BaseLLMNode):
 
         Args:
             selected_files (List[str]): List of files already selected from checkbox.
+            manual_files (List[str]): List of files already manually entered.
+            path (str): The current path input to validate.
 
         Returns:
             bool | str: True if valid, error message otherwise.
@@ -120,6 +154,18 @@ class GuidelinesRetrieverNode(BaseLLMNode):
     def _prompt_user_selection(
         self, guideline_files: List[GuidelineFile]
     ) -> List[GuidelineFile]:
+        """
+        Prompts the user to select specific guideline files from the detected list.
+
+        Allows the user to select from detected files via a checkbox interface and 
+        optionally manually enter paths for other files.
+
+        Args:
+            guideline_files (List[GuidelineFile]): A list of detected guideline files.
+
+        Returns:
+            List[GuidelineFile]: The final list of guideline files selected or added by the user.
+        """
         if not guideline_files:
             self.logger.warning("No guideline files found.")
             return []
@@ -162,6 +208,15 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         return final_selection
 
     def _get_guideline_files(self) -> List[GuidelineFile]:
+        """
+        Retrieves the list of guideline files to be processed.
+
+        Sources files either directly from the configuration (if provided) or by 
+        scanning the project structure and filtering for relevant content.
+
+        Returns:
+            List[GuidelineFile]: A list of GuidelineFile objects.
+        """
         if self._config.guideline_files:
             return [GuidelineFile(file=file, content=self._file_loader.load_document(file)) for file in self._config.guideline_files]
         else:
@@ -170,6 +225,17 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             return self._pick_guideline_files_from_content(relevant_files)
 
     def invoke(self, state: GraphState) -> GraphState:
+        """
+        Executes the main logic of the Guidelines Retriever Node.
+
+        Retrieves guidelines, prompts for user selection, and updates the state.
+
+        Args:
+            state (GraphState): The current state of the execution graph.
+
+        Returns:
+            GraphState: The updated state containing the selected guideline files.
+        """
         self.logger.info("Retrieving guidelines from the project")
         guideline_files = self._get_guideline_files()
         selected_files = self._prompt_user_selection(guideline_files=guideline_files)
