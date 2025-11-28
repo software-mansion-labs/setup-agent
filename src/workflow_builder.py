@@ -124,8 +124,6 @@ class WorkflowBuilder:
     @staticmethod
     def route_success_verifier(state: GraphState) -> Node:
         next_node = state.get("next_node")
-        if not next_node:
-            return Node.CONTINUE_PROCESS_NODE
         if next_node == Node.PLANNER_AGENT.value:
             return next_node
         return Node.CONTINUE_PROCESS_NODE
