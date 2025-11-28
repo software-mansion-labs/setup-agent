@@ -17,3 +17,11 @@ class SuccessVerifierPrompts(str, Enum):
         Return 'continue' if user might have more information to provide or issues to report.
         """
     )
+    COLLECT_USER_ERRORS = (
+        "You are a planner agent helping fix installation issues.\n"
+        "The user reported the following problem:\n{problem_description}\n\n"
+        "Ask ONE concise clarifying question to understand the issue better.\n"
+        "- Do NOT suggest any fix.\n"
+        "- Do NOT output explanations.\n"
+        "- If you have no further questions, return an empty string."
+    )
