@@ -60,8 +60,9 @@ class Planner(BaseReactAgent):
 
     def _first_analysis(self, state: GraphState) -> GraphState:
         """
-        Perform the first analysis of the project's README or guideline files.
-
+        Perform the first analysis of the project's README or guideline files for given task.
+        Includes context on finished steps from previous executions so the LLM can skip them.
+        
         Args:
             state (GraphState): The current workflow state, containing chosen task and guideline files.
 
@@ -70,6 +71,7 @@ class Planner(BaseReactAgent):
         """
         guideline_files = state["guideline_files"]
         chosen_task = state["chosen_task"]
+        finished_steps = state.get("finished_steps", [])
 
         if not guideline_files:
             state["plan"] = deque(
@@ -83,14 +85,33 @@ class Planner(BaseReactAgent):
             )
             return state
 
+        finished_steps_context = ""
+        if finished_steps:
+            history_lines = []
+            for fs in finished_steps:
+                status = "SKIPPED" if fs.skipped else "COMPLETED"
+                history_lines.append(f"- {fs.step.description} [{status}]")
+            
+            finished_steps_context = (
+                "\n\n**CONTEXT: STEPS ALREADY COMPLETED (DO NOT INCLUDE IN NEW PLAN)**:\n" 
+                + "\n".join(history_lines)
+            )
+
         guideline_files_merged_content = FILE_SEPARATOR.join(
             [guideline.content for guideline in guideline_files]
+        )
+
+        prompt_input = (
+            f"raw_texts:\n{guideline_files_merged_content}\n\n"
+            f"project_root:\n{self.project_root}\n\n"
+            f"**GOAL**:\n{chosen_task}"
+            f"{finished_steps_context}"
         )
 
         analysis: ReadmeAnalysis = self._invoke_structured_llm(
             ReadmeAnalysis,
             PlannerPrompts.FIRST_GUIDELINES_ANALYSIS.value,
-            f"raw_texts:\n{guideline_files_merged_content}\n\nproject_root:\n{self.project_root}\n\n**GOAL**:\n{chosen_task}",
+            input_text=prompt_input,
         )
 
         planned_steps = self._assign_shells([self.cd_step] + analysis.plan)
