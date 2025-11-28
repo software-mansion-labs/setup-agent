@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from uuid import UUID
 from typing import Deque
 from enum import Enum
+from langgraph.graph import START, END
 
 
 class Node(str, Enum):
@@ -13,7 +14,8 @@ class Node(str, Enum):
     AUDITOR_AGENT = "AUDITOR_AGENT"
     GUIDELINES_RETRIEVER_NODE = "GUIDELINES_RETRIEVER_NODE"
     TASK_IDENTIFIER_NODE = "TASK_IDENTIFIER_NODE"
-
+    START = START
+    END = END
 
 class Substep(BaseModel):
     description: str
