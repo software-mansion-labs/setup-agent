@@ -9,7 +9,7 @@ from typing import Optional
 from nodes.base_llm_node import BaseLLMNode
 from pydantic import BaseModel
 from typing import Type, TypeVar
-from langchain.agents.middleware import AgentState
+from langchain.agents import AgentState
 from middlewares import ParallelToolCallsMiddleware
 
 
@@ -35,7 +35,7 @@ class BaseAgent(BaseLLMNode):
         parallel_tool_calls: bool = False,
         state_schema: Optional[Type[K]] = CustomAgentState,
         response_format: Optional[Type[T]] = None,
-    ):
+    ) -> None:
         super().__init__(name=name)
         self.agent = create_agent(
             model=self._llm.raw_llm,

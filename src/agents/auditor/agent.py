@@ -22,13 +22,9 @@ class Auditor(BaseAgent):
     The Auditor examines the output of the last finished step and determines
     whether it succeeded or failed. It can use system tools or web search
     to validate results and provide actionable guidance.
-
-    Attributes:
-        tools: List of tools available to the auditor (run_command, websearch).
-        response_format: Pydantic model defining the structured response.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Auditor agent with appropriate tools and prompt."""
         websearch_tool = get_websearch_tool()
         tools = [websearch_tool, run_command_tool]
@@ -76,6 +72,7 @@ class Auditor(BaseAgent):
         previous_steps: List[FinishedStep],
         failed_steps: List[FailedStep],
         state: GraphState,
+        characters_to_analyze: int = 65536
     ) -> GraphState:
         """Internal helper to verify the last finished step using LLM and tools.
 
@@ -93,7 +90,7 @@ class Auditor(BaseAgent):
             if previous_steps
             else "none"
         )
-        step_output = last_step.output[-64_000:] if last_step.output is not None else "No output recorded."
+        step_output = last_step.output[-characters_to_analyze:] if last_step.output else "No output recorded."
 
         prompt = self._build_verification_prompt(
             last_step.step.description, previous_text, step_output
