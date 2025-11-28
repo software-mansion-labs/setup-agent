@@ -108,9 +108,6 @@ class WorkflowBuilder:
     @staticmethod
     def route_planner(state: GraphState) -> Node:
         next_node = state.get("next_node")
-
-        if not next_node:
-            return Node.SUCCESS_VERIFIER
         if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
             return next_node
         return Node.SUCCESS_VERIFIER
@@ -118,8 +115,6 @@ class WorkflowBuilder:
     @staticmethod
     def route_success_verifier(state: GraphState) -> Node:
         next_node = state.get("next_node")
-        if not next_node:
-            return Node.END
         if next_node == Node.PLANNER_AGENT.value:
             return next_node
         return Node.END

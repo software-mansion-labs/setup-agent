@@ -1,7 +1,6 @@
 from agents.base_custom_agent import BaseCustomAgent
 from graph_state import GraphState, WorkflowError, Node
 from langchain_core.messages import HumanMessage, SystemMessage
-from agents.planner.prompts import PlannerPrompts
 from questionary import text, select, Choice
 from langgraph.graph import StateGraph, END
 from agents.success_verifier.types import ShutdownDecision, VerifierAgentNode, VerifierState, VerificationOutcome
@@ -105,17 +104,14 @@ class SuccessVerifier(BaseCustomAgent):
         """Node: Ask clarifying questions about the error"""
         question_count = state.get("question_count", 0)
     
-        full_description = state.get("current_error_description", "")
-        
-        if not full_description:
-            full_description = "Unknown error reported by user."
+        full_description = state.get("current_error_description", "Unknown error reported by user.")
 
-        system_prompt = PlannerPrompts.COLLECT_USER_ERRORS.value.format(
+        system_prompt = SuccessVerifierPrompts.COLLECT_USER_ERRORS.value.format(
             problem_description=full_description
         )
         
         try:
-            messages = [HumanMessage(content=system_prompt)] + state.get("messages", [])
+            messages = [HumanMessage(content=system_prompt)] + state["messages"]
             result = self._llm.raw_llm.invoke(messages)
             agent_question = result.content
  
@@ -167,7 +163,7 @@ class SuccessVerifier(BaseCustomAgent):
     def _check_continuation_node(self, state: VerifierState) -> VerifierState:
         """Check if we should continue asking questions or end the verification"""
         
-        if state.get("user_stopped_questioning", False):
+        if state["user_stopped_questioning"]:
             self.logger.info("User explicitly stopped questioning - ending verification")
             state["should_continue"] = False
             return state
@@ -208,7 +204,7 @@ class SuccessVerifier(BaseCustomAgent):
         return VerifierAgentNode.ASK_CLARIFICATION.value
 
     def _route_final(self, state: VerifierState) -> str:
-        if not state.get("should_continue", True) or state.get("user_stopped_questioning", False):
+        if not state["should_continue"] or state["user_stopped_questioning"]:
             return VerifierAgentNode.END.value
         return VerifierAgentNode.COLLECT_ERROR.value
         
