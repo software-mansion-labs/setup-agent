@@ -64,3 +64,4 @@ class GraphState(MessagesState):
     selected_guideline_files: List[GuidelineFile]
     possible_tasks: List[str]
     chosen_task: str
+    finished_tasks: List[str]

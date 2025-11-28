@@ -16,7 +16,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         self._config = Config.get()
         self._project_root = self._config.project_root
         self._file_loader = FileLoader(project_root=self._project_root)
-        self._selector = GuidelinesSelector(self._file_loader)
+        self._guidelines_selector = GuidelinesSelector(self._file_loader)
 
     def _filter_non_relevant_subdirectories(self, subdir_paths: List[str]) -> List[str]:
         """
@@ -151,7 +151,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         possible_guideline_files = self._get_guideline_files()
         state["possible_guideline_files"] = possible_guideline_files
         
-        selected_files = self._selector.select_guidelines(guideline_files=possible_guideline_files)
+        selected_files = self._guidelines_selector.select_guidelines(guideline_files=possible_guideline_files)
         state["selected_guideline_files"] = selected_files
 
         return state

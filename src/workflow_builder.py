@@ -110,6 +110,7 @@ class WorkflowBuilder:
             self.route_continue_process,
             {
                 Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
+                Node.TASK_IDENTIFIER_NODE.value: Node.TASK_IDENTIFIER_NODE.value,
                 Node.END.value: Node.END.value
             }
         )
@@ -131,7 +132,7 @@ class WorkflowBuilder:
     @staticmethod
     def route_continue_process(state: GraphState) -> Node:
         next_node = state.get("next_node")
-        if next_node == Node.PLANNER_AGENT.value:
+        if next_node in [Node.PLANNER_AGENT.value, Node.TASK_IDENTIFIER_NODE.value]:
             return next_node
         return Node.END
 
@@ -145,9 +146,11 @@ class WorkflowBuilder:
                     failed_steps=[],
                     errors=[],
                     next_node=Node.GUIDELINES_RETRIEVER_NODE,
-                    guideline_files=[],
+                    selected_guideline_files=[],
+                    possible_guideline_files=[],
                     possible_tasks=[],
                     chosen_task="",
+                    finished_tasks=[]
                 ),
                 {"recursion_limit": 100}
             )
