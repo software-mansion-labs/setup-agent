@@ -76,7 +76,6 @@ class SuccessVerifier(BaseCustomAgent):
     def _collect_error_node(self, state: VerifierState) -> VerifierState:
         self.logger.info("Collecting error details...")
         
-        errors = state.get("errors", [])
         outcome = state.get("outcome") or VerificationOutcome.FAILURE
         
         error_category = select(
@@ -97,14 +96,7 @@ class SuccessVerifier(BaseCustomAgent):
         if not problem_description:
             problem_description = "User provided no details."
 
-        full_description = f"[{outcome.upper()}] Category: {error_category}. Details: {problem_description}"        
-        errors.append(
-            WorkflowError(
-                description="User reported issue after whole process finished",
-                error=full_description
-            )
-        )
-        state["errors"] = errors
+        full_description = f"[{outcome.upper()}] Category: {error_category}. Details: {problem_description}"
         state["current_error_description"] = full_description
         
         return state
@@ -158,17 +150,12 @@ class SuccessVerifier(BaseCustomAgent):
             user_reply = text(message="Your answer:").ask()
             
             if user_reply:
-                errors = state.get("errors", [])
-                errors.append(
-                    WorkflowError(
-                        description=f"Clarification: {agent_question}", 
-                        error=user_reply
-                    )
-                )
-                state["errors"] = errors
                 messages_list = state.get("messages", [])
                 messages_list.append(HumanMessage(content=f"Q: {agent_question}\nA: {user_reply}"))
                 state["messages"] = messages_list
+                
+                current_desc = state.get("current_error_description", "")
+                state["current_error_description"] = f"{current_desc}\n\nClarification Q&A:\nQ: {agent_question}\nA: {user_reply}"
             
         except Exception as e:
             self.logger.error(f"Error during clarification: {e}")
@@ -274,9 +261,14 @@ class SuccessVerifier(BaseCustomAgent):
             )
         ) # type: ignore
 
-        errors = result_state.get("errors", [])
-        if errors:
-            state["errors"] = errors
+        error_description = result_state.get("current_error_description", "")
+        if error_description:
+            state["errors"] = [
+                WorkflowError(
+                    description="User reported issue after verification process",
+                    error=error_description
+                )
+            ]
             state["next_node"] = Node.PLANNER_AGENT
 
         self.logger.info(f"Verification finished. Outcome: {result_state.get('outcome')}")
