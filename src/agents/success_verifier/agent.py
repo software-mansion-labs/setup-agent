@@ -1,10 +1,10 @@
 from agents.base_custom_agent import BaseCustomAgent
 from graph_state import GraphState, WorkflowError, Node
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from agents.planner.prompts import PlannerPrompts
 from questionary import text, select, Choice
 from langgraph.graph import StateGraph, END
-from agents.success_verifier.types import ShutdownDecision, VerifierAgentNodes, VerifierState
+from agents.success_verifier.types import ShutdownDecision, VerifierAgentNode, VerifierState, VerificationOutcome
 from agents.success_verifier.prompts import SuccessVerifierPrompts
 
 
@@ -19,39 +19,39 @@ class SuccessVerifier(BaseCustomAgent):
     def _build_agent_workflow(self) -> StateGraph:
         workflow = StateGraph(VerifierState)
         
-        workflow.add_node(VerifierAgentNodes.CHECK_OUTCOME.value, self._check_outcome_node)
-        workflow.add_node(VerifierAgentNodes.COLLECT_ERROR.value, self._collect_error_node)
-        workflow.add_node(VerifierAgentNodes.ASK_CLARIFICATION.value, self._ask_clarification_node)
-        workflow.add_node(VerifierAgentNodes.SHOULD_CONTINUE.value, self._check_continuation_node)
-        workflow.set_entry_point(VerifierAgentNodes.CHECK_OUTCOME.value)
+        workflow.add_node(VerifierAgentNode.CHECK_OUTCOME.value, self._check_outcome_node)
+        workflow.add_node(VerifierAgentNode.COLLECT_ERROR.value, self._collect_error_node)
+        workflow.add_node(VerifierAgentNode.ASK_CLARIFICATION.value, self._ask_clarification_node)
+        workflow.add_node(VerifierAgentNode.SHOULD_CONTINUE.value, self._check_continuation_node)
+        workflow.set_entry_point(VerifierAgentNode.CHECK_OUTCOME.value)
         
         workflow.add_conditional_edges(
-            VerifierAgentNodes.CHECK_OUTCOME.value,
+            VerifierAgentNode.CHECK_OUTCOME.value,
             self._route_after_outcome,
             {
-                "success": END,
-                "collect_error": VerifierAgentNodes.COLLECT_ERROR.value
+                VerifierAgentNode.END.value: VerifierAgentNode.END.value,
+                VerifierAgentNode.COLLECT_ERROR.value: VerifierAgentNode.COLLECT_ERROR.value
             }
         )
         
-        workflow.add_edge(VerifierAgentNodes.COLLECT_ERROR.value, VerifierAgentNodes.ASK_CLARIFICATION.value)
+        workflow.add_edge(VerifierAgentNode.COLLECT_ERROR.value, VerifierAgentNode.ASK_CLARIFICATION.value)
         
         workflow.add_conditional_edges(
-            VerifierAgentNodes.ASK_CLARIFICATION.value,
+            VerifierAgentNode.ASK_CLARIFICATION.value,
             self._route_after_clarification,
             {
-                "continue": VerifierAgentNodes.ASK_CLARIFICATION.value,
-                "stop": VerifierAgentNodes.SHOULD_CONTINUE.value,
-                "end": END
+                "continue": VerifierAgentNode.ASK_CLARIFICATION.value,
+                VerifierAgentNode.SHOULD_CONTINUE.value: VerifierAgentNode.SHOULD_CONTINUE.value,
+                VerifierAgentNode.END.value: VerifierAgentNode.END.value
             }
         )
         
         workflow.add_conditional_edges(
-            VerifierAgentNodes.SHOULD_CONTINUE.value,
+            VerifierAgentNode.SHOULD_CONTINUE.value,
             self._route_final,
             {
-                "end": END,
-                "continue": VerifierAgentNodes.COLLECT_ERROR.value
+                "end": VerifierAgentNode.END.value,
+                "continue": VerifierAgentNode.COLLECT_ERROR.value
             }
         )
         
@@ -63,18 +63,14 @@ class SuccessVerifier(BaseCustomAgent):
         outcome = select(
             message="How did the installation/execution process go?",
             choices=[
-                Choice("Success - everything works as expected", value="success"),
-                Choice("Partial success - works but with errors", value="partial"),
-                Choice("Failure - critical error occurred", value="failure"),
+                Choice("Success - everything works as expected", value=VerificationOutcome.SUCCESS.value),
+                Choice("Partial success - works but with errors", value=VerificationOutcome.PARTIAL_SUCCESS.value),
+                Choice("Failure - critical error occurred", value=VerificationOutcome.FAILURE.value),
             ],
-            default="success"
+            default=VerificationOutcome.SUCCESS.value
         ).ask()
         
         state["outcome"] = outcome
-        
-        if outcome == "success":
-            self.logger.info("User confirmed full success.")
-            
         return state
 
     def _ask_clarification_node(self, state: VerifierState) -> VerifierState:
@@ -142,7 +138,7 @@ class SuccessVerifier(BaseCustomAgent):
         self.logger.info("Collecting error details...")
         
         errors = state.get("errors", [])
-        context = state.get("current_context", "failure")
+        outcome = state["outcome"] or VerificationOutcome.FAILURE
         
         error_category = select(
             message="What is the nature of the problem?",
@@ -162,8 +158,8 @@ class SuccessVerifier(BaseCustomAgent):
         if not problem_description:
             problem_description = "User provided no details."
 
-        full_description = f"[{context.upper()}] Category: {error_category}. Details: {problem_description}"        
-        errors.append(WorkflowError(description="User reported issue", error=full_description))
+        full_description = f"[{outcome.value.upper()}] Category: {error_category}. Details: {problem_description}"        
+        errors.append(WorkflowError(description="User reported issue after whole process finished", error=full_description))
         state["errors"] = errors
         
         return state
@@ -185,29 +181,30 @@ class SuccessVerifier(BaseCustomAgent):
             
         return state
 
-    def _route_after_outcome(self, state: VerifierState) -> str:
+    def _route_after_outcome(self, state: VerifierState) -> VerifierAgentNode:
         """Route based on outcome check"""
-        if state.get("outcome") == "success":
-            return "success"
-        return "collect_error"
+        if state["outcome"] == VerificationOutcome.SUCCESS:
+            return VerifierAgentNode.END
+        return VerifierAgentNode.COLLECT_ERROR
 
-    def _route_after_clarification(self, state: VerifierState) -> str:
+    def _route_after_clarification(self, state: VerifierState) -> VerifierAgentNode:
         """Route after asking clarification"""
-        if not state.get("should_continue", True):
-            return "stop"
+        should_continue = state["should_continue"]
+        if not should_continue:
+            return VerifierAgentNode.SHOULD_CONTINUE
         
         user_choice = state.get("user_choice", "")
         if user_choice == "stop":
-            return "stop"
+            return VerifierAgentNode.SHOULD_CONTINUE
         
         if self._should_end_conversation(state):
             self.logger.info("Intelligent shutdown detected.")
-            return "end"
+            return VerifierAgentNode.END
         
         if state.get("question_count", 0) < self.max_questions:
-            return "continue"
+            return VerifierAgentNode.ASK_CLARIFICATION
         
-        return "stop"
+        return VerifierAgentNode.SHOULD_CONTINUE
 
     def _route_final(self, state: VerifierState) -> str:
         if state.get("should_continue", True):
@@ -226,20 +223,52 @@ class SuccessVerifier(BaseCustomAgent):
         except Exception as e:
             self.logger.error(f"Error in quick shutdown check: {e}")
             return False
+        
+    def _create_execution_context(self, state: GraphState) -> str:
+        """
+        Constructs a system prompt summarizing the workflow history 
+        based on the provided Pydantic models.
+        """
+        task = state["chosen_task"]
+        
+        context_lines = [
+            f"### WORKFLOW CONTEXT",
+            f"**Target Task:** {task}",
+            ""
+        ]
+        
+        finished_steps = state.get("finished_steps", [])
+        if finished_steps:
+            context_lines.append("**SUCCESSFULLY COMPLETED STEPS:**")
+            for i, fs in enumerate(finished_steps, 1):
+                step_desc = fs.step.description
+                status = "Skipped" if fs.skipped else "Executed"
+                context_lines.append(f"{i}. [{status}] {step_desc}")
+                
+                if fs.step.substeps:
+                    for sub in fs.step.substeps:
+                        context_lines.append(f"    - Substep: {sub.description}")
+                        if sub.suggested_commands:
+                            cmds_str = ", ".join([f"`{cmd}`" for cmd in sub.suggested_commands])
+                            context_lines.append(f"      Commands: {cmds_str}")
+        else:
+            context_lines.append("No steps have been completed yet.")
+
+        context_lines.append("\nUse this context to understand the current state of the environment and interact with user to verify if everything works as expected.")
+        return "\n".join(context_lines)
 
     def invoke(self, state: GraphState) -> GraphState:
         self.logger.info("Starting success verification workflow...")
+        context_messages = [SystemMessage(content=self._create_execution_context(state))] + state["messages"]
         
         result_state: VerifierState = self.subgraph.invoke(
             VerifierState(
-                messages=[],
-                outcome="",
+                messages=context_messages,
+                outcome=None,
                 should_continue=True,
                 errors=[]
             )
         ) # type: ignore
-
-        print(result_state)
 
         errors = result_state.get("errors", [])
         if errors:
