@@ -107,17 +107,20 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         if OTHER_OPTION in selected_files:
             selected_files.remove(OTHER_OPTION)
             
-            custom_path = path(
-                message="Please enter the file path:",
-                validate=lambda val: len(selected_files) > 0 or len(val.strip()) > 0 or "You must choose at least one valid file."
-            ).ask()
-            
-            if custom_path:
-                manual_paths.append(custom_path)
+            while True:
+                custom_path = path(
+                    message="Please enter the file path (or press Enter to finish):",
+                    validate=lambda path: len(selected_files) > 0 or len(path.strip()) > 0 or "You must choose at least one valid file."
+                ).ask()
+                
+                if not custom_path or not custom_path.strip():
+                    break
+                
+                manual_paths.append(custom_path.strip())
 
         final_selection = [gf for gf in guideline_files if gf.file in selected_files]
         for manual_path in manual_paths:
-            if manual_path in final_selection:
+            if any(gf.file == manual_path for gf in final_selection):
                 continue
             content = self._file_loader.load_document(manual_path)
             if not content:
