@@ -34,7 +34,7 @@ def prompt_user_input_tool(prompt: str, state: Annotated[CustomAgentState, Injec
     try:
         user_input: str = text(
             message=f"\n[{name}] {prompt}",
-        ).ask()
+        ).unsafe_ask()
 
         return user_input.strip()
     except Exception as e:

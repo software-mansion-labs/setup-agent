@@ -78,13 +78,13 @@ class TaskIdentifierNode(BaseLLMNode):
             message="Which task would you like to perform?",
             choices=choices,
             default=choices[0]
-        ).ask()
+        ).unsafe_ask()
 
         if selected_task == self.CUSTOM_TASK_OPTION:
             custom_task = text(
                 message="Please describe your custom task:",
                 validate=self._validate_custom_task
-            ).ask()
+            ).unsafe_ask()
             return custom_task.strip() if custom_task else ""
 
         return selected_task

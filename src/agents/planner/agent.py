@@ -185,7 +185,7 @@ class Planner(BaseAgent):
         is_installation_successful = confirm(
             message="Did the installation/process achieve the desired goal?",
             default=True,
-        ).ask()
+        ).unsafe_ask()
 
         if is_installation_successful:
             self.logger.info("User confirmed success.")
@@ -212,7 +212,7 @@ class Planner(BaseAgent):
 
         problem_description = text(
             message="Please describe the problem or paste the error/output here:"
-        ).ask()
+        ).unsafe_ask()
 
         description = "User reported installation issue"
         errors = state.get("errors", [])
@@ -237,7 +237,7 @@ class Planner(BaseAgent):
             if not agent_question:
                 break
 
-            user_reply = text(message=f"[{self.name}] {agent_question}\n=>").ask()
+            user_reply = text(message=f"[{self.name}] {agent_question}\n=>").unsafe_ask()
             if not user_reply.strip():
                 break
 
