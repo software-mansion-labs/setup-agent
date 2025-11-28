@@ -69,7 +69,7 @@ class Planner(BaseReactAgent):
         Returns:
             GraphState: Updated state with a newly generated step plan.
         """
-        guideline_files = state["guideline_files"]
+        guideline_files = state["selected_guideline_files"]
         chosen_task = state["chosen_task"]
         finished_steps = state.get("finished_steps", [])
 

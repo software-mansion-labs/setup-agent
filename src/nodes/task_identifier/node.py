@@ -107,7 +107,7 @@ class TaskIdentifierNode(BaseLLMNode):
             state["chosen_task"] = user_task
             return state
 
-        guideline_files = state.get("guideline_files", [])
+        guideline_files = state["selected_guideline_files"]
         if not guideline_files:
             self.logger.warning("No guideline files found.")
             state["possible_tasks"] = []

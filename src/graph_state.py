@@ -60,6 +60,7 @@ class GraphState(MessagesState):
     failed_steps: List[FailedStep]
     errors: List[WorkflowError]
     next_node: Optional[Node]
-    guideline_files: List[GuidelineFile]
+    possible_guideline_files: List[GuidelineFile]
+    selected_guideline_files: List[GuidelineFile]
     possible_tasks: List[str]
     chosen_task: str
