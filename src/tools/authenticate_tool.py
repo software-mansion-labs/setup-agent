@@ -1,7 +1,7 @@
 from langchain_core.tools import tool
 from typing_extensions import Annotated
 from langgraph.prebuilt import InjectedState
-from agents.base_agent import CustomAgentState
+from agents.base_react_agent import CustomAgentState
 from uuid import UUID
 from shell import ShellRegistry, StreamToShellOutput
 from typing import Optional
