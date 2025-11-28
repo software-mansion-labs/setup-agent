@@ -10,7 +10,7 @@ from langgraph.prebuilt import InjectedState
 @tool(parse_docstring=True)
 def prompt_user_selection_tool(prompt: str, choices: List[str], state: Annotated[CustomAgentState, InjectedState]) -> str:
     """
-    Prompt the user to select one value from a given list of options using InquirerPy.
+    Prompt the user to select one value from a given list of options.
 
     This tool allows the agent to request that the user make a choice from several
     options (e.g., selecting a file, environment, or configuration value).
