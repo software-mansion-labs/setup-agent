@@ -1,5 +1,5 @@
 from config import Config
-from typing import List
+from typing import List, Literal
 import os
 from itertools import chain
 from graph_state import GuidelineFile, Node, GraphState
@@ -117,7 +117,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         self.logger.info(f"Supported files found: {len(supported_files)}")
         return supported_files
     
-    def _validate_checkbox_selection(self, choices: List[str]) -> bool | str:
+    def _validate_checkbox_selection(self, choices: List[str]) -> Literal[True] | str:
         """
         Validate that at least one option is selected in the checkbox.
 
@@ -125,13 +125,13 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             choices (List[str]): List of selected choices.
 
         Returns:
-            bool | str: True if valid, error message otherwise.
+            Literal[True] | str: True if valid, error message otherwise.
         """
         if len(choices) > 0:
             return True
         return "You must choose at least one option."
 
-    def _validate_custom_path(self, selected_files: List[str], manual_files: List[str], path: str) -> bool | str:
+    def _validate_custom_path(self, selected_files: List[str], manual_files: List[str], path: str) -> Literal[True] | str:
         """
         Create a validator function for custom path input.
         Returns a closure that captures the selected_files list.
@@ -142,7 +142,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             path (str): The current path input to validate.
 
         Returns:
-            bool | str: True if valid, error message otherwise.
+            Literal[True] | str: True if valid, error message otherwise.
         """
         if len(selected_files) > 0 or len(manual_files) > 0:
             return True
@@ -179,7 +179,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             choices=choices,
             default=choices[0] if choices else None,
             validate=self._validate_checkbox_selection
-        ).unsafe_ask()
+        ).ask()
 
         manual_paths = []      
         if OTHER_OPTION in selected_files:
@@ -189,7 +189,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
                 custom_path = path(
                     message="Please enter the file path (or press Enter to finish):",
                     validate=lambda path: self._validate_custom_path(selected_files, manual_paths, path)
-                ).unsafe_ask()
+                ).ask()
                 
                 if not custom_path or not custom_path.strip():
                     break
