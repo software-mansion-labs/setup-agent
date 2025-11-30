@@ -12,8 +12,10 @@ class Node(str, Enum):
     INSTALLER_AGENT = "INSTALLER_AGENT"
     RUNNER_AGENT = "RUNNER_AGENT"
     AUDITOR_AGENT = "AUDITOR_AGENT"
+    SUCCESS_VERIFIER_AGENT = "SUCCESS_VERIFIER_AGENT"
     GUIDELINES_RETRIEVER_NODE = "GUIDELINES_RETRIEVER_NODE"
     TASK_IDENTIFIER_NODE = "TASK_IDENTIFIER_NODE"
+    CONTINUE_PROCESS_NODE = "CONTINUE_PROCESS_NODE"
     START = START
     END = END
 
@@ -58,6 +60,8 @@ class GraphState(MessagesState):
     failed_steps: List[FailedStep]
     errors: List[WorkflowError]
     next_node: Optional[Node]
-    guideline_files: List[GuidelineFile]
+    possible_guideline_files: List[GuidelineFile]
+    selected_guideline_files: List[GuidelineFile]
     possible_tasks: List[str]
     chosen_task: str
+    finished_tasks: List[str]

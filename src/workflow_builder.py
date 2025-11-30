@@ -2,10 +2,11 @@ from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph
 from agents.runner.agent import Runner
 from graph_state import GraphState, Node
-from nodes import GuidelinesRetrieverNode, TaskIdentifierNode
+from nodes import GuidelinesRetrieverNode, TaskIdentifierNode, ContinueProcessNode
 from agents.installer.agent import Installer
 from agents.planner.agent import Planner
 from agents.auditor.agent import Auditor
+from agents.success_verifier.agent import SuccessVerifier
 from dotenv import load_dotenv
 from config import Config
 from shell import ShellRegistry
@@ -51,6 +52,8 @@ class WorkflowBuilder:
         self.installer_agent = Installer()
         self.runner_agent = Runner()
         self.auditor_agent = Auditor()
+        self.success_verifier = SuccessVerifier()
+        self.continue_process_node = ContinueProcessNode()
 
     def _build_workflow(self):
         self.graph = StateGraph(GraphState)
@@ -70,7 +73,9 @@ class WorkflowBuilder:
         self.graph.add_node(Node.INSTALLER_AGENT.value, self.installer_agent.invoke)
         self.graph.add_node(Node.RUNNER_AGENT.value, self.runner_agent.invoke)
         self.graph.add_node(Node.AUDITOR_AGENT.value, self.auditor_agent.invoke)
-
+        self.graph.add_node(Node.SUCCESS_VERIFIER_AGENT.value, self.success_verifier.invoke)
+        self.graph.add_node(Node.CONTINUE_PROCESS_NODE.value, self.continue_process_node.invoke)
+        
     def _add_edges(self) -> None:
         self.graph.add_edge(Node.START.value, Node.GUIDELINES_RETRIEVER_NODE.value)
         self.graph.add_edge(
@@ -88,17 +93,46 @@ class WorkflowBuilder:
             {
                 Node.INSTALLER_AGENT.value: Node.INSTALLER_AGENT.value,
                 Node.RUNNER_AGENT.value: Node.RUNNER_AGENT.value,
+                Node.SUCCESS_VERIFIER_AGENT.value: Node.SUCCESS_VERIFIER_AGENT.value,
                 Node.END.value: Node.END.value,
             },
+        )
+        self.graph.add_conditional_edges(
+            Node.SUCCESS_VERIFIER_AGENT,
+            self.route_success_verifier,
+            {
+                Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
+                Node.CONTINUE_PROCESS_NODE.value: Node.CONTINUE_PROCESS_NODE.value
+            }
+        )
+        self.graph.add_conditional_edges(
+            Node.CONTINUE_PROCESS_NODE,
+            self.route_continue_process,
+            {
+                Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
+                Node.TASK_IDENTIFIER_NODE.value: Node.TASK_IDENTIFIER_NODE.value,
+                Node.END.value: Node.END.value
+            }
         )
 
     @staticmethod
     def route_planner(state: GraphState) -> Node:
         next_node = state.get("next_node")
-
-        if not next_node:
-            return Node.END
         if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
+            return next_node
+        return Node.SUCCESS_VERIFIER_AGENT
+    
+    @staticmethod
+    def route_success_verifier(state: GraphState) -> Node:
+        next_node = state.get("next_node")
+        if next_node == Node.PLANNER_AGENT.value:
+            return next_node
+        return Node.CONTINUE_PROCESS_NODE
+    
+    @staticmethod
+    def route_continue_process(state: GraphState) -> Node:
+        next_node = state.get("next_node")
+        if next_node in [Node.PLANNER_AGENT.value, Node.TASK_IDENTIFIER_NODE.value]:
             return next_node
         return Node.END
 
@@ -112,9 +146,11 @@ class WorkflowBuilder:
                     failed_steps=[],
                     errors=[],
                     next_node=Node.GUIDELINES_RETRIEVER_NODE,
-                    guideline_files=[],
+                    selected_guideline_files=[],
+                    possible_guideline_files=[],
                     possible_tasks=[],
                     chosen_task="",
+                    finished_tasks=[]
                 ),
                 {"recursion_limit": 100}
             )
