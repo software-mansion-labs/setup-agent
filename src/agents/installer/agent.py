@@ -18,7 +18,7 @@ from shell import ShellRegistry
 from agents.installer.prompts import InstallerPrompts
 from typing import List
 from constants import FILE_SEPARATOR
-from InquirerPy.prompts.list import ListPrompt
+from questionary import select
 from shell import BaseShell
 from agents.installer.types import StepExplanation
 
@@ -38,10 +38,11 @@ class Installer(BaseAgent):
     - Use special keyboard keys (`use_keyboard_keys`)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._shell_registry = ShellRegistry.get()
+        websearch_tool = get_websearch_tool()
         tools = [
-            get_websearch_tool(),
+            websearch_tool,
             run_command_tool,
             authenticate_tool,
             user_input_tool,
@@ -129,11 +130,11 @@ class Installer(BaseAgent):
         Returns:
             str: User's selected action.
         """
-        return ListPrompt(
+        return select(
             message="Choose an action:",
             choices=["Continue", "Skip", "Learn more"],
             default="Continue",
-        ).execute()
+        ).unsafe_ask()
 
     def _handle_non_continue_choice(
         self,
@@ -174,7 +175,16 @@ class Installer(BaseAgent):
         return state
 
     def _learn_more_about_step(self, step: Step) -> str:
-        """Explain what this installation step does and if it’s safe."""
+        """
+        Explain what this installation step does and if it's safe.
+
+        Args:
+            step (Step): step to be explained based on description and suggested commands.
+        
+        Returns:
+            str: Explanation of the step with it's purpose, possible effects and verdict if it's safe to be performed.
+        
+        """
         try:
             response: StepExplanation = self._llm.invoke(
                 StepExplanation,
@@ -204,7 +214,7 @@ class Installer(BaseAgent):
 
         Args:
             step (Step): Current step containing installation commands.
-            shell: Active shell session used to run commands.
+            shell (BaseShell): Active shell session used to run commands.
             finished_steps (List[FinishedStep]): Completed steps so far.
             errors (List[WorkflowError]): Recorded workflow errors.
             state (GraphState): Current workflow state.

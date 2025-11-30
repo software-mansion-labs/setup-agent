@@ -1,5 +1,5 @@
-from typing import List
-from InquirerPy.prompts.list import ListPrompt
+from typing import List, Literal
+from questionary import select, text
 from graph_state import GraphState, Node
 from nodes.base_llm_node import BaseLLMNode
 from nodes.task_identifier.prompts import TaskIdentifierPrompts
@@ -18,6 +18,8 @@ class TaskIdentifierNode(BaseLLMNode):
     - Prompt the user to select a task interactively.
     - Update the workflow state with identified and chosen tasks.
     """
+
+    CUSTOM_TASK_OPTION = "Other: (Define custom task)"
 
     def __init__(self):
         super().__init__(name=Node.TASK_IDENTIFIER_NODE.value)
@@ -41,9 +43,24 @@ class TaskIdentifierNode(BaseLLMNode):
         )
         return result.tasks
 
+    def _validate_custom_task(self, task_input: str) -> Literal[True] | str:
+        """
+        Validate that custom task input is not empty.
+
+        Args:
+            task_input (str): The custom task string entered by the user.
+
+        Returns:
+            Literal[True] | str: True if valid, error message otherwise.
+        """
+        if task_input and task_input.strip():
+            return True
+        return "Task description cannot be empty."
+
     def _prompt_task_selection(self, tasks: List[str]) -> str:
         """
-        Prompts the user to select one task from the list of identified tasks.
+        Prompts the user to select one task from the list of identified tasks,
+        or define a custom task.
 
         Args:
             tasks (List[str]): List of possible tasks extracted from the documentation.
@@ -55,11 +72,22 @@ class TaskIdentifierNode(BaseLLMNode):
             self.logger.warning("No tasks found.")
             return ""
 
-        return ListPrompt(
+        choices = [*tasks, self.CUSTOM_TASK_OPTION]
+        
+        selected_task = select(
             message="Which task would you like to perform?",
-            choices=tasks,
-            cycle=True,
-        ).execute()
+            choices=choices,
+            default=choices[0]
+        ).unsafe_ask()
+
+        if selected_task == self.CUSTOM_TASK_OPTION:
+            custom_task = text(
+                message="Please describe your custom task:",
+                validate=self._validate_custom_task
+            ).unsafe_ask()
+            return custom_task.strip() if custom_task else ""
+
+        return selected_task
 
     def invoke(self, state: GraphState) -> GraphState:
         """

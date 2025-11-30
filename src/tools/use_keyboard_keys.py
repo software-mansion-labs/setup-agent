@@ -38,8 +38,8 @@ def use_keyboard_keys(key: KeyboardKey, state: Annotated[CustomAgentState, Injec
 
     match key:
         case KeyboardKey.ENTER:
-            return shell.sendline("")
+            return shell.send_line("")
         case KeyboardKey.CTRL_C:
-            return shell.sendcontrol('c')
+            return shell.send_control('c')
         case _:
             raise Exception(f"Unsupported key: {key}")

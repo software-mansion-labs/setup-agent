@@ -8,11 +8,8 @@ from config import Config
 from langchain_core.messages import HumanMessage
 from agents.planner.types import ReadmeAnalysis
 from agents.planner.prompts import PlannerPrompts
-from InquirerPy.prompts.list import ListPrompt
-from InquirerPy.prompts.input import InputPrompt
-from InquirerPy.base.control import Choice
+from questionary import text, confirm
 from constants import FILE_SEPARATOR
-import json
 
 
 class Planner(BaseAgent):
@@ -33,7 +30,7 @@ class Planner(BaseAgent):
         cd_step (Step): Step that ensures the working directory is correct before running commands.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize the Planner agent.
 
@@ -184,16 +181,11 @@ class Planner(BaseAgent):
             GraphState: The same or updated state, possibly containing new error reports.
         """
         self.logger.info("Checking if installation succeeded...")
-        choices = [
-            Choice(value=True, name="Yes, everything worked"),
-            Choice(value=False, name="No, there was a problem"),
-        ]
 
-        is_installation_successful = ListPrompt(
+        is_installation_successful = confirm(
             message="Did the installation/process achieve the desired goal?",
-            choices=choices,
             default=True,
-        ).execute()
+        ).unsafe_ask()
 
         if is_installation_successful:
             self.logger.info("User confirmed success.")
@@ -218,9 +210,9 @@ class Planner(BaseAgent):
         """
         self.logger.info("Collecting info about errors from user.")
 
-        problem_description = InputPrompt(
+        problem_description = text(
             message="Please describe the problem or paste the error/output here:"
-        ).execute()
+        ).unsafe_ask()
 
         description = "User reported installation issue"
         errors = state.get("errors", [])
@@ -245,7 +237,7 @@ class Planner(BaseAgent):
             if not agent_question:
                 break
 
-            user_reply = InputPrompt(message=f"[{self.name}] {agent_question}\n=>").execute()
+            user_reply = text(message=f"[{self.name}] {agent_question}\n=>").unsafe_ask()
             if not user_reply.strip():
                 break
 
