@@ -1,5 +1,5 @@
 from langchain_core.tools import tool
-from agents.base_agent import CustomAgentState
+from agents.base_react_agent import CustomAgentState
 from utils.logger import LoggerFactory
 from questionary import select
 from typing import List

@@ -3,7 +3,7 @@ from typing import List
 
 from graph_state import FinishedStep, GraphState, Node, Step, WorkflowError
 from tools import run_command_tool, user_input_tool, authenticate_tool, prompt_user_selection_tool, prompt_user_input_tool, use_arrow_keys_sequence, use_keyboard_keys
-from agents.base_agent import BaseAgent
+from agents.base_react_agent import BaseReactAgent
 from langchain_core.messages import HumanMessage
 from shell import ShellRegistry
 from questionary import select
@@ -13,7 +13,7 @@ from constants import FILE_SEPARATOR
 from agents.runner.types import StepExplanation
 
 
-class Runner(BaseAgent):
+class Runner(BaseReactAgent):
     """Agent responsible for executing application runtime steps.
 
     The `Runner` coordinates command execution, user interaction,

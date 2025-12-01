@@ -5,7 +5,7 @@ from typing_extensions import Annotated
 from langgraph.prebuilt import InjectedState
 from shell import ShellRegistry
 from uuid import UUID
-from agents.base_agent import CustomAgentState
+from agents.base_react_agent import CustomAgentState
 from typing import Optional
 
 
