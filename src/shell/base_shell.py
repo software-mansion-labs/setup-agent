@@ -8,6 +8,7 @@ from functools import reduce
 from utils.logger import LoggerFactory
 from llm import StructuredLLM
 from utils.secrets_redactor import SecretsRedactor
+import os
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 PROGRESS_RE = re.compile(r"\d{1,3}\.\d%#+\s*")
@@ -35,15 +36,6 @@ class BaseShell(ABC):
         env["NO_COLOR"] = "1"
         env["COLUMNS"] = str(columns)
         env["PAGER"] = "cat"
-
-        self.logger.info(f"Starting {shell_path} shell...")
-        self.child = pexpect.spawn(
-            "/bin/zsh",
-            ["-l"],,
-            encoding="utf-8",
-            echo=False,
-            env=env
-        )
 
         self.logger.info("Starting zsh shell...")
         self.child = pexpect.spawn(
