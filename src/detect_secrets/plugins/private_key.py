@@ -38,7 +38,7 @@ class PrivateKeyDetector(RegexBasedDetector):
     lines are present in the analyzed string.
     """
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Private Key'
 
     @property

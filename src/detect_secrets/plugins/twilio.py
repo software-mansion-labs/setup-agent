@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class TwilioKeyDetector(RegexBasedDetector):
     """Scans for Twilio API keys."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Twilio API Key'
 
     @property

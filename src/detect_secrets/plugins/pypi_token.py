@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class PypiTokenDetector(RegexBasedDetector):
     """Scans for PyPI tokens."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'PyPI Token'
 
     @property

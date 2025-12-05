@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class NpmDetector(RegexBasedDetector):
     """Scans for NPM tokens."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'NPM tokens'
 
     @property

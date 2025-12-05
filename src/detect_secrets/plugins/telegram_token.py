@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class TelegramBotTokenDetector(RegexBasedDetector):
     """Scans for Telegram bot tokens."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Telegram Bot Token'
 
     @property

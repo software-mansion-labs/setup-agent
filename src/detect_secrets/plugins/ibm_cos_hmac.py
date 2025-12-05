@@ -16,7 +16,7 @@ class IbmCosHmacDetector(RegexBasedDetector):
 
 
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'IBM COS HMAC Credentials'
 
     @property

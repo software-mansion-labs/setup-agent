@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class DiscordBotTokenDetector(RegexBasedDetector):
     """Scans for Discord Bot token."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Discord Bot Token'
 
     @property

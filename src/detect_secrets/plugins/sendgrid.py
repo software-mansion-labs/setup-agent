@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class SendGridDetector(RegexBasedDetector):
     """Scans for SendGrid API keys."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'SendGrid API Key'
 
     @property

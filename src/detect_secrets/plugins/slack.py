@@ -9,7 +9,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class SlackDetector(RegexBasedDetector):
     """Scans for Slack tokens."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Slack Token'
 
     @property

@@ -12,7 +12,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class JwtTokenDetector(RegexBasedDetector):
     """Scans for JWTs."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'JSON Web Token'
     @property
     def denylist(self) -> List[Pattern]:

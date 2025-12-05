@@ -8,7 +8,7 @@ class CloudantDetector(RegexBasedDetector):
     """Scans for Cloudant credentials."""
 
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Cloudant Credentials'
 
     # opt means optional

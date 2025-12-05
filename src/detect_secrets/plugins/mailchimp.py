@@ -8,7 +8,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class MailchimpDetector(RegexBasedDetector):
     """Scans for Mailchimp keys."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Mailchimp Access Key'
 
     @property

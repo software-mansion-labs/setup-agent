@@ -241,7 +241,7 @@ class KeywordDetector(BasePlugin):
     This checks if denylisted keywords are present in the analyzed string.
     """
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Secret Keyword'
 
     def __init__(self, keyword_exclude: Optional[str] = None) -> None:

@@ -22,9 +22,7 @@ class BasePlugin(metaclass=ABCMeta):
     @abstractmethod
     def secret_type(self) -> str:
         """
-        Unique, user-facing description to identify this type of secret. This should be overloaded
-        by declaring a class variable (rather than a `property` function), since we need to know
-        a plugin's `secret_type` before initialization.
+        Unique, user-facing description to identify this type of secret.
 
         NOTE: Choose carefully! If this value is changed, it will require old baselines to be
         updated to use the new secret type.

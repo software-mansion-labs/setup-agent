@@ -7,7 +7,7 @@ class IbmCloudIamDetector(RegexBasedDetector):
     """Scans for IBM Cloud IAM Key."""
 
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'IBM Cloud IAM Key'
 
     @property

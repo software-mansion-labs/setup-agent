@@ -7,7 +7,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class ArtifactoryDetector(RegexBasedDetector):
     """Scans for Artifactory credentials."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Artifactory Credentials'
 
     @property

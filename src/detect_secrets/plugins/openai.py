@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class OpenAIDetector(RegexBasedDetector):
     """Scans for OpenAI tokens."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'OpenAI Token'
 
     @property

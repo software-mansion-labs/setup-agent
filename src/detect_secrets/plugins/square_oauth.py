@@ -6,7 +6,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class SquareOAuthDetector(RegexBasedDetector):
     """Scans for Square OAuth Secrets"""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Square OAuth Secret'
 
     @property

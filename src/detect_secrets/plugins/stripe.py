@@ -6,7 +6,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class StripeDetector(RegexBasedDetector):
     """Scans for Stripe keys."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Stripe Access Key'
 
     @property

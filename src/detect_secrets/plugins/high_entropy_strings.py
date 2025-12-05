@@ -147,7 +147,7 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
 class Base64HighEntropyString(HighEntropyStringsPlugin):
     """Scans for random-looking base64 encoded strings."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Base64 High Entropy String'
 
     def __init__(self, limit: float = 4.5) -> None:
@@ -167,7 +167,7 @@ class HexHighEntropyString(HighEntropyStringsPlugin):
     """Scans for random-looking hex encoded strings."""
     
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Hex High Entropy String'
 
     def __init__(self, limit: float = 3.0) -> None:

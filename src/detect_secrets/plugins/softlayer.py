@@ -8,7 +8,7 @@ class SoftlayerDetector(RegexBasedDetector):
     """Scans for Softlayer credentials."""
 
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'SoftLayer Credentials'
 
     sl = r'(?:softlayer|sl)(?:_|-|)(?:api|)'

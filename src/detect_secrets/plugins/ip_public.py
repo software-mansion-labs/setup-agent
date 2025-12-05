@@ -19,7 +19,7 @@ class IPPublicDetector(RegexBasedDetector):
     https://en.wikipedia.org/wiki/Private_network
     """
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Public IP (ipv4)'
 
     denylist_ipv4_address = r"""

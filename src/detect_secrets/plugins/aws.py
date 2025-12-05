@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class AWSKeyDetector(RegexBasedDetector):
     """Scans for AWS keys."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'AWS Access Key'
 
     @property

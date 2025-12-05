@@ -10,7 +10,7 @@ from detect_secrets.plugins.base import RegexBasedDetector
 class GitHubTokenDetector(RegexBasedDetector):
     """Scans for GitHub tokens."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'GitHub Token'
 
     @property

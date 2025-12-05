@@ -16,7 +16,7 @@ SUB_DELIMITER_CHARACTERS = '!$&\'()*+,;='
 class BasicAuthDetector(RegexBasedDetector):
     """Scans for Basic Auth formatted URIs."""
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
         return 'Basic Auth Credentials'
 
     @property
