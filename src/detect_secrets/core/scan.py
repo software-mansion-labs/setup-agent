@@ -72,55 +72,5 @@ def _scan_line(
     )
 
 
-def _is_filtered_out(required_filter_parameters: Iterable[str], **kwargs: Any) -> bool:
-    for filter_fn in get_filters_with_parameter(*required_filter_parameters):
-        try:
-            if call_function_with_arguments(filter_fn, **kwargs):
-                if 'secret' in kwargs:
-                    debug_msg = f'Skipping "{0}" due to `{1}`.'.format(
-                        kwargs['secret'],
-                        filter_fn.path,
-                    )
-                elif list(kwargs.keys()) == ['filename']:
-                    # We want to make sure this is only run if we're skipping files (as compared
-                    # to other filters that may include `filename` as a parameter).
-                    debug_msg = 'Skipping "{0}" due to `{1}`'.format(
-                        kwargs['filename'],
-                        filter_fn.path,
-                    )
-                else:
-                    debug_msg = 'Skipping secret due to `{0}`.'.format(filter_fn.path)
-
-                log.info(debug_msg)
-                return True
-        except TypeError:
-            pass
-
-    return False
-
-
-def get_filters_with_parameter(*parameters: str) -> List[SelfAwareCallable]:
-    """
-    The issue of our method of dependency injection is that functions will be called multiple
-    times. For example, if we have two functions:
-
-    >>> def foo(filename: str): ...
-    >>> def bar(filename: str, secret: str): ...
-
-    our invocation of `call_function_with_arguments(filename=filename, secret=secret)`
-    will run both of these functions. While expected, this results in multiple invocations of
-    the same function, which can be less than ideal (especially if we have a heavy duty filter).
-
-    To address this, we filter our filters with this function. It will return the functions
-    that accept a minimum set of parameters, to avoid duplicative work. For instance,
-
-    >>> get_filters_with_parameter('secret')
-    [bar]
-    """
-    minimum_parameters = set(parameters)
-
-    return [
-        filter
-        for filter in get_filters()
-        if minimum_parameters <= filter.injectable_variables
-    ]
+def _is_filtered_out(secret: str, plugin: BasePlugin) -> bool:
+    return any(filter.should_exclude(secret=secret, plugin=plugin) for filter in get_filters())
