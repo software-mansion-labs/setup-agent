@@ -6,7 +6,7 @@ import json
 import re
 from typing import Generator
 
-from .base import RegexBasedDetector
+from detect_secrets.plugins.base import RegexBasedDetector
 
 
 class JwtTokenDetector(RegexBasedDetector):

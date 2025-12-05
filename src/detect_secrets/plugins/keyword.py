@@ -32,11 +32,8 @@ from typing import Optional
 from typing import Pattern
 from typing import Set
 
-from ..core.potential_secret import PotentialSecret
-from ..util.filetype import determine_file_type
-from ..util.filetype import FileType
-from .base import BasePlugin
-from detect_secrets.util.code_snippet import CodeSnippet
+from detect_secrets.core.potential_secret import PotentialSecret
+from detect_secrets.plugins.base import BasePlugin
 
 
 # Note: All values here should be lowercase
@@ -289,17 +286,11 @@ class KeywordDetector(BasePlugin):
 
     def analyze_line(
         self,
-        filename: str,
         line: str,
-        line_number: int = 0,
-        context: Optional[CodeSnippet] = None,
         **kwargs: Any,
     ) -> Set[PotentialSecret]:
         return super().analyze_line(
-            filename=filename,
             line=line,
-            line_number=line_number,
-            context=context
         )
 
     def json(self) -> Dict[str, Any]:

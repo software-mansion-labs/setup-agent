@@ -1,7 +1,6 @@
 import re
 
-from .base import RegexBasedDetector
-
+from detect_secrets.plugins.base import RegexBasedDetector
 
 class SquareOAuthDetector(RegexBasedDetector):
     """Scans for Square OAuth Secrets"""

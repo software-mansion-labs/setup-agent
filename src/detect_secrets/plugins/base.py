@@ -9,16 +9,11 @@ import re
 from abc import ABCMeta
 from abc import abstractmethod
 from typing import Any, Dict, Generator, Iterable, Pattern, Set, Optional, TypedDict
-from detect_secrets.util.code_snippet import CodeSnippet
 
-import requests
-
-from detect_secrets.constants import VerifiedResult
 from detect_secrets.core.potential_secret import PotentialSecret
 
 class PotentialSecretResult(TypedDict):
     is_secret: bool
-    is_verified: Optional[bool]
     secret_value: Optional[str]
     secret_type: str
 
@@ -43,44 +38,24 @@ class BasePlugin(metaclass=ABCMeta):
 
     def analyze_line(
         self,
-        filename: str,
         line: str,
-        line_number: int = 0,
         **kwargs: Any
     ) -> Set[PotentialSecret]:
         """This examines a line and finds all possible secret values in it."""
-        from detect_secrets.settings import get_settings
 
         output = set()
         for match in self.analyze_string(line, **kwargs):
             is_verified: bool = False
-            # If the filter is disabled it means --no-verify flag was passed
-            # We won't run verification in that case
-            if (
-                'detect_secrets.filters.common.is_ignored_due_to_verification_policies'
-                in get_settings().filters
-            ):
-                try:
-                    verified_result = self.verify(secret=match)
-                    is_verified = True if verified_result == VerifiedResult.VERIFIED_TRUE else False
-                except requests.exceptions.RequestException:
-                    is_verified = False
-
             output.add(
                 PotentialSecret(
                     type=self.secret_type,
-                    filename=filename,
                     secret=match,
-                    line_number=line_number,
                     is_verified=is_verified,
                 ),
             )
 
         return output
     
-    def verify(self, secret: str, context: Optional[CodeSnippet] = None) -> VerifiedResult:
-        return VerifiedResult.UNVERIFIED
-
     def json(self) -> Dict[str, Any]:
         return {
             'name': self.__class__.__name__,
@@ -88,59 +63,21 @@ class BasePlugin(metaclass=ABCMeta):
     
     def prepare_secret_result(self, secret: PotentialSecret) -> PotentialSecretResult:
         """Prepare any data structures needed for formatting results."""
-        from detect_secrets.settings import get_settings
-
-        try:
-            verification_level = VerifiedResult(
-                get_settings().filters[
-                    'detect_secrets.filters.common.is_ignored_due_to_verification_policies'
-                ]['min_level'],
-            )
-        except KeyError:
-            verification_level = VerifiedResult.VERIFIED_FALSE
-
-        if verification_level == VerifiedResult.VERIFIED_FALSE:
-            # This is a secret, but we can't verify it. So this is the best we can do.
-            return {'is_secret': True, 'is_verified': None, 'secret_value': secret.secret_value, 'secret_type': secret.type}
-
         if not secret.secret_value and not secret.is_verified:
-            # If the secret isn't verified, but we don't know the true secret value, this
-            # is also the best we can do.
-            return {'is_secret': True, 'is_verified': False, 'secret_value': None, 'secret_type': secret.type}
+            return {'is_secret': True, 'secret_value': None, 'secret_type': secret.type}
         
         if secret.is_verified:
-            return {'is_secret': True, 'is_verified': True, 'secret_value': secret.secret_value, 'secret_type': secret.type}
-        
-        if secret.secret_value:
-            try:
-                verified_result = self.verify(secret.secret_value)
-            except (requests.exceptions.RequestException, TypeError):
-                verified_result = VerifiedResult.UNVERIFIED
-            
-            is_verified = verified_result in [VerifiedResult.VERIFIED_TRUE, VerifiedResult.VERIFIED_FALSE]
-            is_secret = verified_result in [VerifiedResult.VERIFIED_TRUE, VerifiedResult.UNVERIFIED]
-
-            return {
-                'is_secret': is_secret,
-                'is_verified': is_verified,
-                'secret_value': secret.secret_value,
-                'secret_type': secret.type,
-            }
+            return {'is_secret': True, 'secret_value': secret.secret_value, 'secret_type': secret.type}
 
         return {
             'is_secret': True,
-            'is_verified': False,
             'secret_value': None,
             'secret_type': secret.type,
         }
 
     def format_scan_result(self, secret: PotentialSecret) -> str:
         secret_result = self.prepare_secret_result(secret)
-        if secret_result['is_verified'] is None:
-            return "True (can't verify)"
-        is_secret_part = 'True' if secret_result['is_secret'] else 'False'
-        is_verified_part = '(verified)' if secret_result['is_verified'] else '(unverified)'
-        return f'{is_secret_part} {is_verified_part}'
+        return 'True' if secret_result['is_secret'] else 'False'
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, BasePlugin):
@@ -173,7 +110,6 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
             for match in regex.findall(string):
                 if isinstance(match, tuple):
                     for submatch in filter(bool, match):
-                        # It might make sense to paste break after yielding
                         yield submatch
                 else:
                     yield match

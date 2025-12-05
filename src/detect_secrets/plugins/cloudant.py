@@ -1,10 +1,5 @@
 import re
-from typing import List, Optional
 
-import requests
-
-from detect_secrets.constants import VerifiedResult
-from detect_secrets.util.code_snippet import CodeSnippet
 from detect_secrets.plugins.base import RegexBasedDetector
 
 
@@ -66,74 +61,3 @@ class CloudantDetector(RegexBasedDetector):
                 flags=re.IGNORECASE,
             ),
         ]
-
-    def verify(
-        self,
-        secret: str,
-        context: Optional[CodeSnippet] = None,
-    ) -> VerifiedResult:
-        if context is not None:
-            hosts = find_account(context)
-            if not hosts:
-                return VerifiedResult.UNVERIFIED
-
-            for host in hosts:
-                return verify_cloudant_key(host, secret)
-
-        return VerifiedResult.VERIFIED_FALSE
-
-
-def find_account(context: CodeSnippet) -> List[str]:
-    opt_hostname_keyword = r'(?:hostname|host|username|id|user|userid|user-id|user-name|' \
-        'name|user_id|user_name|uname|account)'
-    account = r'(\w[\w\-]*)'
-    opt_basic_auth = r'(?:[\w\-:%]*\@)?'
-
-    regexes = (
-        RegexBasedDetector.build_assignment_regex(
-            prefix_regex=CloudantDetector.cl,
-            secret_keyword_regex=opt_hostname_keyword,
-            secret_regex=account,
-        ),
-        re.compile(
-            r'{http}{opt_basic_auth}{cl_account}{dot}{cloudant_api_url}'.format(
-                http=CloudantDetector.http,
-                opt_basic_auth=opt_basic_auth,
-                cl_account=account,
-                dot=CloudantDetector.dot,
-                cloudant_api_url=CloudantDetector.cloudant_api_url,
-            ),
-            flags=re.IGNORECASE,
-        ),
-    )
-
-    return [
-        match
-        for line in context
-        for regex in regexes
-        for match in regex.findall(line)
-    ]
-
-
-def verify_cloudant_key(hostname: str, token: str) -> VerifiedResult:
-    headers = {'Content-type': 'application/json'}
-    request_url = 'https://{hostname}:' \
-        '{token}' \
-        '@{hostname}.' \
-        'cloudant.com'.format(
-            hostname=hostname,
-            token=token,
-        )
-
-    try:
-        response = requests.get(
-            request_url,
-            headers=headers,
-        )
-    except requests.exceptions.RequestException:
-        return VerifiedResult.UNVERIFIED
-
-    if response.status_code == 200:
-        return VerifiedResult.VERIFIED_TRUE
-    else:
-        return VerifiedResult.VERIFIED_FALSE

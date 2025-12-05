@@ -3,11 +3,10 @@ import re
 import string
 from abc import ABCMeta
 from contextlib import contextmanager
-from typing import Any, cast, Dict, Generator, Set, Optional
+from typing import Any, cast, Dict, Generator, Set
 
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.plugins.base import BasePlugin, PotentialSecretResult
-from detect_secrets.util.code_snippet import CodeSnippet
 
 class PotentialSecretResultWithEntropy(PotentialSecretResult):
     entropy: float
@@ -41,18 +40,12 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
 
     def analyze_line(
         self,
-        filename: str,
         line: str,
-        line_number: int = 0,
-        context: Optional[CodeSnippet] = None,
         enable_eager_search: bool = False,
-        **kwargs: Any,
+        **kwargs
     ) -> Set[PotentialSecret]:
         output = super().analyze_line(
-            filename=filename,
             line=line,
-            line_number=line_number,
-            context=context,
         )
         if output or not enable_eager_search:
             # NOTE: We perform the limit filter at this layer (rather than analyze_string) so
@@ -75,14 +68,14 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         # perform the limit filtering outside this function. This allows us to see *why* secrets
         # have failed to be caught with our configured limit.
         with self.non_quoted_string_regex(is_exact_match=False):
-            return super().analyze_line(filename=filename, line=line, line_number=line_number)
+            return super().analyze_line(line=line)
 
     def calculate_shannon_entropy(self, data: str) -> float:
         """Returns the entropy of a given string.
 
         Borrowed from: http://blog.dkbza.org/2007/05/scanning-data-for-entropy-anomalies.html.
         """
-        if not data:  # pragma: no cover
+        if not data:
             return 0
 
         entropy = 0.0
@@ -100,7 +93,6 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
 
         return {
             'is_secret': is_secret,
-            'is_verified': None,
             'secret_value': secret.secret_value,
             'secret_type': secret.type,
             'entropy': entropy,
@@ -111,17 +103,12 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         secret_result_with_entropy = self.prepare_secret_result_with_entropy(secret)
         return {
             'is_secret': secret_result_with_entropy['is_secret'],
-            'is_verified': secret_result_with_entropy['is_verified'],
             'secret_value': secret_result_with_entropy['secret_value'],
             'secret_type': secret_result_with_entropy['secret_type'],
         }
 
     def format_scan_result(self, secret: PotentialSecret) -> str:
         secret_result_with_entropy = self.prepare_secret_result_with_entropy(secret)
-
-        if secret_result_with_entropy['is_verified'] is None:
-            return "True (can't verify)"
-        
         is_secret_part = 'True' if secret_result_with_entropy['is_secret'] else 'False'
         entropy = secret_result_with_entropy['entropy']
         return f'{is_secret_part} ({entropy})'
