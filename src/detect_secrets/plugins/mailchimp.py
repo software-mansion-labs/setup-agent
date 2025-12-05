@@ -1,43 +1,38 @@
-"""
-This plugin searches for Mailchimp keys
-"""
+"""This plugin searches for Mailchimp keys."""
 import re
-from base64 import b64encode
+from typing import List, Pattern
 
-import requests
-
-from detect_secrets.constants import VerifiedResult
 from detect_secrets.plugins.base import RegexBasedDetector
-from typing import Optional
-from detect_secrets.util.code_snippet import CodeSnippet
+
 
 class MailchimpDetector(RegexBasedDetector):
-    """Scans for Mailchimp keys."""
+    """Scans for Mailchimp Access Keys.
+
+    Mailchimp API keys have a distinct structure involving a 32-character
+    hexadecimal string followed by a data center suffix (e.g., `xxxxxxxx-us19`).
+    """
+
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'Mailchimp Access Key'.
+        """
         return 'Mailchimp Access Key'
 
     @property
-    def denylist(self):
-        return (
+    def denylist(self) -> List[Pattern]:
+        """Returns the list of regex patterns to search for.
+
+        The pattern looks for:
+        1. 32 lowercase hexadecimal characters.
+        2. A literal '-us' suffix.
+        3. A 1 or 2 digit data center identifier.
+
+        Returns:
+            List[Pattern]: A list of compiled regular expression patterns.
+        """
+        return [
             re.compile(r'[0-9a-z]{32}-us[0-9]{1,2}'),
-        )
-
-    def verify(self, secret: str, context: Optional[CodeSnippet] = None) -> VerifiedResult:
-        _, datacenter_number = secret.split('-us')
-
-        response = requests.get(
-            'https://us{}.api.mailchimp.com/3.0/'.format(
-                datacenter_number,
-            ),
-            headers={
-                'Authorization': b'Basic ' + b64encode(
-                    'any_user:{}'.format(secret).encode('utf-8'),
-                ),
-            },
-        )
-        return (
-            VerifiedResult.VERIFIED_TRUE
-            if response.status_code == 200
-            else VerifiedResult.VERIFIED_FALSE
-        )
+        ]

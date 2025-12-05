@@ -1,20 +1,26 @@
 import re
-from typing import List, Optional
+from typing import List, Pattern
 
-import requests
-
-from detect_secrets.constants import VerifiedResult
-from detect_secrets.util.code_snippet import CodeSnippet
 from detect_secrets.plugins.base import RegexBasedDetector
 
 
 class CloudantDetector(RegexBasedDetector):
-    """Scans for Cloudant credentials."""
+    """Scans for Cloudant credentials.
+
+    This detects both variable assignments (e.g., `cloudant_password = ...`)
+    and credentials embedded directly into Cloudant service URLs.
+    """
 
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'Cloudant Credentials'.
+        """
         return 'Cloudant Credentials'
 
+    # Regex components for building complex patterns
     # opt means optional
     dot = r'\.'
     cl_account = r'[\w\-]+'
@@ -29,18 +35,34 @@ class CloudantDetector(RegexBasedDetector):
     cloudant_api_url = r'cloudant\.com'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
+        """Returns the list of regex patterns to search for.
+
+        The patterns look for:
+        1. Assignments of Cloudant passwords (64 hex characters).
+        2. Assignments of Cloudant API keys (24 lowercase alpha characters).
+        3. URLs containing the password in the authority section:
+           `https://account:password@account.cloudant.com`.
+        4. URLs containing the API key in the authority section:
+           `https://account:api_key@account.cloudant.com`.
+
+        Returns:
+            List[Pattern]: A list of compiled regular expression patterns.
+        """
         return [
+            # 1. Variable assignment for Password
             RegexBasedDetector.build_assignment_regex(
                 prefix_regex=self.cl,
                 secret_keyword_regex=self.cl_key_or_pass,
                 secret_regex=self.cl_pw,
             ),
+            # 2. Variable assignment for API Key
             RegexBasedDetector.build_assignment_regex(
                 prefix_regex=self.cl,
                 secret_keyword_regex=self.cl_key_or_pass,
                 secret_regex=self.cl_api_key,
             ),
+            # 3. URL embedding Password
             re.compile(
                 r'{http}{cl_account}{colon}{cl_pw}{at}{cl_account}{dot}{cloudant_api_url}'.format(
                     http=self.http,
@@ -53,6 +75,7 @@ class CloudantDetector(RegexBasedDetector):
                 ),
                 flags=re.IGNORECASE,
             ),
+            # 4. URL embedding API Key
             re.compile(
                 r'{http}{cl_account}{colon}{cl_api_key}{at}{cl_account}{dot}{cloudant_api_url}'.format(
                     http=self.http,
@@ -66,74 +89,3 @@ class CloudantDetector(RegexBasedDetector):
                 flags=re.IGNORECASE,
             ),
         ]
-
-    def verify(
-        self,
-        secret: str,
-        context: Optional[CodeSnippet] = None,
-    ) -> VerifiedResult:
-        if context is not None:
-            hosts = find_account(context)
-            if not hosts:
-                return VerifiedResult.UNVERIFIED
-
-            for host in hosts:
-                return verify_cloudant_key(host, secret)
-
-        return VerifiedResult.VERIFIED_FALSE
-
-
-def find_account(context: CodeSnippet) -> List[str]:
-    opt_hostname_keyword = r'(?:hostname|host|username|id|user|userid|user-id|user-name|' \
-        'name|user_id|user_name|uname|account)'
-    account = r'(\w[\w\-]*)'
-    opt_basic_auth = r'(?:[\w\-:%]*\@)?'
-
-    regexes = (
-        RegexBasedDetector.build_assignment_regex(
-            prefix_regex=CloudantDetector.cl,
-            secret_keyword_regex=opt_hostname_keyword,
-            secret_regex=account,
-        ),
-        re.compile(
-            r'{http}{opt_basic_auth}{cl_account}{dot}{cloudant_api_url}'.format(
-                http=CloudantDetector.http,
-                opt_basic_auth=opt_basic_auth,
-                cl_account=account,
-                dot=CloudantDetector.dot,
-                cloudant_api_url=CloudantDetector.cloudant_api_url,
-            ),
-            flags=re.IGNORECASE,
-        ),
-    )
-
-    return [
-        match
-        for line in context
-        for regex in regexes
-        for match in regex.findall(line)
-    ]
-
-
-def verify_cloudant_key(hostname: str, token: str) -> VerifiedResult:
-    headers = {'Content-type': 'application/json'}
-    request_url = 'https://{hostname}:' \
-        '{token}' \
-        '@{hostname}.' \
-        'cloudant.com'.format(
-            hostname=hostname,
-            token=token,
-        )
-
-    try:
-        response = requests.get(
-            request_url,
-            headers=headers,
-        )
-    except requests.exceptions.RequestException:
-        return VerifiedResult.UNVERIFIED
-
-    if response.status_code == 200:
-        return VerifiedResult.VERIFIED_TRUE
-    else:
-        return VerifiedResult.VERIFIED_FALSE

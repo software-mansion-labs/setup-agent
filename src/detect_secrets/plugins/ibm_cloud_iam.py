@@ -1,23 +1,38 @@
-from typing import Union, Optional
+"""
+This plugin searches for IBM Cloud IAM Keys.
+"""
+from typing import List, Pattern
 
-import requests
-
-from detect_secrets.constants import VerifiedResult
 from detect_secrets.plugins.base import RegexBasedDetector
-from detect_secrets.util.code_snippet import CodeSnippet
-
 
 
 class IbmCloudIamDetector(RegexBasedDetector):
-    """Scans for IBM Cloud IAM Key."""
+    """Scans for IBM Cloud IAM Keys.
+
+    This detector identifies 44-character API keys that are assigned to variables
+    containing keywords related to IBM, Cloud, and IAM.
+    """
 
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'IBM Cloud IAM Key'.
+        """
         return 'IBM Cloud IAM Key'
 
     @property
-    def denylist(self):
-        # opt means optional
+    def denylist(self) -> List[Pattern]:
+        """Returns the list of regex patterns to search for.
+
+        The pattern constructs a flexible assignment search that looks for:
+        1. Variable names containing combinations of 'ibm', 'cloud', 'iam', and 'api'.
+        2. Assignments to a 44-character string (alphanumeric, underscores, and dashes).
+
+        Returns:
+            List[Pattern]: A list of compiled regular expression patterns.
+        """
         opt_ibm_cloud_iam = r'(?:ibm(?:_|-|)cloud(?:_|-|)iam|cloud(?:_|-|)iam|' + \
             r'ibm(?:_|-|)cloud|ibm(?:_|-|)iam|ibm|iam|cloud|)'
         opt_dash_underscore = r'(?:_|-|)'
@@ -32,28 +47,3 @@ class IbmCloudIamDetector(RegexBasedDetector):
                 secret_regex=secret,
             ),
         ]
-
-    def verify(self, secret: str, context: Optional[CodeSnippet] = None) -> VerifiedResult:
-        response = verify_cloud_iam_api_key(secret)
-
-        return VerifiedResult.VERIFIED_TRUE if response.status_code == 200 \
-            else VerifiedResult.VERIFIED_FALSE
-
-
-def verify_cloud_iam_api_key(apikey: Union[str, bytes]) -> requests.Response:  # pragma: no cover
-    if type(apikey) is bytes:
-        apikey = apikey.decode('UTF-8')
-
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-    }
-    response = requests.post(
-        'https://iam.cloud.ibm.com/identity/token',
-        headers=headers,
-        data={
-            'grant_type': 'urn:ibm:params:oauth:grant-type:apikey',
-            'apikey': apikey,
-        },
-    )
-    return response

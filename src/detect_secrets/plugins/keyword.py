@@ -25,18 +25,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 import re
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import Optional
-from typing import Pattern
-from typing import Set
+from typing import Any, Dict, Generator, Optional, Pattern, Set
 
-from ..core.potential_secret import PotentialSecret
-from ..util.filetype import determine_file_type
-from ..util.filetype import FileType
-from .base import BasePlugin
-from detect_secrets.util.code_snippet import CodeSnippet
+from detect_secrets.core.potential_secret import PotentialSecret
+from detect_secrets.plugins.base import BasePlugin
 
 
 # Note: All values here should be lowercase
@@ -243,16 +235,30 @@ QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP = {
 
 
 class KeywordDetector(BasePlugin):
-    """
-    Scans for secret-sounding variable names.
+    """Scans for secret-sounding variable names.
 
-    This checks if denylisted keywords are present in the analyzed string.
+    This detector checks if denylisted keywords (like 'password', 'key', 'secret')
+    are present in variable assignments within the analyzed string. It is a general
+    purpose detector derived from Bandit.
     """
+
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'Secret Keyword'.
+        """
         return 'Secret Keyword'
 
     def __init__(self, keyword_exclude: Optional[str] = None) -> None:
+        """Initializes the KeywordDetector.
+
+        Args:
+            keyword_exclude (Optional[str]): A regex pattern string. If a variable
+                matches this pattern, it will be excluded from results even if it
+                matches the denylist.
+        """
         self.keyword_exclude = None
         if keyword_exclude:
             self.keyword_exclude = re.compile(
@@ -266,6 +272,24 @@ class KeywordDetector(BasePlugin):
         denylist_regex_to_group: Optional[Dict[Pattern, int]] = None,
         **kwargs: Any,
     ) -> Generator[str, None, None]:
+        """Scans the string for secret keywords using regex matching.
+        
+        
+
+        The detection process iterates through a set of regex patterns mapped to
+        specific capture groups. If a match is found, the value in the capture
+        group (the potential secret) is yielded.
+
+        Args:
+            string (str): The text content to analyze.
+            denylist_regex_to_group (Optional[Dict[Pattern, int]]): A mapping of
+                regex patterns to the capture group index containing the secret value.
+                If None, defaults to `QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP`.
+            **kwargs: Arbitrary keyword arguments.
+
+        Yields:
+            str: The potential secret value found in the string.
+        """
         if self.keyword_exclude and self.keyword_exclude.search(string):
             return
 
@@ -289,20 +313,29 @@ class KeywordDetector(BasePlugin):
 
     def analyze_line(
         self,
-        filename: str,
         line: str,
-        line_number: int = 0,
-        context: Optional[CodeSnippet] = None,
         **kwargs: Any,
     ) -> Set[PotentialSecret]:
+        """Examines a line and finds all possible secret values in it.
+
+        Args:
+            line (str): The line of text to analyze.
+            **kwargs: Arbitrary keyword arguments passed to analyze_string.
+
+        Returns:
+            Set[PotentialSecret]: A set of PotentialSecret objects found in the line.
+        """
         return super().analyze_line(
-            filename=filename,
             line=line,
-            line_number=line_number,
-            context=context
         )
 
     def json(self) -> Dict[str, Any]:
+        """Returns a JSON-serializable representation of the plugin configuration.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the class name and the
+            `keyword_exclude` pattern (if present).
+        """
         return {
             'keyword_exclude': (
                 self.keyword_exclude.pattern
