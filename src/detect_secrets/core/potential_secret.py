@@ -2,16 +2,25 @@ from typing import Any
 from typing import Optional
 
 class PotentialSecret:
-    """This custom data type represents a string found, matching the
-    plugin rules defined in SecretsCollection, that has the potential
-    to be a secret that we actually care about.
+    """
+    This custom data type represents a string that matches the plugin rules
+    defined in SecretsCollection, which might be an important secret.
 
-    "Potential" is the operative word here, because of the nature of
-    false positives.
+    The word "Potential" is used because there can be false positives.
 
-    We use this custom class so that we can more easily generate data
-    structures and do object-based comparisons with other PotentialSecrets,
-    without actually knowing what the secret is.
+    This custom class is used to easily generate data structures and compare
+    with other PotentialSecrets objects without actually knowing what the secret is.
+
+    Attributes:
+        secret_type (str): Human-readable type of the secret, set by the plugin
+                            that generated this PotentialSecret. e.g., "High Entropy String"
+        secret_value (str): The identified secret
+        is_secret (Optional[bool]): Indicates whether the secret is a true or false positive
+        is_verified (bool): It tells whether the secret has been externally verified or not
+        fields_to_compare (list[str]): List of field names that are considered while comparing,
+                                        such as 'secret_value', 'secret_type'.
+                                        Note that line numbers are not included in this,
+                                        because line numbers can change.
     """
 
     def __init__(
@@ -22,11 +31,14 @@ class PotentialSecret:
         is_verified: bool = False,
     ) -> None:
         """
-        :param type: human-readable secret type, defined by the plugin
-            that generated this PotentialSecret. e.g. "High Entropy String"
-        :param secret: the actual secret identified
-        :param is_secret: whether or not the secret is a true- or false- positive
-        :param is_verified: whether the secret has been externally verified
+        Args:
+            secret_type (str): Human-readable type of the secret, set by the plugin
+                               that generated this PotentialSecret. e.g., "High Entropy String"
+            secret (str): The identified secret
+            is_secret (Optional[bool], optional): Indicates whether the secret
+                                                  is a true or false positive. Defaults to None.
+            is_verified (bool, optional): It tells whether the secret
+                                          has been externally verified or not. Defaults to False.
         """
         self.secret_type = secret_type
         self.secret_value = secret
@@ -34,8 +46,7 @@ class PotentialSecret:
         self.is_verified = is_verified
 
         # If two PotentialSecrets have the same values for these fields,
-        # they are considered equal. Note that line numbers aren't included
-        # in this, because line numbers are subject to change.
+        # they are considered equal.
         self.fields_to_compare = ['secret_value', 'secret_type']
 
     def __eq__(self, other: Any) -> bool:

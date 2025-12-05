@@ -6,7 +6,16 @@ from detect_secrets.plugins.base import BasePlugin
 
 
 def scan_line(line: str, plugins: List[BasePlugin]) -> Generator[PotentialSecret, None, None]:
-    """Used for adhoc string scanning."""
+    """
+    Function for adhoc string scanning.
+
+    Args:
+        line (str): String to scan.
+        plugins (List[BasePlugin]): List of plugins to use for scanning.
+
+    Returns:
+        Generator[PotentialSecret, None, None]: Generator of PotentialSecret objects.
+    """
     yield from (
         secret
         for plugin in plugins
@@ -26,6 +35,17 @@ def _scan_line(
     line: str,
     **kwargs: Any,
 ) -> Generator[PotentialSecret, None, None]:
+    """
+    Function to scan a line with a given plugin.
+
+    Args:
+        plugin (BasePlugin): Plugin to use for scanning.
+        line (str): String to scan.
+        **kwargs (Any): Additional arguments.
+
+    Returns:
+        Generator[PotentialSecret, None, None]: Generator of PotentialSecret objects.
+    """
     secrets = plugin.analyze_line(
         line=line,
         **kwargs
@@ -44,4 +64,14 @@ def _scan_line(
 
 
 def _is_filtered_out(secret: str, plugin: BasePlugin) -> bool:
+    """
+    Function to check if a secret should be filtered out.
+
+    Args:
+        secret (str): Secret to check.
+        plugin (BasePlugin): Plugin to use for checking.
+
+    Returns:
+        bool: True if the secret should be filtered out, False otherwise.
+    """
     return any(filter.should_exclude(secret=secret, plugin=plugin) for filter in get_filters())

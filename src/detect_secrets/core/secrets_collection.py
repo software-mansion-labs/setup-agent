@@ -6,6 +6,14 @@ from detect_secrets.settings import get_plugins
 
 class SecretsCollection:
     def scan_text(self, text: str) -> List[PotentialSecretResult]:
+        """Scans provided text for secrets, prepares result and and returns it.
+
+        Args:
+            text (str): Text to be scanned for secrets.
+
+        Returns:
+            List[PotentialSecretResult]: List of results from the secret check.
+        """
         plugins = get_plugins()
         secrets = scan.scan_line(text, plugins=plugins)
         result: List[PotentialSecretResult] = []

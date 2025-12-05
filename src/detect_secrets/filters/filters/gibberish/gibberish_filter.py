@@ -10,18 +10,25 @@ from gibberish_detector.model import Model
 from gibberish_detector.detector import Detector
 from gibberish_detector.exceptions import ParsingError
 
+
 class GibberishFilter(BaseSecretFilter):
     """
     Filter that uses a trained machine learning model to distinguish between
     random gibberish (actual secrets) and regular English words (false positives).
+
+    Attributes:
+        limit (float): Threshold for the detector.
+        model (Model): The Gibberish Detector model.
+        detector (Detector): The Gibberish Detector.
     """
 
     def __init__(self, model_path: str = 'rfc.model', limit: float = 3.7):
         """
         Initializes the Gibberish Detector model.
         
-        :param model_path: Path to the trained 'rfc.model' file.
-        :param limit: Threshold for the detector.
+        Args:
+            model_path (str): Path to the trained 'rfc.model' file.
+            limit (float): Threshold for the detector.
         """
         self.limit = limit
         self.model = Model(charset='')
@@ -41,9 +48,13 @@ class GibberishFilter(BaseSecretFilter):
     def should_exclude(self, secret: str, plugin: Optional[BasePlugin] = None) -> bool:
         """
         Returns True if the secret looks like a regular English word (not gibberish).
-        """
+        Args:
+            secret (str): The secret to check.
+            plugin (Optional[BasePlugin]): The plugin used.
         
-        # Private keys often contain actual words, so we must NOT filter them out here.
+        Returns:
+            bool: Whether the secret should be excluded.
+        """
         if plugin and isinstance(plugin, PrivateKeyDetector):
             return False
 

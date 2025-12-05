@@ -13,4 +13,14 @@ class UUIDFilter(BaseSecretFilter):
     )
 
     def should_exclude(self, secret: str, plugin: Optional[BasePlugin] = None) -> bool:
+        """
+        Determine whether the secret should be excluded based on the UUID pattern.
+
+        Args:
+            secret (str): The secret string to be checked.
+            plugin (Optional[BasePlugin]): The detect-secrets plugin being used.
+
+        Returns:
+            bool: True if the secret should be excluded, False otherwise.
+        """
         return bool(self._REGEX.search(secret))
