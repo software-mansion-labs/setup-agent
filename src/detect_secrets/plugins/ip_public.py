@@ -1,3 +1,4 @@
+"""This plugin searches for Public IP addresses."""
 import re
 from typing import List, Pattern
 
@@ -5,21 +6,31 @@ from detect_secrets.plugins.base import RegexBasedDetector
 
 
 class IPPublicDetector(RegexBasedDetector):
-    """Scans for public ip address (ipv4)
+    """Scans for public IPv4 addresses.
 
-    Some non-public ipv4 addresses are ignored, such as:
-        - 127.
-        - 10.
-        - 172.(16-31)
-        - 192.168.
-        - 169.254. - Link Local Address IPv4
+    This detector identifies valid IPv4 addresses while explicitly ignoring
+    non-public ranges as defined by IANA and RFC standards (Private, Loopback,
+    and Link-Local).
 
-    Reference:
-    https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.xhtml
-    https://en.wikipedia.org/wiki/Private_network
+    Excluded ranges:
+    - 127.0.0.0/8 (Loopback)
+    - 10.0.0.0/8 (Private)
+    - 172.16.0.0/12 (Private)
+    - 192.168.0.0/16 (Private)
+    - 169.254.0.0/16 (Link-Local)
+
+    References:
+        - https://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.xhtml
+        - https://en.wikipedia.org/wiki/Private_network
     """
+
     @property
     def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'Public IP (ipv4)'.
+        """
         return 'Public IP (ipv4)'
 
     denylist_ipv4_address = r"""
@@ -47,6 +58,14 @@ class IPPublicDetector(RegexBasedDetector):
 
     @property
     def denylist(self) -> List[Pattern]:
+        """Returns the list of regex patterns to search for.
+
+        The regex uses negative lookaheads to exclude private and reserved
+        IP ranges (RFC 1918, RFC 3927) from the detection results.
+
+        Returns:
+            List[Pattern]: A list of compiled regular expression patterns.
+        """
         return [
             re.compile(self.denylist_ipv4_address, flags=re.IGNORECASE | re.VERBOSE),
         ]

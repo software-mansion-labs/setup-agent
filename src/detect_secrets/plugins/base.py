@@ -1,5 +1,4 @@
-"""
-Defines the interfaces for extending plugins.
+"""Defines the interfaces for extending plugins.
 
 In most cases, you probably can just use the RegexBasedPlugin. In more advanced cases,
 you can also use the LineBasedPlugin, and FileBasedPlugin. If you're extending the BasePlugin,
@@ -13,25 +12,41 @@ from typing import Any, Dict, Generator, Iterable, Pattern, Set, Optional, Typed
 from detect_secrets.core.potential_secret import PotentialSecret
 
 class PotentialSecretResult(TypedDict):
+    """Typed dictionary representing the structure of a secret result.
+
+    Attributes:
+        is_secret (bool): Whether the item is considered a secret.
+        secret_value (Optional[str]): The actual string value of the secret, or None.
+        secret_type (str): The identifier string for the type of secret.
+    """
     is_secret: bool
     secret_value: Optional[str]
     secret_type: str
 
 class BasePlugin(metaclass=ABCMeta):
+    """Abstract base class for all plugins."""
+
     @property
     @abstractmethod
     def secret_type(self) -> str:
-        """
-        Unique, user-facing description to identify this type of secret.
+        """Unique, user-facing description to identify this type of secret.
 
-        NOTE: Choose carefully! If this value is changed, it will require old baselines to be
-        updated to use the new secret type.
+        Returns:
+            str: The identifier for the secret type.
         """
         raise NotImplementedError
 
     @abstractmethod
     def analyze_string(self, string: str, **kwargs) -> Generator[str, None, None]:
-        """Yields all the raw secret values within a supplied string."""
+        """Yields all the raw secret values within a supplied string.
+
+        Args:
+            string (str): The text content to analyze.
+            **kwargs: Arbitrary keyword arguments.
+
+        Yields:
+            str: The raw secret value found in the string.
+        """
         raise NotImplementedError
 
     def analyze_line(
@@ -39,8 +54,15 @@ class BasePlugin(metaclass=ABCMeta):
         line: str,
         **kwargs: Any
     ) -> Set[PotentialSecret]:
-        """This examines a line and finds all possible secret values in it."""
+        """Examines a line and finds all possible secret values in it.
 
+        Args:
+            line (str): The line of text to analyze.
+            **kwargs: Arbitrary keyword arguments passed to analyze_string.
+
+        Returns:
+            Set[PotentialSecret]: A set of PotentialSecret objects found in the line.
+        """
         output = set()
         for match in self.analyze_string(line, **kwargs):
             is_verified: bool = False
@@ -55,12 +77,24 @@ class BasePlugin(metaclass=ABCMeta):
         return output
     
     def json(self) -> Dict[str, Any]:
+        """Returns a JSON-serializable representation of the plugin.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the class name.
+        """
         return {
             'name': self.__class__.__name__,
         }
     
     def prepare_secret_result(self, secret: PotentialSecret) -> PotentialSecretResult:
-        """Prepare any data structures needed for formatting results."""
+        """Prepare any data structures needed for formatting results.
+
+        Args:
+            secret (PotentialSecret): The secret object to process.
+
+        Returns:
+            PotentialSecretResult: A dictionary containing the formatted secret details.
+        """
         if not secret.secret_value and not secret.is_verified:
             return {'is_secret': True, 'secret_value': None, 'secret_type': secret.secret_type}
         
@@ -74,6 +108,14 @@ class BasePlugin(metaclass=ABCMeta):
         }
 
     def format_scan_result(self, secret: PotentialSecret) -> str:
+        """Formats the result of a scan for display.
+
+        Args:
+            secret (PotentialSecret): The secret object to format.
+
+        Returns:
+            str: 'True' if the item is a secret, otherwise 'False'.
+        """
         secret_result = self.prepare_secret_result(secret)
         return 'True' if secret_result['is_secret'] else 'False'
 
@@ -88,22 +130,35 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
     """Parent class for regular-expression based detectors.
 
     To create a new regex-based detector, subclass this and set `secret_type` with a
-    description and `denylist` with a sequence of *compiled* regular expressions, like:
+    description and `denylist` with a sequence of *compiled* regular expressions.
 
-    class FooDetector(RegexBasedDetector):
-
-        secret_type = "foo"
-
-        denylist = (
-            re.compile(r'foo'),
-        )
+    Example:
+        class FooDetector(RegexBasedDetector):
+            secret_type = "foo"
+            denylist = (
+                re.compile(r'foo'),
+            )
     """
     @property
     @abstractmethod
     def denylist(self) -> Iterable[Pattern]:
+        """Returns the list of regex patterns to search for.
+
+        Returns:
+            Iterable[Pattern]: A sequence of compiled regular expression patterns.
+        """
         raise NotImplementedError
 
     def analyze_string(self, string: str, **kwargs) -> Generator[str, None, None]:
+        """Analyzes a string using the defined denylist regex patterns.
+
+        Args:
+            string (str): The content to analyze.
+            **kwargs: Arbitrary keyword arguments.
+
+        Yields:
+            str: Strings matching the denylist patterns.
+        """
         for regex in self.denylist:
             for match in regex.findall(string):
                 if isinstance(match, tuple):
@@ -118,12 +173,26 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
         secret_keyword_regex: str,
         secret_regex: str,
     ) -> Pattern:
-        """Generate assignment regex
-        It reads 3 input parameters, each stands for regex. The return regex would look for
-        secret in following format.
-        <prefix_regex>(-|_|)<secret_keyword_regex> <assignment> <secret_regex>
-        assignment would include =,:,:=,::
-        keyname and value supports optional quotes
+        """Generates a regular expression for detecting assignments.
+
+        This method constructs a regex that looks for a secret assignment in the 
+        following format:
+        
+        `<prefix_regex>(-|_|)<secret_keyword_regex> <assignment> <secret_regex>`
+        
+        It accounts for:
+        * Assignments using `=`, `:`, `:=`, `=>`, or `::`.
+        * Optional quotes around key names and values.
+        * Optional square brackets.
+        * Optional whitespace.
+
+        Args:
+            prefix_regex (str): Regex for the prefix of the variable name.
+            secret_keyword_regex (str): Regex for the keyword indicating a secret.
+            secret_regex (str): Regex for the actual secret value.
+
+        Returns:
+            Pattern: A compiled regular expression object ignoring case.
         """
         begin = r'(?:(?<=\W)|(?<=^))'
         opt_quote = r'(?:"|\'|)'
