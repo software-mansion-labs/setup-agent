@@ -1,4 +1,3 @@
-from __future__ import annotations
 from functools import lru_cache
 from typing import List
 
@@ -77,11 +76,7 @@ def get_plugins() -> List[BasePlugin]:
 
 @lru_cache(maxsize=1)
 def get_filters() -> List[BaseSecretFilter]:
-    """
-    Returns the hardcoded list of active filters.
-    """
-
-    filters: List[BaseSecretFilter] = [
+    filters = [
         SequentialStringFilter(),
         UUIDFilter(),
         TemplatedSecretFilter(),

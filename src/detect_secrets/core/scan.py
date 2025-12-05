@@ -1,6 +1,4 @@
-from typing import Any
-from typing import Generator
-from typing import List
+from typing import Any, Generator, List
 
 from detect_secrets.settings import get_filters
 from detect_secrets.core.potential_secret import PotentialSecret
