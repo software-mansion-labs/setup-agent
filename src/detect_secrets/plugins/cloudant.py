@@ -1,4 +1,5 @@
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -24,7 +25,7 @@ class CloudantDetector(RegexBasedDetector):
     cloudant_api_url = r'cloudant\.com'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             RegexBasedDetector.build_assignment_regex(
                 prefix_regex=self.cl,

@@ -1,4 +1,5 @@
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -9,7 +10,7 @@ class SquareOAuthDetector(RegexBasedDetector):
         return 'Square OAuth Secret'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             re.compile(r'sq0csp-[0-9A-Za-z\\\-_]{43}'),
         ]

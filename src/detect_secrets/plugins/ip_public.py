@@ -1,4 +1,5 @@
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -45,7 +46,7 @@ class IPPublicDetector(RegexBasedDetector):
     """
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             re.compile(self.denylist_ipv4_address, flags=re.IGNORECASE | re.VERBOSE),
         ]

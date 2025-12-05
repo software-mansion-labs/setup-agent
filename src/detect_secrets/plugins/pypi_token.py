@@ -2,6 +2,7 @@
 This plugin searches for PyPI tokens
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class PypiTokenDetector(RegexBasedDetector):
         return 'PyPI Token'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # refs https://warehouse.pypa.io/development/token-scanning.html
             # pypi.org token

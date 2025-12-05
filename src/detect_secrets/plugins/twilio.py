@@ -2,6 +2,7 @@
 This plugin searches for Twilio API keys
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class TwilioKeyDetector(RegexBasedDetector):
         return 'Twilio API Key'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # Account SID (ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)
             re.compile(r'AC[a-z0-9]{32}'),

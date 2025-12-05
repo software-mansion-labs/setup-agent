@@ -25,12 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 import re
-from typing import Any
-from typing import Dict
-from typing import Generator
-from typing import Optional
-from typing import Pattern
-from typing import Set
+from typing import Any, Dict, Generator, Optional, Pattern, Set
 
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.plugins.base import BasePlugin

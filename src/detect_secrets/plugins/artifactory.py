@@ -1,4 +1,5 @@
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -10,7 +11,7 @@ class ArtifactoryDetector(RegexBasedDetector):
         return 'Artifactory Credentials'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # Artifactory tokens begin with AKC
             re.compile(r'(?:\s|=|:|"|^)AKC[a-zA-Z0-9]{10,}(?:\s|"|$)'),  # API token

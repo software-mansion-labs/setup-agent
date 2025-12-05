@@ -11,7 +11,7 @@ class SecretsCollection:
         result: List[PotentialSecretResult] = []
 
         for secret in secrets:
-            plugin = [p for p in plugins if p.secret_type == secret.type][0]
+            plugin = [p for p in plugins if p.secret_type == secret.secret_type][0]
             result.append(plugin.prepare_secret_result(secret=secret))
 
         return result

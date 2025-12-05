@@ -94,7 +94,7 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         return {
             'is_secret': is_secret,
             'secret_value': secret.secret_value,
-            'secret_type': secret.type,
+            'secret_type': secret.secret_type,
             'entropy': entropy,
         }
 

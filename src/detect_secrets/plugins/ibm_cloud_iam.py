@@ -1,3 +1,5 @@
+from typing import List, Pattern
+
 from detect_secrets.plugins.base import RegexBasedDetector
 
 
@@ -9,7 +11,7 @@ class IbmCloudIamDetector(RegexBasedDetector):
         return 'IBM Cloud IAM Key'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         # opt means optional
         opt_ibm_cloud_iam = r'(?:ibm(?:_|-|)cloud(?:_|-|)iam|cloud(?:_|-|)iam|' + \
             r'ibm(?:_|-|)cloud|ibm(?:_|-|)iam|ibm|iam|cloud|)'

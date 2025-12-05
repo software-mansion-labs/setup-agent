@@ -2,6 +2,7 @@
 This plugin searches for SendGrid API keys
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class SendGridDetector(RegexBasedDetector):
         return 'SendGrid API Key'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # SendGrid API key
             # ref. https://d2w67tjf43xwdp.cloudfront.net/Classroom/Basics/API/what_is_my_api_key.html

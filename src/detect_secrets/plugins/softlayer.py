@@ -1,4 +1,5 @@
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -15,7 +16,7 @@ class SoftlayerDetector(RegexBasedDetector):
     secret = r'([a-z0-9]{64})'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             RegexBasedDetector.build_assignment_regex(
                 prefix_regex=self.sl,

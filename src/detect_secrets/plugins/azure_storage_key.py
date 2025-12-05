@@ -2,6 +2,7 @@
 This plugin searches for Azure Storage Account access keys.
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class AzureStorageKeyDetector(RegexBasedDetector):
         return 'Azure Storage Account access key'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # Account Key (AccountKey=xxxxxxxxx)
             re.compile(r'AccountKey=[a-zA-Z0-9+\/=]{88}'),

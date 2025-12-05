@@ -2,6 +2,7 @@
 This plugin searches for Discord Bot Token
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class DiscordBotTokenDetector(RegexBasedDetector):
         return 'Discord Bot Token'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # Discord Bot Token ([M|N|O]XXXXXXXXXXXXXXXXXXXXXXX[XX].XXXXXX.XXXXXXXXXXXXXXXXXXXXXXXXXXX)
             # Reference: https://discord.com/developers/docs/reference#authentication

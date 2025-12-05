@@ -2,6 +2,7 @@
 This plugin searches for GitLab tokens
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class GitLabTokenDetector(RegexBasedDetector):
         return 'GitLab Token'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # ref:
             #  - https://docs.gitlab.com/ee/security/token_overview.html#gitlab-tokens

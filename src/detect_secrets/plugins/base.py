@@ -48,7 +48,7 @@ class BasePlugin(metaclass=ABCMeta):
             is_verified: bool = False
             output.add(
                 PotentialSecret(
-                    type=self.secret_type,
+                    secret_type=self.secret_type,
                     secret=match,
                     is_verified=is_verified,
                 ),
@@ -64,15 +64,15 @@ class BasePlugin(metaclass=ABCMeta):
     def prepare_secret_result(self, secret: PotentialSecret) -> PotentialSecretResult:
         """Prepare any data structures needed for formatting results."""
         if not secret.secret_value and not secret.is_verified:
-            return {'is_secret': True, 'secret_value': None, 'secret_type': secret.type}
+            return {'is_secret': True, 'secret_value': None, 'secret_type': secret.secret_type}
         
         if secret.is_verified:
-            return {'is_secret': True, 'secret_value': secret.secret_value, 'secret_type': secret.type}
+            return {'is_secret': True, 'secret_value': secret.secret_value, 'secret_type': secret.secret_type}
 
         return {
             'is_secret': True,
             'secret_value': None,
-            'secret_type': secret.type,
+            'secret_type': secret.secret_type,
         }
 
     def format_scan_result(self, secret: PotentialSecret) -> str:

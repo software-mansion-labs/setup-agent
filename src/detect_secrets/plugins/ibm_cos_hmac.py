@@ -1,3 +1,5 @@
+from typing import List, Pattern
+
 from detect_secrets.plugins.base import RegexBasedDetector
 
 
@@ -18,11 +20,11 @@ class IbmCosHmacDetector(RegexBasedDetector):
         return 'IBM COS HMAC Credentials'
 
     @property
-    def denylist(self):
-        return (
+    def denylist(self) -> List[Pattern]:
+        return [
             RegexBasedDetector.build_assignment_regex(
                 prefix_regex=self.token_prefix,
                 secret_keyword_regex=self.password_keyword,
                 secret_regex=self.password,
             ),
-        )
+        ]

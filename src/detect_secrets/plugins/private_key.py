@@ -25,6 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -41,7 +42,7 @@ class PrivateKeyDetector(RegexBasedDetector):
         return 'Private Key'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             re.compile(regexp)
             for regexp in (

@@ -4,7 +4,7 @@ This plugin finds JWT tokens
 import base64
 import json
 import re
-from typing import Generator
+from typing import Generator, List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -15,7 +15,7 @@ class JwtTokenDetector(RegexBasedDetector):
     def secret_type(self):
         return 'JSON Web Token'
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             re.compile(r'eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*?'),
         ]

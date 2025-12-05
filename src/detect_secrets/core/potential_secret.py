@@ -16,7 +16,7 @@ class PotentialSecret:
 
     def __init__(
         self,
-        type: str,
+        secret_type: str,
         secret: str,
         is_secret: Optional[bool] = None,
         is_verified: bool = False,
@@ -28,7 +28,7 @@ class PotentialSecret:
         :param is_secret: whether or not the secret is a true- or false- positive
         :param is_verified: whether the secret has been externally verified
         """
-        self.type = type
+        self.secret_type = secret_type
         self.secret_value = secret
         self.is_secret = is_secret
         self.is_verified = is_verified
@@ -36,7 +36,7 @@ class PotentialSecret:
         # If two PotentialSecrets have the same values for these fields,
         # they are considered equal. Note that line numbers aren't included
         # in this, because line numbers are subject to change.
-        self.fields_to_compare = ['secret_value', 'type']
+        self.fields_to_compare = ['secret_value', 'secret_type']
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PotentialSecret):

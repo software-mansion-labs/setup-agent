@@ -2,6 +2,7 @@
 This plugin searches for NPM tokens
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class NpmDetector(RegexBasedDetector):
         return 'NPM tokens'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # npmrc authToken
             # ref. https://stackoverflow.com/questions/53099434/using-auth-tokens-in-npmrc

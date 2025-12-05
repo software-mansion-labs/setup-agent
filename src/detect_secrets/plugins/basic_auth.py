@@ -1,4 +1,5 @@
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -19,7 +20,7 @@ class BasicAuthDetector(RegexBasedDetector):
         return 'Basic Auth Credentials'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             re.compile(
                 r'://[^{}\s]+:([^{}\s]+)@'.format(

@@ -2,6 +2,7 @@
 This plugin searches for OpenAI tokens
 """
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
@@ -13,7 +14,7 @@ class OpenAIDetector(RegexBasedDetector):
         return 'OpenAI Token'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
         return [
             # refs https://community.openai.com/t/what-are-the-valid-characters-for-the-apikey/288643
             # User api keys (legacy): 'sk-[20 alnum]T3BlbkFJ[20 alnum]'
