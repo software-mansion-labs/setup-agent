@@ -8,7 +8,7 @@ from agents.success_verifier.prompts import SuccessVerifierPrompts
 
 
 class SuccessVerifier(BaseCustomAgent):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             name=Node.SUCCESS_VERIFIER_AGENT.value,
         )
@@ -62,9 +62,9 @@ class SuccessVerifier(BaseCustomAgent):
         outcome = select(
             message="How did the installation/execution process go?",
             choices=[
-                Choice("Success - everything works as expected", value=VerificationOutcome.SUCCESS.value),
-                Choice("Partial success - works but with errors", value=VerificationOutcome.PARTIAL_SUCCESS.value),
-                Choice("Failure - critical error occurred", value=VerificationOutcome.FAILURE.value),
+                Choice("Success - everything works as expected", value=VerificationOutcome.SUCCESS),
+                Choice("Partial success - works but with errors", value=VerificationOutcome.PARTIAL_SUCCESS),
+                Choice("Failure - critical error occurred", value=VerificationOutcome.FAILURE),
             ],
             default=VerificationOutcome.SUCCESS.value
         ).unsafe_ask()

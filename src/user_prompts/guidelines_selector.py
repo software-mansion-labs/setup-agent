@@ -11,7 +11,7 @@ class GuidelinesSelector:
     custom file paths through a checkbox interface.
     """
     
-    def __init__(self, file_loader: FileLoader):
+    def __init__(self, file_loader: FileLoader) -> None:
         """
         Initialize the guidelines selector.
         
@@ -34,7 +34,7 @@ class GuidelinesSelector:
         Args:
             guideline_files (List[GuidelineFile]): List of GuidelineFile objects with content already loaded.
             default_files (List[GuidelineFile]): List of GuidelineFile objects to pre-select in the checkbox.
-                          If empty, the first file in the sorted list is selected by default.
+                          If empty, the first file in the sorted list is selected by default. Defaults to empty list.
         
         Returns:
             List[GuidelineFile]: Selected guideline files with their content loaded.

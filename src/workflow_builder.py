@@ -98,7 +98,7 @@ class WorkflowBuilder:
             },
         )
         self.graph.add_conditional_edges(
-            Node.SUCCESS_VERIFIER_AGENT,
+            Node.SUCCESS_VERIFIER_AGENT.value,
             self.route_success_verifier,
             {
                 Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
@@ -106,7 +106,7 @@ class WorkflowBuilder:
             }
         )
         self.graph.add_conditional_edges(
-            Node.CONTINUE_PROCESS_NODE,
+            Node.CONTINUE_PROCESS_NODE.value,
             self.route_continue_process,
             {
                 Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,

@@ -20,7 +20,7 @@ class TaskIdentifierNode(BaseLLMNode):
     - Update the workflow state with identified and chosen tasks.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(name=Node.TASK_IDENTIFIER_NODE.value)
         self._config = Config.get()
         self._task_selector = TaskSelector()
@@ -58,7 +58,7 @@ class TaskIdentifierNode(BaseLLMNode):
 
         user_task = self._config.task
         finished_tasks = state["finished_tasks"]
-        if user_task is not None and user_task not in finished_tasks:
+        if user_task and user_task not in finished_tasks:
             state["chosen_task"] = user_task
             return state
 
