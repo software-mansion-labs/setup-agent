@@ -1,0 +1,346 @@
+"""
+This code was extracted in part from
+https://github.com/PyCQA/bandit. Using similar heuristic logic,
+we adapted it to fit our plugin infrastructure, to create an organized,
+concerted effort in detecting all type of secrets in code.
+
+Copyright (c) 2014 Hewlett-Packard Development Company, L.P.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+import re
+from typing import Any, Dict, Generator, Optional, Pattern, Set
+
+from detect_secrets.core.potential_secret import PotentialSecret
+from detect_secrets.plugins.base import BasePlugin
+
+
+# Note: All values here should be lowercase
+DENYLIST = (
+    'api_?key',
+    'auth_?key',
+    'service_?key',
+    'account_?key',
+    'db_?key',
+    'database_?key',
+    'priv_?key',
+    'private_?key',
+    'client_?key',
+    'db_?pass',
+    'database_?pass',
+    'key_?pass',
+    'password',
+    'passwd',
+    'pwd',
+    'secret',
+    'contraseña',
+    'contrasena',
+)
+# Includes ], ', " as closing
+CLOSING = r'[]\'"]{0,2}'
+AFFIX_REGEX = r'\w*'
+DENYLIST_REGEX = r'|'.join(DENYLIST)
+# Support for suffix after keyword i.e. password_secure = "value"
+DENYLIST_REGEX = r'({denylist}){suffix}'.format(
+    denylist=DENYLIST_REGEX,
+    suffix=AFFIX_REGEX,
+)
+# Support for prefix and suffix with keyword, needed for reverse comparisons
+# i.e. if ("value" == my_password_secure) {}
+DENYLIST_REGEX_WITH_PREFIX = r'{prefix}{denylist}'.format(
+    prefix=AFFIX_REGEX,
+    denylist=DENYLIST_REGEX,
+)
+# Non-greedy match
+OPTIONAL_WHITESPACE = r'\s*'
+OPTIONAL_NON_WHITESPACE = r'[^\s]{0,50}?'
+QUOTE = r'[\'"`]'
+# Secret regex details:
+#   (?=[^\v\'"]*)   ->  this section match with every character except line breaks and quotes. This
+#                       allows to find secrets that starts with symbols or alphanumeric characters.
+#
+#   (?=\w+)     ->  this section match only with words (letters, numbers or _ are allowed), and at
+#                   least one character is required. This allows to reduce the false positives
+#                   number.
+#
+#   [^\v\'"]*   ->  this section match with every character except line breaks and quotes. This
+#                   allows to find secrets with symbols at the end.
+#
+#   [^\v,\'"`]  ->  this section match with the last secret character that can be everything except
+#                   line breaks, comma, backticks or quotes. This allows to reduce the false
+#                   positives number and to prevent errors in the code snippet highlighting.
+SECRET = r'(?=[^\v\'\"]*)(?=\w+)[^\v\'\"]*[^\v,\'\"`]'
+SQUARE_BRACKETS = r'(\[[0-9]*\])'
+
+FOLLOWED_BY_COLON_EQUAL_SIGNS_REGEX = re.compile(
+    # e.g. my_password := "bar" or my_password := bar
+    r'{denylist}({closing})?{whitespace}:={whitespace}({quote}?)({secret})(\3)'.format(
+        denylist=DENYLIST_REGEX,
+        closing=CLOSING,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+FOLLOWED_BY_COLON_REGEX = re.compile(
+    # e.g. api_key: foo
+    r'{denylist}({closing})?:{whitespace}({quote}?)({secret})(\3)'.format(
+        denylist=DENYLIST_REGEX,
+        closing=CLOSING,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+FOLLOWED_BY_COLON_QUOTES_REQUIRED_REGEX = re.compile(
+    # e.g. api_key: "foo"
+    r'{denylist}({closing})?:({whitespace})({quote})({secret})(\4)'.format(
+        denylist=DENYLIST_REGEX,
+        closing=CLOSING,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+FOLLOWED_BY_EQUAL_SIGNS_OPTIONAL_BRACKETS_OPTIONAL_AT_SIGN_QUOTES_REQUIRED_REGEX = re.compile(
+    # e.g. my_password = "bar"
+    # e.g. my_password = @"bar"
+    # e.g. my_password[] = "bar";
+    # e.g. char my_password[25] = "bar";
+    r'{denylist}({square_brackets})?{optional_whitespace}[!=]{{1,2}}{optional_whitespace}(@)?(")({secret})(\5)'.format(  # noqa: E501
+        denylist=DENYLIST_REGEX,
+        square_brackets=SQUARE_BRACKETS,
+        optional_whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+FOLLOWED_BY_OPTIONAL_ASSIGN_QUOTES_REQUIRED_REGEX = re.compile(
+    # e.g. std::string secret("bar");
+    # e.g. secret.assign("bar",17);
+    r'{denylist}(.assign)?\((")({secret})(\3)'.format(
+        denylist=DENYLIST_REGEX,
+        secret=SECRET,
+    ),
+)
+FOLLOWED_BY_EQUAL_SIGNS_REGEX = re.compile(
+    # e.g. my_password = bar
+    # e.g. my_password == "bar" or my_password != "bar" or my_password === "bar"
+    # or my_password !== "bar"
+    # e.g. my_password == 'bar' or my_password != 'bar' or my_password === 'bar'
+    # or my_password !== 'bar'
+    r'{denylist}({closing})?{whitespace}(={{1,3}}|!==?){whitespace}({quote}?)({secret})(\4)'.format(  # noqa: E501
+        denylist=DENYLIST_REGEX,
+        closing=CLOSING,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+FOLLOWED_BY_EQUAL_SIGNS_QUOTES_REQUIRED_REGEX = re.compile(
+    # e.g. my_password = "bar"
+    # e.g. my_password == "bar" or my_password != "bar" or my_password === "bar"
+    # or my_password !== "bar"
+    # e.g. my_password == 'bar' or my_password != 'bar' or my_password === 'bar'
+    # or my_password !== 'bar'
+    r'{denylist}({closing})?{whitespace}(={{1,3}}|!==?){whitespace}({quote})({secret})(\4)'.format(  # noqa: E501
+        denylist=DENYLIST_REGEX,
+        closing=CLOSING,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+PRECEDED_BY_EQUAL_COMPARISON_SIGNS_QUOTES_REQUIRED_REGEX = re.compile(
+    # e.g. "bar" == my_password or "bar" != my_password or "bar" === my_password
+    # or "bar" !== my_password
+    # e.g. 'bar' == my_password or 'bar' != my_password or 'bar' === my_password
+    # or 'bar' !== my_password
+    r'({quote})({secret})(\1){whitespace}[!=]{{2,3}}{whitespace}{denylist}'.format(
+        denylist=DENYLIST_REGEX_WITH_PREFIX,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+)
+FOLLOWED_BY_QUOTES_AND_SEMICOLON_REGEX = re.compile(
+    # e.g. private_key "something";
+    r'{denylist}{nonWhitespace}{whitespace}({quote})({secret})(\2);'.format(
+        denylist=DENYLIST_REGEX,
+        nonWhitespace=OPTIONAL_NON_WHITESPACE,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+FOLLOWED_BY_ARROW_FUNCTION_SIGN_QUOTES_REQUIRED_REGEX = re.compile(
+    # e.g. my_password => "bar" or my_password => bar
+    r'{denylist}({closing})?{whitespace}=>?{whitespace}({quote})({secret})(\3)'.format(
+        denylist=DENYLIST_REGEX,
+        closing=CLOSING,
+        quote=QUOTE,
+        whitespace=OPTIONAL_WHITESPACE,
+        secret=SECRET,
+    ),
+    flags=re.IGNORECASE,
+)
+CONFIG_DENYLIST_REGEX_TO_GROUP = {
+    FOLLOWED_BY_COLON_REGEX: 4,
+    PRECEDED_BY_EQUAL_COMPARISON_SIGNS_QUOTES_REQUIRED_REGEX: 2,
+    FOLLOWED_BY_EQUAL_SIGNS_REGEX: 5,
+    FOLLOWED_BY_QUOTES_AND_SEMICOLON_REGEX: 3,
+}
+GOLANG_DENYLIST_REGEX_TO_GROUP = {
+    FOLLOWED_BY_COLON_EQUAL_SIGNS_REGEX: 4,
+    PRECEDED_BY_EQUAL_COMPARISON_SIGNS_QUOTES_REQUIRED_REGEX: 2,
+    FOLLOWED_BY_EQUAL_SIGNS_REGEX: 5,
+    FOLLOWED_BY_QUOTES_AND_SEMICOLON_REGEX: 3,
+}
+COMMON_C_DENYLIST_REGEX_TO_GROUP = {
+    FOLLOWED_BY_EQUAL_SIGNS_OPTIONAL_BRACKETS_OPTIONAL_AT_SIGN_QUOTES_REQUIRED_REGEX: 6,
+}
+C_PLUS_PLUS_REGEX_TO_GROUP = {
+    FOLLOWED_BY_OPTIONAL_ASSIGN_QUOTES_REQUIRED_REGEX: 4,
+    FOLLOWED_BY_EQUAL_SIGNS_QUOTES_REQUIRED_REGEX: 5,
+}
+QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP = {
+    FOLLOWED_BY_COLON_QUOTES_REQUIRED_REGEX: 5,
+    PRECEDED_BY_EQUAL_COMPARISON_SIGNS_QUOTES_REQUIRED_REGEX: 2,
+    FOLLOWED_BY_EQUAL_SIGNS_QUOTES_REQUIRED_REGEX: 5,
+    FOLLOWED_BY_QUOTES_AND_SEMICOLON_REGEX: 3,
+    FOLLOWED_BY_ARROW_FUNCTION_SIGN_QUOTES_REQUIRED_REGEX: 4,
+}
+
+
+class KeywordDetector(BasePlugin):
+    """Scans for secret-sounding variable names.
+
+    This detector checks if denylisted keywords (like 'password', 'key', 'secret')
+    are present in variable assignments within the analyzed string. It is a general
+    purpose detector derived from Bandit.
+    """
+
+    @property
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'Secret Keyword'.
+        """
+        return 'Secret Keyword'
+
+    def __init__(self, keyword_exclude: Optional[str] = None) -> None:
+        """Initializes the KeywordDetector.
+
+        Args:
+            keyword_exclude (Optional[str]): A regex pattern string. If a variable
+                matches this pattern, it will be excluded from results even if it
+                matches the denylist.
+        """
+        self.keyword_exclude = None
+        if keyword_exclude:
+            self.keyword_exclude = re.compile(
+                keyword_exclude,
+                re.IGNORECASE,
+            )
+
+    def analyze_string(
+        self,
+        string: str,
+        denylist_regex_to_group: Optional[Dict[Pattern, int]] = None,
+        **kwargs: Any,
+    ) -> Generator[str, None, None]:
+        """Scans the string for secret keywords using regex matching.
+        
+        
+
+        The detection process iterates through a set of regex patterns mapped to
+        specific capture groups. If a match is found, the value in the capture
+        group (the potential secret) is yielded.
+
+        Args:
+            string (str): The text content to analyze.
+            denylist_regex_to_group (Optional[Dict[Pattern, int]]): A mapping of
+                regex patterns to the capture group index containing the secret value.
+                If None, defaults to `QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP`.
+            **kwargs: Arbitrary keyword arguments.
+
+        Yields:
+            str: The potential secret value found in the string.
+        """
+        if self.keyword_exclude and self.keyword_exclude.search(string):
+            return
+
+        if denylist_regex_to_group is None:
+            attempts = [
+                QUOTES_REQUIRED_DENYLIST_REGEX_TO_GROUP,
+            ]
+        else:
+            attempts = [denylist_regex_to_group]
+
+        has_results = False
+        for denylist_regex_to_group in attempts:
+            for denylist_regex, group_number in denylist_regex_to_group.items():
+                match = denylist_regex.search(string)
+                if match:
+                    has_results = True
+                    yield match.group(group_number)
+
+            if has_results:
+                break
+
+    def analyze_line(
+        self,
+        line: str,
+        **kwargs: Any,
+    ) -> Set[PotentialSecret]:
+        """Examines a line and finds all possible secret values in it.
+
+        Args:
+            line (str): The line of text to analyze.
+            **kwargs: Arbitrary keyword arguments passed to analyze_string.
+
+        Returns:
+            Set[PotentialSecret]: A set of PotentialSecret objects found in the line.
+        """
+        return super().analyze_line(
+            line=line,
+        )
+
+    def json(self) -> Dict[str, Any]:
+        """Returns a JSON-serializable representation of the plugin configuration.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the class name and the
+            `keyword_exclude` pattern (if present).
+        """
+        return {
+            'keyword_exclude': (
+                self.keyword_exclude.pattern
+                if self.keyword_exclude
+                else ''
+            ),
+            **super().json(),
+        }
