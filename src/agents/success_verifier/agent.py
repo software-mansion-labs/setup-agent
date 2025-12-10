@@ -66,7 +66,7 @@ class SuccessVerifier(BaseCustomAgent):
                 Choice("Partial success - works but with errors", value=VerificationOutcome.PARTIAL_SUCCESS),
                 Choice("Failure - critical error occurred", value=VerificationOutcome.FAILURE),
             ],
-            default=VerificationOutcome.SUCCESS.value
+            default=VerificationOutcome.SUCCESS
         ).unsafe_ask()
         
         state["outcome"] = outcome
