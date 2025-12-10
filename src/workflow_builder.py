@@ -6,6 +6,7 @@ from nodes import GuidelinesRetrieverNode, TaskIdentifierNode
 from agents.installer.agent import Installer
 from agents.planner.agent import Planner
 from agents.auditor.agent import Auditor
+from agents.success_verifier.agent import SuccessVerifier
 from dotenv import load_dotenv
 from config import Config
 from shell import ShellRegistry
@@ -51,6 +52,8 @@ class WorkflowBuilder:
         self.installer_agent = Installer()
         self.runner_agent = Runner()
         self.auditor_agent = Auditor()
+        self.success_verifier = SuccessVerifier()
+        self.logger = LoggerFactory.get_logger(name="WORKFLOW_BUILDER")
 
     def _build_workflow(self):
         self.graph = StateGraph(GraphState)
@@ -70,6 +73,7 @@ class WorkflowBuilder:
         self.graph.add_node(Node.INSTALLER_AGENT.value, self.installer_agent.invoke)
         self.graph.add_node(Node.RUNNER_AGENT.value, self.runner_agent.invoke)
         self.graph.add_node(Node.AUDITOR_AGENT.value, self.auditor_agent.invoke)
+        self.graph.add_node(Node.SUCCESS_VERIFIER.value, self.success_verifier.invoke)
 
     def _add_edges(self) -> None:
         self.graph.add_edge(Node.START.value, Node.GUIDELINES_RETRIEVER_NODE.value)
@@ -88,17 +92,30 @@ class WorkflowBuilder:
             {
                 Node.INSTALLER_AGENT.value: Node.INSTALLER_AGENT.value,
                 Node.RUNNER_AGENT.value: Node.RUNNER_AGENT.value,
+                Node.SUCCESS_VERIFIER.value: Node.SUCCESS_VERIFIER.value,
                 Node.END.value: Node.END.value,
             },
+        )
+        self.graph.add_conditional_edges(
+            Node.SUCCESS_VERIFIER,
+            self.route_success_verifier,
+            {
+                Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
+                Node.END.value: Node.END.value
+            }
         )
 
     @staticmethod
     def route_planner(state: GraphState) -> Node:
         next_node = state.get("next_node")
-
-        if not next_node:
-            return Node.END
         if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
+            return next_node
+        return Node.SUCCESS_VERIFIER
+    
+    @staticmethod
+    def route_success_verifier(state: GraphState) -> Node:
+        next_node = state.get("next_node")
+        if next_node == Node.PLANNER_AGENT.value:
             return next_node
         return Node.END
 

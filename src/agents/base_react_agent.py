@@ -23,7 +23,7 @@ T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", bound=CustomAgentState)
 
 
-class BaseAgent(BaseLLMNode):
+class BaseReactAgent(BaseLLMNode[GraphState]):
     """
     Abstract base class for all agents.
     Provides shared interface and utility methods.

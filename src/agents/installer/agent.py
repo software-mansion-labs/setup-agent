@@ -13,7 +13,7 @@ from tools import (
     use_arrow_keys_sequence,
     use_keyboard_keys
 )
-from agents.base_agent import BaseAgent
+from agents.base_react_agent import BaseReactAgent
 from shell import ShellRegistry
 from agents.installer.prompts import InstallerPrompts
 from typing import List
@@ -22,7 +22,7 @@ from questionary import select
 from shell import BaseShell
 from agents.installer.types import StepExplanation
 
-class Installer(BaseAgent):
+class Installer(BaseReactAgent):
     """Agent responsible for managing installation steps within a workflow.
 
     The `Installer` class acts as a specialized automation agent that
