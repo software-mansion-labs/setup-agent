@@ -5,11 +5,25 @@ from shell.types import (
     StreamToShellOutput,
     LongRunningShellInteractionReviewLLMResponse
 )
-from typing import Optional
+from typing import Optional, List, Tuple
 from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
 from shell.base_shell import BaseShell
 from uuid import UUID
+import fnmatch
 
+
+FORBIDDEN_PATHS: List[str] = [
+    "/home/*/.ssh/*",
+    "/home/*/.gnupg/*",
+    "/home/*/.aws/*",
+    "/home/*/.config/*",
+    "*.env",
+    ".*env*",
+    "*secret*",
+    "*password*",
+    "*token*",
+    "*credential*",
+]
 
 class InteractiveShell(BaseShell):
     """
@@ -97,6 +111,14 @@ class InteractiveShell(BaseShell):
         Returns:
             StreamToShellOutput: A structured object representing the command output.
         """
+        is_forbidden, pattern = self._is_forbidden_command(command=command)
+        if is_forbidden:
+            return StreamToShellOutput(
+                needs_action=False,
+                reason=f"Command attempts to access forbidden files or secrets: {pattern}",
+                output="Access denied: this command is not allowed."
+            )
+
         return self.send_line(sequence=command, hide_input=hide_input)
 
     def _review_for_interaction(self, buffer: str) -> InteractionReview:
@@ -164,6 +186,7 @@ class InteractiveShell(BaseShell):
                     self._buffer = self._mask_sequence_in_text(
                         self._buffer, sequence=sequence, hide_input=hide_input
                     )
+                    self._buffer = self._redact_text(self._buffer)
 
                     result = self._evaluate_buffer_state()
                     if result:
@@ -176,6 +199,7 @@ class InteractiveShell(BaseShell):
                 break
             
         self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
+        self._buffer = self._redact_text(self._buffer)
         
         self._log_to_file("\n")
         self.logger.info("Command finished")
@@ -262,3 +286,10 @@ class InteractiveShell(BaseShell):
         )
 
         return long_running_review
+
+    def _is_forbidden_command(self, command: str) -> Tuple[bool, Optional[str]]:
+        command_lower = command.lower()
+        for pattern in FORBIDDEN_PATHS:
+            if fnmatch.fnmatch(command_lower, f"*{pattern.lower()}*"):
+                return True, f"*{pattern.lower()}*"
+        return False, None

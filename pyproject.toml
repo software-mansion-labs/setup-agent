@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "dotenv>=0.9.9",
+    "gibberish-detector>=0.1.1",
     "langchain==1.0.4",
     "langchain-anthropic>=0.3.22",
     "langchain-community>=0.3.31",
@@ -18,8 +19,10 @@ dependencies = [
     "markdown>=3.9",
     "pexpect>=4.9.0",
     "pre-commit>=4.3.0",
+    "pyahocorasick>=2.2.0",
     "questionary>=2.1.1",
     "typer>=0.20.0",
+    "unidiff>=0.7.5",
     "unstructured>=0.18.15",
 ]
 
