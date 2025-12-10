@@ -1,39 +1,57 @@
-"""
-This plugin searches for GitLab tokens
-"""
+"""This plugin searches for GitLab tokens."""
 import re
+from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
 
 class GitLabTokenDetector(RegexBasedDetector):
-    """Scans for GitLab tokens."""
+    """Scans for GitLab tokens.
+
+    This detector identifies various GitLab token types (Personal Access Tokens,
+    Deploy Tokens, Runner Tokens, etc.) based on their specific prefixes
+    introduced to allow for secret scanning.
+    """
+
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'GitLab Token'.
+        """
         return 'GitLab Token'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
+        """Returns the list of regex patterns to search for.
+
+        This list covers a wide range of GitLab token formats, most of which follow
+        the pattern `prefix-token`.
+
+        Supported token types and prefixes:
+        - Personal Access Token (`glpat-`): User authentication.
+        - Deploy Token (`gldt-`): Repository access.
+        - Feed Token (`glft-`): RSS/Atom feed access.
+        - OAuth Access Token (`glsoat-`): OAuth flow.
+        - Runner Token (`glrt-`): Runner authentication.
+        - Runner Registration Token (`GR1348941`): Registering new runners.
+        - CI/CD Job Token (`glcbt-`): Authentication within CI jobs.
+        - Incoming Mail Token (`glimt-`): Email ingestion.
+        - Pipeline Trigger Token (`glptt-`): Triggering pipelines.
+        - Agent Token (`glagent-`): Kubernetes agent.
+        - OAuth Application Secret (`gloas-`): OAuth app credentials.
+
+        References:
+            - https://docs.gitlab.com/ee/security/token_overview.html#gitlab-tokens
+            - https://gitlab.com/groups/gitlab-org/-/epics/8923
+
+        Returns:
+            List[Pattern]: A list of compiled regular expression patterns.
+        """
         return [
-            # ref:
-            #  - https://docs.gitlab.com/ee/security/token_overview.html#gitlab-tokens
-            #  - https://gitlab.com/groups/gitlab-org/-/epics/8923
-            #  - https://github.com/gitlabhq/gitlabhq/blob/master/gems
-            #        /gitlab-secret_detection/lib/gitleaks.toml#L6-L76
-
-            # `gl..-` prefix and a token of length >20
-            #    characters are typically alphanumeric, underscore, dash
-            # Most tokens are generated either with:
-            #  - `Devise.friendly_token`, a string with a default length of 20, or
-            #  - `SecureRandom.hex`, default data size of 16 bytes, encoded in different ways.
-            # String length may vary depending on the type of token, and probably
-            # even GL-settings in the future, so we expect between 20 and 50 chars.
-
-            # Personal Access Token - glpat
-            # Deploy Token - gldt
-            # Feed Token - glft
-            # OAuth Access Token - glsoat
-            # Runner Token - glrt
+            # Personal Access Token, Deploy Token, Feed Token, OAuth Access Token, Runner Token
+            # Expected length: 20-50 chars (alphanumeric, underscore, dash)
             re.compile(
                 r'(glpat|gldt|glft|glsoat|glrt)-'
                 r'[A-Za-z0-9_\-]{20,50}(?!\w)',

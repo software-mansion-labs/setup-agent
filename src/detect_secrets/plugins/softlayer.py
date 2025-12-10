@@ -1,18 +1,24 @@
+"""This plugin searches for SoftLayer credentials."""
 import re
-from typing import List, Optional
+from typing import List, Pattern
 
-import requests
-
-from detect_secrets.constants import VerifiedResult
-from detect_secrets.util.code_snippet import CodeSnippet
 from detect_secrets.plugins.base import RegexBasedDetector
 
 
 class SoftlayerDetector(RegexBasedDetector):
-    """Scans for Softlayer credentials."""
+    """Scans for SoftLayer credentials.
+
+    This detector identifies SoftLayer API keys (64-character lowercase
+    alphanumeric strings) in both variable assignments and direct SOAP API URLs.
+    """
 
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'SoftLayer Credentials'.
+        """
         return 'SoftLayer Credentials'
 
     sl = r'(?:softlayer|sl)(?:_|-|)(?:api|)'
@@ -20,7 +26,18 @@ class SoftlayerDetector(RegexBasedDetector):
     secret = r'([a-z0-9]{64})'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
+        """Returns the list of regex patterns to search for.
+
+        The patterns look for:
+        1.  **Assignments:** Variables with names containing 'softlayer' or 'sl'
+            assigned to a 64-character lowercase alphanumeric string.
+        2.  **SOAP URLs:** API keys embedded directly in SoftLayer SOAP API endpoints
+            (e.g., `api.softlayer.com/soap/v3/KEY`).
+
+        Returns:
+            List[Pattern]: A list of compiled regular expression patterns.
+        """
         return [
             RegexBasedDetector.build_assignment_regex(
                 prefix_regex=self.sl,
@@ -33,57 +50,3 @@ class SoftlayerDetector(RegexBasedDetector):
                 flags=re.IGNORECASE,
             ),
         ]
-
-    def verify(
-        self,
-        secret: str,
-        context: Optional[CodeSnippet]=None,
-    ) -> VerifiedResult:
-        if context is not None:
-            usernames = find_username(context)
-            if not usernames:
-                return VerifiedResult.UNVERIFIED
-
-            for username in usernames:
-                return verify_softlayer_key(username, secret)
-
-        return VerifiedResult.VERIFIED_FALSE
-
-
-def find_username(context: CodeSnippet) -> List[str]:
-    username_keyword = (
-        r'(?:'
-        r'username|id|user|userid|user-id|user-name|'
-        r'name|user_id|user_name|uname'
-        r')'
-    )
-    username = r'(\w(?:\w|_|@|\.|-)+)'
-    regex = re.compile(
-        RegexBasedDetector.build_assignment_regex(
-            prefix_regex=SoftlayerDetector.sl,
-            secret_keyword_regex=username_keyword,
-            secret_regex=username,
-        ),
-    )
-
-    return [
-        match
-        for line in context
-        for match in regex.findall(line)
-    ]
-
-
-def verify_softlayer_key(username: str, token: str) -> VerifiedResult:
-    headers = {'Content-type': 'application/json'}
-    try:
-        response = requests.get(
-            'https://api.softlayer.com/rest/v3/SoftLayer_Account.json',
-            auth=(username, token), headers=headers,
-        )
-    except requests.exceptions.RequestException:
-        return VerifiedResult.UNVERIFIED
-
-    if response.status_code == 200:
-        return VerifiedResult.VERIFIED_TRUE
-    else:
-        return VerifiedResult.VERIFIED_FALSE

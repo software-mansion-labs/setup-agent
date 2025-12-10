@@ -22,17 +22,17 @@ class PersonalInformationMiddleware(AgentMiddleware):
         result = handler(request)
 
         if isinstance(result, ToolMessage):
-            content_str = result.content if isinstance(result.content, str) else str(result.content)
-            result_output_values = retrieve_key_value_pairs(content_str).values()
+            updated_result = result.model_copy()
+            content_str = str(result.content)
             secrets_collection = SecretsCollection()
             potential_secrets = []
-            for value in result_output_values:
-                for secret in secrets_collection.scan_text(value):
-                    if secret["is_secret"]:
-                        potential_secrets.append(secret["secret_value"])
+            for secret in secrets_collection.scan_text(content_str):
+                if secret["is_secret"]:
+                    potential_secrets.append(secret["secret_value"])
 
             for secret in set(potential_secrets):
                 content_str = content_str.replace(secret, "[REDACTED_PERSONAL_INFORMATION]")
-            result.content = content_str
+            updated_result.content = content_str
+            return updated_result
 
         return result

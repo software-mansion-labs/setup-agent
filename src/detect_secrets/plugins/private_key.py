@@ -25,23 +25,47 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 import re
+from typing import List, Pattern
 
-from .base import RegexBasedDetector
+from detect_secrets.plugins.base import RegexBasedDetector
 
 
 class PrivateKeyDetector(RegexBasedDetector):
-    """
-    Scans for private keys.
+    """Scans for private keys.
 
-    This checks for private keys by determining whether the denylisted
-    lines are present in the analyzed string.
+    This detector identifies private keys by searching for standard PEM headers
+    (Begin/End blocks) and other common key file markers (like PuTTY).
     """
+
     @property
-    def secret_type(self):
+    def secret_type(self) -> str:
+        """Returns the secret type identifier.
+
+        Returns:
+            str: The string identifier 'Private Key'.
+        """
         return 'Private Key'
 
     @property
-    def denylist(self):
+    def denylist(self) -> List[Pattern]:
+        """Returns the list of regex patterns to search for.
+        
+        The patterns target the header lines typical of private key files,
+        which provides high-confidence detection with low false positives.
+
+        Supported formats:
+        - DSA Private Keys
+        - EC (Elliptic Curve) Private Keys
+        - OpenSSH Private Keys (modern format)
+        - PGP Private Key Blocks
+        - Generic Private Keys (PKCS#8)
+        - RSA Private Keys
+        - SSH2 Encrypted Private Keys
+        - PuTTY User Key Files (Version 2)
+
+        Returns:
+            List[Pattern]: A list of compiled regular expression patterns.
+        """
         return [
             re.compile(regexp)
             for regexp in (
