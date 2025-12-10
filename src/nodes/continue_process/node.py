@@ -16,7 +16,7 @@ class ContinueProcessNode(BaseLLMNode):
         self._guidelines_selector = GuidelinesSelector(self._file_loader)
         self._task_selector = TaskSelector()
 
-    def invoke(self, state: GraphState):
+    def invoke(self, state: GraphState) -> GraphState:
         while True:
             current_task = state.get("chosen_task", "Unknown Task")
             
