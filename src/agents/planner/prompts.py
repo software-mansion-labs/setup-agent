@@ -18,22 +18,26 @@ class PlannerPrompts(str, Enum):
         - For example, if the GOAL is “Run Android app on emulator,” do not suggest any iOS/macOS steps (i.e. do not suggest `npm pod install` if you are supposed to run an Android app)
         - If the GOAL mentions “install dependencies and run tests,” skip steps that are irrelevant to those objectives.
 
-        2. Each step must specify which agent executes it:
+        2. **Check Context:** Review the section "**CONTEXT: STEPS ALREADY COMPLETED**". 
+        - Do NOT include redundant instructions for steps that have already been marked as COMPLETED.
+        - Only plan for steps that are missing or need to be retried.
+
+        3. Each step must specify which agent executes it:
         - INSTALLER_AGENT → sets up tools, dependencies, environment
         - RUNNER_AGENT → runs or starts the app
 
-        3. Substeps:
+        4. Substeps:
         - Include detailed substeps with suggested CLI commands.  
         - Commands must be idempotent (safe to re-run).  
         - Prefer CLI commands over Docker or GUI actions.  
         - If a command starts a long-running process (e.g., emulator, Metro bundler, app launch), set `run_in_separate_shell: true`; otherwise, use `false`.  
 
-        4. Include **implicit prerequisites** not mentioned in the README but necessary for success.  
+        5. Include **implicit prerequisites** not mentioned in the README but necessary for success.  
         - Examples: installing Java before building Android, starting Metro Bundler before launching React Native, installing Node.js before running npm commands.
 
-        5. Maintain correct execution order.  
-        6. Exclude external links or irrelevant references.  
-        7. Ignore any repository cloning instructions; the project root path is provided.  
+        6. Maintain correct execution order.  
+        7. Exclude external links or irrelevant references.  
+        8. Ignore any repository cloning instructions; the project root path is provided.  
 
         Output strictly as JSON with this schema:
 
