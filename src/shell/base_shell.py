@@ -10,7 +10,7 @@ from llm import StructuredLLM
 from utils.secrets_redactor import SecretsRedactor
 import os
 
-ANSI_ESCAPE_RE = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
+ANSI_ESCAPE_RE = re.compile(r'\x1B(?:\[[0-?]*[ -/]*[@-~]|[=><!])')
 PROGRESS_RE = re.compile(r"\d{1,3}\.\d%#+\s*")
 ZSH_ARTIFACT_RE = re.compile(r"%\s+(\r|$)")
 SPINNER_CHARS = set("⠏⠋⠙⠹⠸⠼⠴⠦⠧⠇|/-\\")
@@ -192,6 +192,29 @@ class BaseShell(ABC):
             'Hello'
         """
         return ANSI_ESCAPE_RE.sub("", sequence)
+    
+    def _remove_progress_noise(self, sequence: str) -> str:
+        """
+        Remove progress indicators (spinners, progress bars) from a sequence.
+        
+        Args:
+            sequence (str): The input string that may contain progress noise.
+        
+        Returns:
+            str: The input string with progress noise removed.
+        """
+        sequence = PROGRESS_RE.sub("", sequence)
+        
+        lines = sequence.split('\n')
+        cleaned_lines = []
+        
+        for line in lines:
+            stripped = line.strip()
+            if stripped and all(ch in SPINNER_CHARS for ch in stripped):
+                continue
+            cleaned_lines.append(line)
+        
+        return '\n'.join(cleaned_lines)
 
     def _remove_carriage_character(self, sequence: str) -> str:
         """
@@ -270,9 +293,9 @@ class BaseShell(ABC):
 
         if PROGRESS_RE.search(sequence):
             return True
-        if sequence and all(ch in SPINNER_CHARS for ch in sequence.strip()):
-            return True
-        return False
+        
+        stripped = sequence.strip()
+        return len(stripped) > 0 and all(ch in SPINNER_CHARS for ch in stripped)
 
     def _clean_chunk(self, chunk: str) -> str:
         """
@@ -296,6 +319,7 @@ class BaseShell(ABC):
             self._remove_zsh_artifacts,
             self._remove_carriage_character,
             self._apply_backspaces,
+            self._remove_progress_noise
         ]
         return reduce(lambda acc, func: func(acc), cleaning_pipeline, chunk)
 
