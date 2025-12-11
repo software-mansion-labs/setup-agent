@@ -1,13 +1,13 @@
 from config import Config
-from typing import List, Literal
+from typing import List
 import os
 from itertools import chain
 from graph_state import GuidelineFile, Node, GraphState
-from questionary import checkbox, path
 from nodes.base_llm_node import BaseLLMNode
 from utils.file_loader import FileLoader
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
 from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
+from user_prompts.guidelines_selector import GuidelinesSelector
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):
@@ -16,6 +16,7 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         self._config = Config.get()
         self._project_root = self._config.project_root
         self._file_loader = FileLoader(project_root=self._project_root)
+        self._guidelines_selector = GuidelinesSelector(self._file_loader)
 
     def _filter_non_relevant_subdirectories(self, subdir_paths: List[str]) -> List[str]:
         """
@@ -117,96 +118,6 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         self.logger.info(f"Supported files found: {len(supported_files)}")
         return supported_files
     
-    def _validate_checkbox_selection(self, choices: List[str]) -> Literal[True] | str:
-        """
-        Validate that at least one option is selected in the checkbox.
-
-        Args:
-            choices (List[str]): List of selected choices.
-
-        Returns:
-            Literal[True] | str: True if valid, error message otherwise.
-        """
-        if len(choices) > 0:
-            return True
-        return "You must choose at least one option."
-
-    def _validate_custom_path(self, selected_files: List[str], manual_files: List[str], path: str) -> Literal[True] | str:
-        """
-        Create a validator function for custom path input.
-        Returns a closure that captures the selected_files list.
-
-        Args:
-            selected_files (List[str]): List of files already selected from checkbox.
-            manual_files (List[str]): List of files already manually entered.
-            path (str): The current path input to validate.
-
-        Returns:
-            Literal[True] | str: True if valid, error message otherwise.
-        """
-        if len(selected_files) > 0 or len(manual_files) > 0:
-            return True
-        if len(path.strip()) > 0:
-            return True
-        return "You must choose at least one valid file."
-        
-
-    def _prompt_user_selection(
-        self, guideline_files: List[GuidelineFile]
-    ) -> List[GuidelineFile]:
-        """
-        Prompts the user to select specific guideline files from the detected list.
-
-        Allows the user to select from detected files via a checkbox interface and 
-        optionally manually enter paths for other files.
-
-        Args:
-            guideline_files (List[GuidelineFile]): A list of detected guideline files.
-
-        Returns:
-            List[GuidelineFile]: The final list of guideline files selected or added by the user.
-        """
-        if not guideline_files:
-            self.logger.warning("No guideline files found.")
-            return []
-
-        sorted_guideline_files = sorted(guideline_files, key=lambda gf: len(gf.file.split("/")))
-        OTHER_OPTION = "Other: (Enter manual path)"
-        choices = [*[gf.file for gf in sorted_guideline_files], OTHER_OPTION]
-
-        selected_files = checkbox(
-            message="Select guideline files to use",
-            choices=choices,
-            default=choices[0] if choices else None,
-            validate=self._validate_checkbox_selection
-        ).ask()
-
-        manual_paths = []      
-        if OTHER_OPTION in selected_files:
-            selected_files.remove(OTHER_OPTION)
-            
-            while True:
-                custom_path = path(
-                    message="Please enter the file path (or press Enter to finish):",
-                    validate=lambda path: self._validate_custom_path(selected_files, manual_paths, path)
-                ).ask()
-                
-                if not custom_path or not custom_path.strip():
-                    break
-                
-                manual_paths.append(custom_path.strip())
-
-        final_selection = [gf for gf in guideline_files if gf.file in selected_files]
-        for manual_path in manual_paths:
-            if any(gf.file == manual_path for gf in final_selection):
-                continue
-            content = self._file_loader.load_document(manual_path)
-            if not content:
-                continue
-            final_selection.append(GuidelineFile(file=manual_path, content=content))
-
-        return final_selection
-
     def _get_guideline_files(self) -> List[GuidelineFile]:
         """
         Retrieves the list of guideline files to be processed.
@@ -237,8 +148,10 @@ class GuidelinesRetrieverNode(BaseLLMNode):
             GraphState: The updated state containing the selected guideline files.
         """
         self.logger.info("Retrieving guidelines from the project")
-        guideline_files = self._get_guideline_files()
-        selected_files = self._prompt_user_selection(guideline_files=guideline_files)
-        state["guideline_files"] = selected_files
+        possible_guideline_files = self._get_guideline_files()
+        state["possible_guideline_files"] = possible_guideline_files
+        
+        selected_files = self._guidelines_selector.select_guidelines(guideline_files=possible_guideline_files)
+        state["selected_guideline_files"] = selected_files
 
         return state
