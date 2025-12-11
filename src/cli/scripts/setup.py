@@ -1,6 +1,5 @@
 import typer
 from workflow_builder import WorkflowBuilder
-from typing import List, Optional
 import questionary
 import os
 
