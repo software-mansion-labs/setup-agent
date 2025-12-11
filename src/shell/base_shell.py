@@ -295,10 +295,7 @@ class BaseShell(ABC):
             return True
         
         stripped = sequence.strip()
-        if len(stripped) > 0 and all(ch in SPINNER_CHARS for ch in stripped):
-            return True
-        
-        return False
+        return len(stripped) > 0 and all(ch in SPINNER_CHARS for ch in stripped)
 
     def _clean_chunk(self, chunk: str) -> str:
         """
