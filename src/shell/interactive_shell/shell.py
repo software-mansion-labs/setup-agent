@@ -1,16 +1,33 @@
 import pexpect
+import fnmatch
+from uuid import UUID
+from typing import Optional, List, Tuple
+from pydantic import BaseModel, Field
+from questionary import select, text
+
 from shell.types import (
     InteractionReviewLLMResponse,
     InteractionReview,
     StreamToShellOutput,
     LongRunningShellInteractionReviewLLMResponse
 )
-from typing import Optional, List, Tuple
 from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
 from shell.base_shell import BaseShell
-from uuid import UUID
-import fnmatch
 from rich.console import Console
+from shell.security_context import SecurityContext
+
+class SecurityCheckLLMResponse(BaseModel):
+    is_safe: bool = Field(
+        ..., 
+        description="True if command is a safe write OR accesses only whitelisted files. False otherwise."
+    )
+    reason: str = Field(..., description="Reasoning for the decision.")
+
+class FileExtractionResponse(BaseModel):
+    file_path: Optional[str] = Field(
+        None, 
+        description="The specific sensitive file path extracted from the command, or None if unclear."
+    )
 
 
 FORBIDDEN_PATHS: List[str] = [
@@ -28,19 +45,13 @@ FORBIDDEN_PATHS: List[str] = [
 
 class InteractiveShell(BaseShell):
     """
-    A persistent interactive shell interface with streaming output and
-    LLM-based detection of user interaction requirements.
-
-    Features:
-    - Spawns a persistent zsh shell.
-    - Streams command output in real time.
-    - Cleans shell output by removing ANSI codes, carriage returns, and handling backspaces.
-    - Uses an LLM to determine if the shell is awaiting user input.
-    - Logs shell output and LLM decisions.
+    A persistent interactive shell interface with streaming output,
+    LLM-based detection of user interaction, and global security context.
     """
 
     def __init__(
         self,
+        security_context: SecurityContext,
         id: Optional[UUID] = None,
         log_file: Optional[str] = None,
         init_timeout: int = 10,
@@ -48,8 +59,7 @@ class InteractiveShell(BaseShell):
         read_timeout: int = 2,
     ) -> None:
         """
-        Initialize the interactive shell and set up environment.
-        Starts a persistent zsh shell and sets a simple prompt.
+        Initialize the interactive shell.
         """
         super().__init__(id=id, init_timeout=init_timeout)
         self._log_file = log_file
@@ -60,6 +70,7 @@ class InteractiveShell(BaseShell):
             log_time_format="[%Y-%m-%d %H:%M:%S]"
         )
         self._console_log_prefix = f"[bold blue][INFO] [{self.name}]:[/bold blue]"
+        self._security_context = security_context
 
     def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
@@ -118,14 +129,120 @@ class InteractiveShell(BaseShell):
             StreamToShellOutput: A structured object representing the command output.
         """
         is_forbidden, pattern = self._is_forbidden_command(command=command)
-        if is_forbidden:
-            return StreamToShellOutput(
-                needs_action=False,
-                reason=f"Command attempts to access forbidden files or secrets: {pattern}",
-                output="Access denied: this command is not allowed."
-            )
+        
+        if is_forbidden and pattern:
+            is_safe = self._check_command_intent(command, pattern)
+            
+            if not is_safe:
+                return self._handle_forbidden_command(
+                    command=command,
+                    hide_input=hide_input,
+                    forbidden_pattern=pattern
+                )
+            else:
+                self.logger.info(f"Allowed sensitive command (Safe Write or Whitelisted): {pattern}")
 
         return self.send_line(sequence=command, hide_input=hide_input)
+    
+    def _check_command_intent(self, command: str, pattern: str) -> bool:
+        """
+        Uses LLM to determine if command is safe (Blind Write) or Whitelisted.
+        """
+        whitelist_str = self._security_context.get_whitelist_str()
+        
+        system_prompt = (
+            "You are a shell security auditor. Your goal is to protect sensitive files.\n"
+            "Analyze the shell command provided by the user.\n\n"
+            f"1. The command triggered the forbidden pattern: '{pattern}'\n"
+            f"2. The user has explicitly WHITELISTED these paths: [{whitelist_str}]\n\n"
+            "Decision Rules:\n"
+            "- ALLOW (True) if the command ONLY reads/accesses files found in the WHITELIST.\n"
+            "- ALLOW (True) if the command is a pure 'Blind Write' (overwriting without reading), even if not whitelisted.\n"
+            "- DENY (False) if the command reads, prints, or exposes a non-whitelisted sensitive file.\n"
+        )
+
+        try:
+            response = self._llm.invoke(
+                schema=SecurityCheckLLMResponse,
+                system_message=system_prompt,
+                input_text=command,
+            )
+            return response.is_safe
+        except Exception as e:
+            self.logger.error(f"Security intent check failed: {e}")
+            return False
+
+    def _handle_forbidden_command(self, command: str, hide_input: bool, forbidden_pattern: str) -> StreamToShellOutput:
+        """
+        Handles user interaction when a command is blocked.
+        Allows 'Allow', 'Skip' (Block), or 'Manual Execution'.
+        """
+        command_to_display = self._mask_sequence(sequence=command, hide_input=hide_input)
+        
+        print(f"\nSecurity Alert: Command matches forbidden pattern '{forbidden_pattern}'")
+        print(f"   Command: {command_to_display}")
+
+        action = select(
+            message="Choose an action:",
+            choices=[
+                "Execute manually & paste output",
+                "Allow once", 
+                "Allow & Whitelist this file (Session)", 
+                "Block / Skip command", 
+            ],
+            default="Block / Skip command",
+        ).unsafe_ask()
+
+        if action == "Execute manually & paste output":
+            print(f"\n{'-'*40}")
+            print("📝 MANUAL EXECUTION INSTRUCTIONS")
+            print(f"{'-'*40}")
+            print("1. Open a new terminal window.")
+            print(f"2. Run this command:\n\n   {command_to_display}\n")
+            print("3. Once done, copy the output (if any) and paste it below.")
+            print(f"{'-'*40}")
+            
+            user_output = text(
+                "Paste command output here (press Enter if no output):",
+                multiline=True
+            ).unsafe_ask()
+
+            self.logger.info(f"Command executed manually by user: {command_to_display}")
+            
+            return StreamToShellOutput(
+                needs_action=False,
+                reason="User executed command manually.",
+                output=user_output + "\n"
+            )
+
+        if action == "Block / Skip command":
+            return StreamToShellOutput(
+                needs_action=False,
+                reason=f"User blocked command matching: {forbidden_pattern}",
+                output="Access denied by user. Command was skipped."
+            )
+
+        if action == "Allow & Whitelist this file (Session)":
+            extracted_file = self._extract_sensitive_path(command)
+            if extracted_file:
+                self._security_context.add_to_whitelist(extracted_file)
+                self.logger.info(f"Globally whitelisted file: {extracted_file}")
+            else:
+                self.logger.warning("Could not extract specific file to whitelist; allowing once.")
+
+        return self.send_line(sequence=command, hide_input=hide_input)
+
+    def _extract_sensitive_path(self, command: str) -> Optional[str]:
+        """Helper to extract the sensitive file path for whitelisting."""
+        try:
+            response = self._llm.invoke(
+                schema=FileExtractionResponse,
+                system_message="Extract the specific file path that is likely sensitive (e.g., .env, id_rsa) from this command. Return just the path string.",
+                input_text=command
+            )
+            return response.file_path
+        except Exception:
+            return None
 
     def _review_for_interaction(self, buffer: str) -> InteractionReview:
         """
@@ -150,16 +267,7 @@ class InteractiveShell(BaseShell):
 
     def stream_command(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
-        Run a command in the shell, stream output, and use the LLM to detect
-        if user interaction is required.
-
-        Args:
-            sequence (str): Command to execute in the shell.
-            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
-
-        Returns:
-            StreamToShellOutput: Either the final shell output (needs_action=False) or
-                                 an LLM decision indicating that interaction is required.
+        Run a command in the shell, stream output, and detect interaction.
         """
         command_to_display = self._mask_sequence(sequence=sequence, hide_input=hide_input)
             

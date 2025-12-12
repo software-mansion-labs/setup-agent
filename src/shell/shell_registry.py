@@ -2,14 +2,19 @@ from __future__ import annotations
 from typing import Dict, Optional
 from uuid import UUID, uuid1
 from shell import InteractiveShell, BaseShell
+from shell.security_context import SecurityContext
 from utils.singleton_meta import SingletonMeta
 
 
 class ShellRegistry(metaclass=SingletonMeta):
-    def __init__(self, log_file: Optional[str] = None):
+    def __init__(self, log_file: Optional[str] = None) -> None:
         self.shell_registry: Dict[UUID, BaseShell] = {}
         self.log_file = log_file
-        self.main_shell = InteractiveShell(log_file=self.log_file)
+        self.security_context = SecurityContext()
+        self.main_shell = InteractiveShell(
+            security_context=self.security_context,
+            log_file=self.log_file,
+        )
 
     def register_new_shell(self) -> UUID:
         """
@@ -21,7 +26,11 @@ class ShellRegistry(metaclass=SingletonMeta):
         while uuid in self.shell_registry:
             uuid = uuid1()
 
-        shell = InteractiveShell(uuid, log_file=self.log_file)
+        shell = InteractiveShell(
+            security_context=self.security_context,
+            id=uuid,
+            log_file=self.log_file,
+        )
         self.shell_registry[uuid] = shell
 
         return uuid

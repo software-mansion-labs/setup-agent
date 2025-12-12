@@ -161,5 +161,5 @@ class WorkflowBuilder:
             sys.exit(0)
 
 if __name__ == "__main__":
-    builder = WorkflowBuilder(project_root="projects/expensify/App")
+    builder = WorkflowBuilder(project_root="projects/expensify/App", log_file="logs.txt")
     builder.run("Install all required tools according to the provided guidelines")
