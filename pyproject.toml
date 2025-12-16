@@ -17,7 +17,6 @@ dependencies = [
     "langgraph==1.0.2",
     "langsmith==0.4.39",
     "markdown>=3.9",
-    "pathvalidate>=3.3.1",
     "pexpect>=4.9.0",
     "pre-commit>=4.3.0",
     "pyahocorasick>=2.2.0",

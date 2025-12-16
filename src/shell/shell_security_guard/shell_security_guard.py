@@ -1,53 +1,24 @@
 import fnmatch
 import shlex
+import os
 from typing import Optional, Tuple
 from llm import StructuredLLM
-from questionary import select, text
-from shell.interactive_shell.shell_types import SecurityCheckLLMResponse
+from questionary import select, text, Choice
 from shell.security_context import SecurityContext
 from shell.shell_security_guard.constants import HandleForbiddenPatternChoices, FORBIDDEN_PATHS
 from shell.shell_security_guard.security_guard_types import SecurityVerdict, SecurityVerdictAction
-from shell.shell_security_guard.prompts import ShellSecurityGuardPrompts
-from pathvalidate import is_valid_filepath
+from config import Config
 
 class ShellSecurityGuard:
-    """Guards shell execution by validating commands against security protocols.
-
-    This class intercepts shell commands, checks them against a list of forbidden
-    patterns (e.g., sensitive file paths), and uses an LLM to determine the 
-    intent of the command. It handles user intervention if a command is flagged
-    as potentially unsafe.
-
-    Attributes:
-        security_context (SecurityContext): The context managing whitelists and security state.
-        llm (StructuredLLM): The language model interface used for intent verification.
-    """
+    """Guards shell execution by validating commands against security protocols."""
 
     def __init__(self, security_context: SecurityContext, llm: StructuredLLM):
-        """Initializes the ShellSecurityGuard.
-
-        Args:
-            security_context (SecurityContext): The context object for security settings.
-            llm (StructuredLLM): The structured LLM instance for processing prompts.
-        """
         self.security_context = security_context
         self.llm = llm
+        self._project_root = Config.get().project_root
 
     def review_command(self, command: str) -> SecurityVerdict:
-        """Validates a command and returns a verdict on how to proceed.
-
-        This is the main entry point for the security guard. It performs the following checks:
-        1. Checks if the command matches any forbidden string patterns.
-        2. If matched, asks the LLM to verify the intent against the whitelist.
-        3. If the LLM deems it unsafe, initiates user intervention.
-
-        Args:
-            command (str): The shell command string to be executed.
-
-        Returns:
-            SecurityVerdict: A data class containing the action (PROCEED, SKIPPED, 
-            COMPLETED_MANUALLY) and the reasoning or output.
-        """
+        """Validates a command and returns a verdict on how to proceed."""
         result = self._extract_sensitive_path(command)
         if result is None:
             return SecurityVerdict(
@@ -56,15 +27,10 @@ class ShellSecurityGuard:
             )
         forbidden_file, pattern = result
         
-        command_intent = self._check_command_intent(
-            command=command,
-            forbidden_file=forbidden_file,
-            pattern=pattern
-        )
-        if command_intent.is_safe:
+        if self._is_path_whitelisted(forbidden_file):
             return SecurityVerdict(
                 action=SecurityVerdictAction.PROCEED,
-                reason=f"Pattern '{pattern}' discoverd in the command, but LLM allowed it. Reason: {command_intent.reason}"
+                reason=f"Pattern '{pattern}' discovered in the command, but it's whitelisted."
             )
 
         return self._handle_intervention(
@@ -100,14 +66,19 @@ class ShellSecurityGuard:
             message="Choose an action:",
             choices=[
                 HandleForbiddenPatternChoices.ALLOW_ONCE.value,
-                HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST.value.format(file=forbidden_file),
+                Choice(
+                    title=HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST.value.format(
+                        file=os.path.relpath(self._resolve_path(forbidden_file), self._project_root)
+                    ),
+                    value=HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST.value
+                ),
                 HandleForbiddenPatternChoices.EXECUTE_MANUALLY.value,
                 HandleForbiddenPatternChoices.SKIP.value,
             ],
             default=HandleForbiddenPatternChoices.ALLOW_ONCE.value,
         ).unsafe_ask()
 
-        if action == HandleForbiddenPatternChoices.SKIP:
+        if action == HandleForbiddenPatternChoices.SKIP.value:
             return SecurityVerdict(action=SecurityVerdictAction.SKIPPED, reason=f"Blocked by user: {pattern}")
 
         if action == HandleForbiddenPatternChoices.EXECUTE_MANUALLY.value:
@@ -126,44 +97,18 @@ class ShellSecurityGuard:
                 output=user_output + "\n"
             )
 
-        if action == HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST:
-            self.security_context.add_to_whitelist(forbidden_file)
+        if action == HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST.value:
+            self.security_context.add_to_whitelist(self._resolve_path(forbidden_file))
 
         return SecurityVerdict(action=SecurityVerdictAction.PROCEED, reason="User allowed to proceed with the command execution.")
+    
+    def _is_path_whitelisted(self, path: str) -> bool:
+        abs_path = self._resolve_path(path)
+        return self.security_context.is_whitelisted(path=abs_path)
 
-    def _check_command_intent(
-            self,
-            command: str,
-            forbidden_file: str,
-            pattern: str
-        ) -> SecurityCheckLLMResponse:
-        """Consults the LLM to determine if the flagged command is actually safe.
-
-        Constructs a prompt containing the current whitelist and the specific pattern,
-        then invokes the StructuredLLM to get a structured boolean assessment of safety.
-
-        Args:
-            command (str): The shell command being analyzed.
-            forbidden_file (str): The  considered unsafe.
-
-        Returns:
-            SecurityCheckLLMResponse: The structured response from the LLM indicating 
-            safety status and reasoning.
-        """
-        whitelist_str = self.security_context.get_whitelist_str()
-        
-        system_prompt = ShellSecurityGuardPrompts.VERIFY_COMMAND_INTENT.format(
-            pattern=pattern,
-            forbidden_file=forbidden_file,
-            whitelist_str=whitelist_str
-        )
-        
-        return self.llm.invoke(
-            schema=SecurityCheckLLMResponse,
-            system_message=system_prompt,
-            input_text=command,
-        )
-
+    def _resolve_path(self, path: str) -> str:
+        return os.path.abspath(os.path.join(self._project_root, path))
+            
     def _extract_sensitive_path(self, command: str) -> Optional[Tuple[str, str]]:
         """Extracts the specific file path or token that triggered the security alert.
         
@@ -188,10 +133,22 @@ class ShellSecurityGuard:
 
                 for candidate in check_candidates:
                     pattern = self._is_forbidden_pattern(candidate)
-                    if pattern and is_valid_filepath(candidate):
+                    if not pattern:
+                        continue
+
+                    abs_path = self._resolve_path(candidate)
+                    if os.path.exists(abs_path):
+                        return candidate, pattern
+
+                    if (os.sep in candidate or 
+                        "/" in candidate or 
+                        "\\" in candidate or 
+                        candidate.startswith(".") or
+                        "." in candidate[1:]):
+                        
                         return candidate, pattern
         except ValueError:
-            pass        
+            pass
         return None
 
     def _is_forbidden_pattern(self, sequence: str) -> Optional[str]:

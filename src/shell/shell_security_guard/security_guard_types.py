@@ -11,4 +11,3 @@ class SecurityVerdict(BaseModel):
     action: SecurityVerdictAction
     reason: str
     output: Optional[str] = None
-
