@@ -8,7 +8,9 @@ from langgraph.prebuilt import InjectedState
 
 
 @tool(parse_docstring=True)
-def prompt_user_selection_tool(prompt: str, choices: List[str], state: Annotated[CustomAgentState, InjectedState]) -> str:
+def prompt_user_selection_tool(
+    prompt: str, choices: List[str], state: Annotated[CustomAgentState, InjectedState]
+) -> str:
     """
     Prompt the user to select one value from a given list of options.
 
@@ -28,8 +30,10 @@ def prompt_user_selection_tool(prompt: str, choices: List[str], state: Annotated
     """
     name = state.get("agent_name")
     logger = LoggerFactory.get_logger(name=name)
-    logger.info(f"prompt_user_selection_tool called with prompt: {prompt} | choices: {choices}")
-    
+    logger.info(
+        f"prompt_user_selection_tool called with prompt: {prompt} | choices: {choices}"
+    )
+
     try:
         if not choices:
             raise ValueError("No choices provided for selection.")

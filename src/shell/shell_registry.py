@@ -44,7 +44,7 @@ class ShellRegistry(metaclass=SingletonMeta):
             return self.shell_registry[uuid]
 
         return self.main_shell
-    
+
     def cleanup(self) -> None:
         for shell in self.shell_registry.values():
             shell.child.close()

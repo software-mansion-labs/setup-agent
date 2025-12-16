@@ -12,7 +12,11 @@ from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
 from shell.base_shell import BaseShell
 from rich.console import Console
 from shell.security_context import SecurityContext
-from shell.shell_security_guard.shell_security_guard import ShellSecurityGuard, SecurityVerdictAction
+from shell.shell_security_guard.shell_security_guard import (
+    ShellSecurityGuard,
+    SecurityVerdictAction,
+)
+
 
 class InteractiveShell(BaseShell):
     """
@@ -36,15 +40,11 @@ class InteractiveShell(BaseShell):
         self._log_file = log_file
         self._read_buffer_size = read_buffer_size
         self._read_timeout = read_timeout
-        self.console = Console(
-            log_path=False,
-            log_time_format="[%Y-%m-%d %H:%M:%S]"
-        )
+        self.console = Console(log_path=False, log_time_format="[%Y-%m-%d %H:%M:%S]")
         self._console_log_prefix = f"[bold blue][INFO] [{self.name}]:[/bold blue]"
         self._security_context = security_context
         self._shell_security_guard = ShellSecurityGuard(
-            security_context=self._security_context,
-            llm=self._llm
+            security_context=self._security_context, llm=self._llm
         )
 
     def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
@@ -76,8 +76,10 @@ class InteractiveShell(BaseShell):
         self._buffer = ""
         self.child.sendline(sequence)
         return self.stream_command(sequence, hide_input=hide_input)
-    
-    def send_control(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+
+    def send_control(
+        self, sequence: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Send a control sequence (e.g., Ctrl+C, Ctrl+D) to the shell.
 
@@ -92,7 +94,9 @@ class InteractiveShell(BaseShell):
         self.child.sendcontrol(sequence)
         return self.stream_command(sequence, hide_input=hide_input)
 
-    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
+    def run_command(
+        self, command: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Execute a command in the shell and return its output after completion.
 
@@ -104,27 +108,24 @@ class InteractiveShell(BaseShell):
             StreamToShellOutput: A structured object representing the command output.
         """
         security_verdict = self._shell_security_guard.review_command(command=command)
-        
+
         if security_verdict.action == SecurityVerdictAction.COMPLETED_MANUALLY:
             user_output = security_verdict.output or ""
             return StreamToShellOutput(
                 needs_action=False,
                 reason=security_verdict.reason,
-                output=user_output + "\n"
+                output=user_output + "\n",
             )
-        
+
         if security_verdict.action == SecurityVerdictAction.SKIPPED:
-            output = security_verdict.output or "Command skipped due to security issues."
-            return StreamToShellOutput(
-                needs_action=False,
-                reason=security_verdict.reason,
-                output=output
+            output = (
+                security_verdict.output or "Command skipped due to security issues."
             )
-        
-        return self.send_line(
-            sequence=command,
-            hide_input=hide_input
-        )
+            return StreamToShellOutput(
+                needs_action=False, reason=security_verdict.reason, output=output
+            )
+
+        return self.send_line(sequence=command, hide_input=hide_input)
 
     def _review_for_interaction(self, buffer: str) -> InteractionReview:
         """
@@ -147,13 +148,19 @@ class InteractiveShell(BaseShell):
             output=buffer,
         )
 
-    def stream_command(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+    def stream_command(
+        self, sequence: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Run a command in the shell, stream output, and detect interaction.
         """
-        command_to_display = self._mask_sequence(sequence=sequence, hide_input=hide_input)
-            
-        with self.console.status(f"[bold green]Running command: {command_to_display}...\n[/bold green]") as status:
+        command_to_display = self._mask_sequence(
+            sequence=sequence, hide_input=hide_input
+        )
+
+        with self.console.status(
+            f"[bold green]Running command: {command_to_display}...\n[/bold green]"
+        ) as status:
             self.logger.info(f"Running command: {command_to_display}")
             llm_called = False
 
@@ -178,21 +185,31 @@ class InteractiveShell(BaseShell):
 
                 except pexpect.TIMEOUT:
                     if not llm_called:
-                        self.console.log(f"{self._console_log_prefix} Output stable for {self._read_timeout}s; invoking LLM...")
+                        self.console.log(
+                            f"{self._console_log_prefix} Output stable for {self._read_timeout}s; invoking LLM..."
+                        )
                         llm_called = True
                         self._buffer = self._mask_sequence_in_text(
                             self._buffer, sequence=sequence, hide_input=hide_input
                         )
                         self._buffer = self._redact_text(self._buffer)
 
-                        status.update("[bold yellow]Analyzing shell state...\n[/bold yellow]", spinner="dots")
+                        status.update(
+                            "[bold yellow]Analyzing shell state...\n[/bold yellow]",
+                            spinner="dots",
+                        )
                         result = self._evaluate_buffer_state()
 
                         if result:
                             return result
-                        
-                        self.console.log(f"{self._console_log_prefix} Analysis complete: Command is still processing. Resuming...")
-                        status.update(f"[bold green]Running command: {command_to_display}...\n[/bold green]", spinner="dots")
+
+                        self.console.log(
+                            f"{self._console_log_prefix} Analysis complete: Command is still processing. Resuming..."
+                        )
+                        status.update(
+                            f"[bold green]Running command: {command_to_display}...\n[/bold green]",
+                            spinner="dots",
+                        )
                 except pexpect.EOF:
                     self.logger.error("EOF reached; shell closed.")
                     break
@@ -200,13 +217,15 @@ class InteractiveShell(BaseShell):
                     self.logger.error(f"Unexpected exception: {e}")
                     break
 
-        self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
+        self._buffer = self._mask_sequence_in_text(
+            self._buffer, sequence=sequence, hide_input=hide_input
+        )
         self._buffer = self._redact_text(self._buffer)
-        
+
         self._log_to_file("\n")
         self.logger.info("Command finished")
         return StreamToShellOutput(needs_action=False, output=self._buffer)
-    
+
     def _evaluate_buffer_state(self) -> Optional[StreamToShellOutput]:
         """Evaluates the buffer to detect interaction prompts or process states.
 
@@ -228,7 +247,7 @@ class InteractiveShell(BaseShell):
                 return StreamToShellOutput(
                     needs_action=True,
                     reason=interaction_review.reason,
-                    output=self._buffer
+                    output=self._buffer,
                 )
 
             wait_reason = interaction_review.reason
@@ -252,13 +271,17 @@ class InteractiveShell(BaseShell):
                         output=self._buffer,
                     )
                 wait_reason = long_running_review.reason
-            self.console.log(f"{self._console_log_prefix} Command is still processing. Reason: {wait_reason}")
+            self.console.log(
+                f"{self._console_log_prefix} Command is still processing. Reason: {wait_reason}"
+            )
         except Exception as e:
             self.logger.error(f"LLM invocation failed: {e}")
 
         return None
 
-    def _review_for_long_running(self, buffer: str) -> LongRunningShellInteractionReviewLLMResponse:
+    def _review_for_long_running(
+        self, buffer: str
+    ) -> LongRunningShellInteractionReviewLLMResponse:
         """
         LLM review for long-running/background shells.
         Determines process state: initializing, running, or error.

@@ -1,4 +1,5 @@
 """This plugin searches for Stripe API keys."""
+
 import re
 from typing import List, Pattern
 
@@ -20,13 +21,13 @@ class StripeDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Stripe Access Key'.
         """
-        return 'Stripe Access Key'
+        return "Stripe Access Key"
 
     @property
     def denylist(self) -> List[Pattern]:
         """Returns the list of regex patterns to search for.
 
-        
+
 
         The pattern targets the specific prefixes used for production secrets:
         - `sk_live_`: Grants full API access (Standard).
@@ -39,5 +40,5 @@ class StripeDetector(RegexBasedDetector):
         """
         return [
             # Stripe standard keys begin with sk_live and restricted with rk_live
-            re.compile(r'(?:r|s)k_live_[0-9a-zA-Z]{24}'),
+            re.compile(r"(?:r|s)k_live_[0-9a-zA-Z]{24}"),
         ]

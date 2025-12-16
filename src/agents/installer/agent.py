@@ -11,7 +11,7 @@ from tools import (
     prompt_user_input_tool,
     prompt_user_selection_tool,
     use_arrow_keys_sequence,
-    use_keyboard_keys
+    use_keyboard_keys,
 )
 from agents.base_react_agent import BaseReactAgent
 from shell import ShellRegistry
@@ -21,6 +21,7 @@ from constants import FILE_SEPARATOR
 from questionary import select
 from shell import BaseShell
 from agents.installer.types import StepExplanation
+
 
 class Installer(BaseReactAgent):
     """Agent responsible for managing installation steps within a workflow.
@@ -49,12 +50,12 @@ class Installer(BaseReactAgent):
             prompt_user_input_tool,
             prompt_user_selection_tool,
             use_arrow_keys_sequence,
-            use_keyboard_keys
+            use_keyboard_keys,
         ]
         super().__init__(
             name=Node.INSTALLER_AGENT.value,
             prompt=InstallerPrompts.INSTALLER_AGENT_DESCRIPTION.value,
-            tools=tools
+            tools=tools,
         )
 
     def invoke(self, state: GraphState) -> GraphState:
@@ -167,9 +168,13 @@ class Installer(BaseReactAgent):
             next_choice = self._choose_action()
             if next_choice == "Continue":
                 shell = self._shell_registry.get_shell(step.shell_id)
-                return self._execute_commands(step, shell, finished_steps, state.get("errors", []), state)
+                return self._execute_commands(
+                    step, shell, finished_steps, state.get("errors", []), state
+                )
             else:
-                return self._handle_non_continue_choice(next_choice, step, finished_steps, state)
+                return self._handle_non_continue_choice(
+                    next_choice, step, finished_steps, state
+                )
 
         state["finished_steps"] = finished_steps
         return state
@@ -180,16 +185,16 @@ class Installer(BaseReactAgent):
 
         Args:
             step (Step): step to be explained based on description and suggested commands.
-        
+
         Returns:
             str: Explanation of the step with it's purpose, possible effects and verdict if it's safe to be performed.
-        
+
         """
         try:
             response: StepExplanation = self._llm.invoke(
                 StepExplanation,
                 InstallerPrompts.STEP_EXPLANATION_PROMPT.value,
-                f"Step description: {step.description}\nSuggested commands: {self._get_suggested_commands(step)}"
+                f"Step description: {step.description}\nSuggested commands: {self._get_suggested_commands(step)}",
             )
 
             return (
@@ -225,7 +230,11 @@ class Installer(BaseReactAgent):
         prompt = self._prepare_installation_prompt(step, finished_steps)
         try:
             self.agent.invoke(
-                {"messages": [HumanMessage(content=prompt)], "shell_id": step.shell_id, "agent_name": self.name}
+                {
+                    "messages": [HumanMessage(content=prompt)],
+                    "shell_id": step.shell_id,
+                    "agent_name": self.name,
+                }
             )
             finished_steps.append(
                 FinishedStep(step=step, output=shell.get_step_buffer())

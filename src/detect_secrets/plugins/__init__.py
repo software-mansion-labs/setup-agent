@@ -6,7 +6,10 @@ from detect_secrets.plugins.cloudant import CloudantDetector
 from detect_secrets.plugins.discord import DiscordBotTokenDetector
 from detect_secrets.plugins.github_token import GitHubTokenDetector
 from detect_secrets.plugins.gitlab_token import GitLabTokenDetector
-from detect_secrets.plugins.high_entropy_strings import Base64HighEntropyString, HexHighEntropyString
+from detect_secrets.plugins.high_entropy_strings import (
+    Base64HighEntropyString,
+    HexHighEntropyString,
+)
 from detect_secrets.plugins.ibm_cloud_iam import IbmCloudIamDetector
 from detect_secrets.plugins.ibm_cos_hmac import IbmCosHmacDetector
 from detect_secrets.plugins.ip_public import IPPublicDetector
@@ -24,7 +27,6 @@ from detect_secrets.plugins.square_oauth import SquareOAuthDetector
 from detect_secrets.plugins.stripe import StripeDetector
 from detect_secrets.plugins.telegram_token import TelegramBotTokenDetector
 from detect_secrets.plugins.twilio import TwilioKeyDetector
-from detect_secrets.plugins.base import BasePlugin
 
 __all__ = [
     "ArtifactoryDetector",
@@ -53,5 +55,5 @@ __all__ = [
     "SquareOAuthDetector",
     "StripeDetector",
     "TelegramBotTokenDetector",
-    "TwilioKeyDetector"
+    "TwilioKeyDetector",
 ]

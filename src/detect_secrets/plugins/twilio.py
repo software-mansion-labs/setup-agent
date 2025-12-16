@@ -1,4 +1,5 @@
 """This plugin searches for Twilio API keys."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class TwilioKeyDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Twilio API Key'.
         """
-        return 'Twilio API Key'
+        return "Twilio API Key"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -38,8 +39,7 @@ class TwilioKeyDetector(RegexBasedDetector):
         """
         return [
             # Account SID (ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)
-            re.compile(r'AC[a-z0-9]{32}'),
-
+            re.compile(r"AC[a-z0-9]{32}"),
             # Auth token (SKxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx)
-            re.compile(r'SK[a-z0-9]{32}'),
+            re.compile(r"SK[a-z0-9]{32}"),
         ]

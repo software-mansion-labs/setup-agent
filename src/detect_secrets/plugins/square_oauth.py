@@ -1,4 +1,5 @@
 """This plugin searches for Square OAuth tokens."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class SquareOAuthDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Square OAuth Secret'.
         """
-        return 'Square OAuth Secret'
+        return "Square OAuth Secret"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -37,5 +38,5 @@ class SquareOAuthDetector(RegexBasedDetector):
             List[Pattern]: A list of compiled regular expression patterns.
         """
         return [
-            re.compile(r'sq0csp-[0-9A-Za-z\\\-_]{43}'),
+            re.compile(r"sq0csp-[0-9A-Za-z\\\-_]{43}"),
         ]

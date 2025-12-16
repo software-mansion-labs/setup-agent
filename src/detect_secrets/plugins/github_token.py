@@ -1,4 +1,5 @@
 """This plugin searches for GitHub tokens."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class GitHubTokenDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'GitHub Token'.
         """
-        return 'GitHub Token'
+        return "GitHub Token"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -42,5 +43,5 @@ class GitHubTokenDetector(RegexBasedDetector):
         """
         return [
             # ref. https://github.blog/2021-04-05-behind-githubs-new-authentication-token-formats/
-            re.compile(r'(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36}'),
+            re.compile(r"(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36}"),
         ]

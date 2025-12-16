@@ -2,7 +2,15 @@ from itertools import chain
 from typing import List
 
 from graph_state import FinishedStep, GraphState, Node, Step, WorkflowError
-from tools import run_command_tool, user_input_tool, authenticate_tool, prompt_user_selection_tool, prompt_user_input_tool, use_arrow_keys_sequence, use_keyboard_keys
+from tools import (
+    run_command_tool,
+    user_input_tool,
+    authenticate_tool,
+    prompt_user_selection_tool,
+    prompt_user_input_tool,
+    use_arrow_keys_sequence,
+    use_keyboard_keys,
+)
 from agents.base_react_agent import BaseReactAgent
 from langchain_core.messages import HumanMessage
 from shell import ShellRegistry
@@ -37,7 +45,7 @@ class Runner(BaseReactAgent):
             prompt_user_selection_tool,
             prompt_user_input_tool,
             use_arrow_keys_sequence,
-            use_keyboard_keys
+            use_keyboard_keys,
         ]
         super().__init__(
             name=Node.RUNNER_AGENT.value,
@@ -152,9 +160,13 @@ class Runner(BaseReactAgent):
             next_choice = self._choose_action()
             if next_choice == "Continue":
                 shell = self._shell_registry.get_shell(step.shell_id)
-                return self._execute_commands(step, shell, finished_steps, state.get("errors", []), state)
+                return self._execute_commands(
+                    step, shell, finished_steps, state.get("errors", []), state
+                )
             else:
-                return self._handle_non_continue_choice(next_choice, step, finished_steps, state)
+                return self._handle_non_continue_choice(
+                    next_choice, step, finished_steps, state
+                )
 
         state["finished_steps"] = finished_steps
         return state
@@ -165,7 +177,7 @@ class Runner(BaseReactAgent):
             response: StepExplanation = self._llm.invoke(
                 StepExplanation,
                 RunnerPrompts.STEP_EXPLANATION_PROMPT.value,
-                f"Step description: {step.description}\nSuggested commands: {self._get_suggested_commands(step)}"
+                f"Step description: {step.description}\nSuggested commands: {self._get_suggested_commands(step)}",
             )
 
             return (
@@ -202,7 +214,11 @@ class Runner(BaseReactAgent):
 
         try:
             self.agent.invoke(
-                {"messages": [HumanMessage(content=prompt)], "shell_id": step.shell_id, "agent_name": self.name}
+                {
+                    "messages": [HumanMessage(content=prompt)],
+                    "shell_id": step.shell_id,
+                    "agent_name": self.name,
+                }
             )
             step.assigned_agent = Node.RUNNER_AGENT
             finished_steps.append(

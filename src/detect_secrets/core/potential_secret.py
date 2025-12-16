@@ -1,6 +1,7 @@
 from typing import Any
 from typing import Optional
 
+
 class PotentialSecret:
     """
     This custom data type represents a string that matches the plugin rules
@@ -47,7 +48,7 @@ class PotentialSecret:
 
         # If two PotentialSecrets have the same values for these fields,
         # they are considered equal.
-        self.fields_to_compare = ['secret_value', 'secret_type']
+        self.fields_to_compare = ["secret_value", "secret_type"]
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PotentialSecret):
@@ -63,8 +64,5 @@ class PotentialSecret:
 
     def __hash__(self) -> int:
         return hash(
-            tuple(
-                getattr(self, x)
-                for x in self.fields_to_compare
-            ),
+            tuple(getattr(self, x) for x in self.fields_to_compare),
         )

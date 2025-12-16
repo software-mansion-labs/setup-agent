@@ -24,6 +24,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
+
 import re
 from typing import List, Pattern
 
@@ -44,12 +45,12 @@ class PrivateKeyDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Private Key'.
         """
-        return 'Private Key'
+        return "Private Key"
 
     @property
     def denylist(self) -> List[Pattern]:
         """Returns the list of regex patterns to search for.
-        
+
         The patterns target the header lines typical of private key files,
         which provides high-confidence detection with low false positives.
 
@@ -69,13 +70,13 @@ class PrivateKeyDetector(RegexBasedDetector):
         return [
             re.compile(regexp)
             for regexp in (
-                r'BEGIN DSA PRIVATE KEY',
-                r'BEGIN EC PRIVATE KEY',
-                r'BEGIN OPENSSH PRIVATE KEY',
-                r'BEGIN PGP PRIVATE KEY BLOCK',
-                r'BEGIN PRIVATE KEY',
-                r'BEGIN RSA PRIVATE KEY',
-                r'BEGIN SSH2 ENCRYPTED PRIVATE KEY',
-                r'PuTTY-User-Key-File-2',
+                r"BEGIN DSA PRIVATE KEY",
+                r"BEGIN EC PRIVATE KEY",
+                r"BEGIN OPENSSH PRIVATE KEY",
+                r"BEGIN PGP PRIVATE KEY BLOCK",
+                r"BEGIN PRIVATE KEY",
+                r"BEGIN RSA PRIVATE KEY",
+                r"BEGIN SSH2 ENCRYPTED PRIVATE KEY",
+                r"PuTTY-User-Key-File-2",
             )
         ]

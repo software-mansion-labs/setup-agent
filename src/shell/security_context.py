@@ -1,6 +1,7 @@
 from typing import Set
 from threading import Lock
 
+
 class SecurityContext:
     def __init__(self) -> None:
         self._whitelist: Set[str] = set()

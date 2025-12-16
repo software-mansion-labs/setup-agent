@@ -33,7 +33,7 @@ class BaseLLMNode(ABC, Generic[K]):
         return self._llm.invoke(
             schema=schema, system_message=system_message, input_text=input_text
         )
-    
+
     @abstractmethod
     def invoke(self, state: K) -> K:
         """

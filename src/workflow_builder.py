@@ -20,25 +20,27 @@ from pathlib import Path
 
 class WorkflowBuilder:
     def __init__(
-            self,
-            project_root: str = ".",
-            guideline_files: List[str] = [],
-            task: Optional[str] = None,
-            model: str = DEFAULT_MODEL,
-            log_file: Optional[str] = None,
-            max_output_tokens: Optional[int] = None,
-            max_retries: Optional[int] = None,
-            temperature: Optional[float] = None,
-            timeout: Optional[float] = None 
-        ) -> None:
+        self,
+        project_root: str = ".",
+        guideline_files: List[str] = [],
+        task: Optional[str] = None,
+        model: str = DEFAULT_MODEL,
+        log_file: Optional[str] = None,
+        max_output_tokens: Optional[int] = None,
+        max_retries: Optional[int] = None,
+        temperature: Optional[float] = None,
+        timeout: Optional[float] = None,
+    ) -> None:
         load_dotenv(dotenv_path=Path.cwd() / ".env")
-        Config.init(project_root=project_root, guideline_files=guideline_files, task=task)
+        Config.init(
+            project_root=project_root, guideline_files=guideline_files, task=task
+        )
         LLMManager.init(
             model=model,
             max_tokens=max_output_tokens,
             max_retries=max_retries,
             temperature=temperature,
-            timeout=timeout
+            timeout=timeout,
         )
         ShellRegistry.init(log_file=log_file)
         self.shell_registry = ShellRegistry.get()
@@ -74,9 +76,13 @@ class WorkflowBuilder:
         self.graph.add_node(Node.INSTALLER_AGENT.value, self.installer_agent.invoke)
         self.graph.add_node(Node.RUNNER_AGENT.value, self.runner_agent.invoke)
         self.graph.add_node(Node.AUDITOR_AGENT.value, self.auditor_agent.invoke)
-        self.graph.add_node(Node.SUCCESS_VERIFIER_AGENT.value, self.success_verifier.invoke)
-        self.graph.add_node(Node.CONTINUE_PROCESS_NODE.value, self.continue_process_node.invoke)
-        
+        self.graph.add_node(
+            Node.SUCCESS_VERIFIER_AGENT.value, self.success_verifier.invoke
+        )
+        self.graph.add_node(
+            Node.CONTINUE_PROCESS_NODE.value, self.continue_process_node.invoke
+        )
+
     def _add_edges(self) -> None:
         self.graph.add_edge(Node.START.value, Node.GUIDELINES_RETRIEVER_NODE.value)
         self.graph.add_edge(
@@ -103,8 +109,8 @@ class WorkflowBuilder:
             self.route_success_verifier,
             {
                 Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
-                Node.CONTINUE_PROCESS_NODE.value: Node.CONTINUE_PROCESS_NODE.value
-            }
+                Node.CONTINUE_PROCESS_NODE.value: Node.CONTINUE_PROCESS_NODE.value,
+            },
         )
         self.graph.add_conditional_edges(
             Node.CONTINUE_PROCESS_NODE.value,
@@ -112,8 +118,8 @@ class WorkflowBuilder:
             {
                 Node.PLANNER_AGENT.value: Node.PLANNER_AGENT.value,
                 Node.TASK_IDENTIFIER_NODE.value: Node.TASK_IDENTIFIER_NODE.value,
-                Node.END.value: Node.END.value
-            }
+                Node.END.value: Node.END.value,
+            },
         )
 
     @staticmethod
@@ -122,14 +128,14 @@ class WorkflowBuilder:
         if next_node in [Node.INSTALLER_AGENT.value, Node.RUNNER_AGENT.value]:
             return next_node
         return Node.SUCCESS_VERIFIER_AGENT
-    
+
     @staticmethod
     def route_success_verifier(state: GraphState) -> Node:
         next_node = state.get("next_node")
         if next_node == Node.PLANNER_AGENT.value:
             return next_node
         return Node.CONTINUE_PROCESS_NODE
-    
+
     @staticmethod
     def route_continue_process(state: GraphState) -> Node:
         next_node = state.get("next_node")
@@ -151,16 +157,21 @@ class WorkflowBuilder:
                     possible_guideline_files=[],
                     possible_tasks=[],
                     chosen_task="",
-                    finished_tasks=[]
+                    finished_tasks=[],
                 ),
-                {"recursion_limit": 100}
+                {"recursion_limit": 100},
             )
         except KeyboardInterrupt:
-            self.logger.error("\nInterrupted by user. Cleaning up to exit gracefully...")
+            self.logger.error(
+                "\nInterrupted by user. Cleaning up to exit gracefully..."
+            )
         finally:
             self.shell_registry.cleanup()
             sys.exit(0)
 
+
 if __name__ == "__main__":
-    builder = WorkflowBuilder(project_root="projects/expensify/App", log_file="logs.txt")
+    builder = WorkflowBuilder(
+        project_root="projects/expensify/App", log_file="logs.txt"
+    )
     builder.run("Install all required tools according to the provided guidelines")

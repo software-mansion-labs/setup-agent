@@ -1,4 +1,5 @@
 """This plugin searches for OpenAI tokens."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class OpenAIDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'OpenAI Token'.
         """
-        return 'OpenAI Token'
+        return "OpenAI Token"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -44,5 +45,5 @@ class OpenAIDetector(RegexBasedDetector):
             # 3. [A-Za-z0-9-_]+       -> Pre-anchor part: alphanumeric, dashes, underscores
             # 4. BlbkFJ               -> "Magic" anchor string (common in OpenAI keys)
             # 5. [A-Za-z0-9-_]+       -> Post-anchor part: alphanumeric, dashes, underscores
-            re.compile(r'sk-(?:svcacct-|proj-|)[A-Za-z0-9-_]+BlbkFJ[A-Za-z0-9-_]+'),
+            re.compile(r"sk-(?:svcacct-|proj-|)[A-Za-z0-9-_]+BlbkFJ[A-Za-z0-9-_]+"),
         ]
