@@ -8,7 +8,7 @@ app = typer.Typer()
 
 
 @app.command()
-def run():
+def run() -> None:
     project_root = questionary.path(
         "Where is the project root?",
         default=".",
