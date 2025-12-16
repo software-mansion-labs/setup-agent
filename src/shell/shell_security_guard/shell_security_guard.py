@@ -1,6 +1,6 @@
 import fnmatch
 import shlex
-from typing import Optional
+from typing import Optional, Tuple
 from llm import StructuredLLM
 from questionary import select, text
 from shell.interactive_shell.shell_types import SecurityCheckLLMResponse
@@ -8,6 +8,7 @@ from shell.security_context import SecurityContext
 from shell.shell_security_guard.constants import HandleForbiddenPatternChoices, FORBIDDEN_PATHS
 from shell.shell_security_guard.security_guard_types import SecurityVerdict, SecurityVerdictAction
 from shell.shell_security_guard.prompts import ShellSecurityGuardPrompts
+from pathvalidate import is_valid_filepath
 
 class ShellSecurityGuard:
     """Guards shell execution by validating commands against security protocols.
@@ -47,24 +48,37 @@ class ShellSecurityGuard:
             SecurityVerdict: A data class containing the action (PROCEED, SKIPPED, 
             COMPLETED_MANUALLY) and the reasoning or output.
         """
-        pattern = self._is_forbidden_command(command)
-        
-        if not pattern:
+        result = self._extract_sensitive_path(command)
+        if result is None:
             return SecurityVerdict(
                 action=SecurityVerdictAction.PROCEED,
                 reason="No forbidden pattern found in the command"
             )
+        forbidden_file, pattern = result
         
-        command_intent = self._check_command_intent(command, pattern)
+        command_intent = self._check_command_intent(
+            command=command,
+            forbidden_file=forbidden_file,
+            pattern=pattern
+        )
         if command_intent.is_safe:
             return SecurityVerdict(
                 action=SecurityVerdictAction.PROCEED,
                 reason=f"Pattern '{pattern}' discoverd in the command, but LLM allowed it. Reason: {command_intent.reason}"
             )
 
-        return self._handle_intervention(command, pattern)
+        return self._handle_intervention(
+            command=command,
+            forbidden_file=forbidden_file,
+            pattern=pattern
+        )
 
-    def _handle_intervention(self, command: str, pattern: str) -> SecurityVerdict:
+    def _handle_intervention(
+            self,
+            command: str,
+            forbidden_file: str,
+            pattern: str
+        ) -> SecurityVerdict:
         """Handles user interaction when a potentially unsafe command is detected.
 
         Prompts the user to choose an action via a CLI selection menu. The user can
@@ -80,13 +94,13 @@ class ShellSecurityGuard:
             execution output if applicable.
         """
         print(f"\nSecurity Alert: Command matches forbidden pattern '{pattern}'")
-        print(f"   Command: {command}")
+        print(f"Command: {command}")
 
         action: str = select(
             message="Choose an action:",
             choices=[
                 HandleForbiddenPatternChoices.ALLOW_ONCE.value,
-                HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST.value,
+                HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST.value.format(file=forbidden_file),
                 HandleForbiddenPatternChoices.EXECUTE_MANUALLY.value,
                 HandleForbiddenPatternChoices.SKIP.value,
             ],
@@ -113,15 +127,16 @@ class ShellSecurityGuard:
             )
 
         if action == HandleForbiddenPatternChoices.ALLOW_AND_WHITELIST:
-            extracted_file = self._extract_sensitive_path(command)
-            if extracted_file:
-                self.security_context.add_to_whitelist(extracted_file)
-            else:
-                pass
+            self.security_context.add_to_whitelist(forbidden_file)
 
         return SecurityVerdict(action=SecurityVerdictAction.PROCEED, reason="User allowed to proceed with the command execution.")
 
-    def _check_command_intent(self, command: str, pattern: str) -> SecurityCheckLLMResponse:
+    def _check_command_intent(
+            self,
+            command: str,
+            forbidden_file: str,
+            pattern: str
+        ) -> SecurityCheckLLMResponse:
         """Consults the LLM to determine if the flagged command is actually safe.
 
         Constructs a prompt containing the current whitelist and the specific pattern,
@@ -129,7 +144,7 @@ class ShellSecurityGuard:
 
         Args:
             command (str): The shell command being analyzed.
-            pattern (str): The forbidden pattern found within the command.
+            forbidden_file (str): The  considered unsafe.
 
         Returns:
             SecurityCheckLLMResponse: The structured response from the LLM indicating 
@@ -139,6 +154,7 @@ class ShellSecurityGuard:
         
         system_prompt = ShellSecurityGuardPrompts.VERIFY_COMMAND_INTENT.format(
             pattern=pattern,
+            forbidden_file=forbidden_file,
             whitelist_str=whitelist_str
         )
         
@@ -148,7 +164,7 @@ class ShellSecurityGuard:
             input_text=command,
         )
 
-    def _extract_sensitive_path(self, command: str) -> Optional[str]:
+    def _extract_sensitive_path(self, command: str) -> Optional[Tuple[str, str]]:
         """Extracts the specific file path or token that triggered the security alert.
         
         Uses `shlex` to parse the command arguments safely, ignoring flags/options 
@@ -164,27 +180,32 @@ class ShellSecurityGuard:
         try:
             tokens = shlex.split(command)
             for token in tokens:
-                if token.startswith("-"):
-                    continue
-                for pattern in FORBIDDEN_PATHS:
-                    if fnmatch.fnmatch(token.lower(), f"*{pattern.lower()}*"):
-                        return token
+                if "=" in token and token.startswith("-"):
+                    _, value = token.split("=", 1)
+                    check_candidates = [token, value]
+                else:
+                    check_candidates = [token]
+
+                for candidate in check_candidates:
+                    pattern = self._is_forbidden_pattern(candidate)
+                    if pattern and is_valid_filepath(candidate):
+                        return candidate, pattern
         except ValueError:
-            pass
+            pass        
         return None
 
-    def _is_forbidden_command(self, command: str) -> Optional[str]:
-        """Checks if the command contains any globally forbidden patterns.
+    def _is_forbidden_pattern(self, sequence: str) -> Optional[str]:
+        """Checks if the sequence contains any globally forbidden patterns.
 
         Args:
-            command (str): The command to check.
+            sequence (str): The sequence to check.
 
         Returns:
             Optional[str]: The matching pattern (lowercased and wrapped in wildcards) 
             if found, otherwise None.
         """
-        command_lower = command.lower()
+        sequence_lower = sequence.lower()
         for pattern in FORBIDDEN_PATHS:
-            if fnmatch.fnmatch(command_lower, f"*{pattern.lower()}*"):
+            if fnmatch.fnmatch(sequence_lower, f"*{pattern.lower()}*"):
                 return f"*{pattern.lower()}*"
         return None
