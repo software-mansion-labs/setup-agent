@@ -33,7 +33,7 @@ class ShellSecurityGuard:
             used for resolving relative paths.
     """
 
-    def __init__(self, security_context: SecurityContext, llm: StructuredLLM):
+    def __init__(self, security_context: SecurityContext, llm: StructuredLLM) -> None:
         """Initializes the ShellSecurityGuard.
 
         Args:
