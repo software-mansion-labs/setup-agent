@@ -14,8 +14,9 @@ FORBIDDEN_PATHS: List[str] = [
     "*credential*",
 ]
 
+
 class HandleForbiddenPatternChoices(str, Enum):
     ALLOW_ONCE = "Allow once"
-    ALLOW_AND_WHITELIST = "Allow and add the file to session's whitelist ({file})"
+    ALLOW_AND_WHITELIST = "Allow and add the file to session's whitelist"
     EXECUTE_MANUALLY = "Execute manually in separate terminal"
     SKIP = "Skip command"
