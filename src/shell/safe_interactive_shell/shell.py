@@ -1,5 +1,5 @@
 from shell.interactive_shell.shell import InteractiveShell
-from shell.types import StreamToShellOutput
+from shell.shell_types import StreamToShellOutput
 from shell.safe_interactive_shell.types import CommandReview
 from shell.safe_interactive_shell.prompts import SafeInteractiveShellPrompts
 from shell.security_context import SecurityContext

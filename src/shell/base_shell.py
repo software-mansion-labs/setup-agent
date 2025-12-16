@@ -3,7 +3,7 @@ import pexpect
 import re
 from uuid import UUID
 from typing import Optional
-from shell.types import StreamToShellOutput
+from shell.shell_types import StreamToShellOutput
 from functools import reduce
 from utils.logger import LoggerFactory
 from llm import StructuredLLM
