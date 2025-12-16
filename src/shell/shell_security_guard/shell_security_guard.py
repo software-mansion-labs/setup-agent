@@ -10,15 +10,49 @@ from shell.shell_security_guard.security_guard_types import SecurityVerdict, Sec
 from config import Config
 
 class ShellSecurityGuard:
-    """Guards shell execution by validating commands against security protocols."""
+    """Guards shell execution by validating commands against security protocols.
+
+    This class intercepts shell commands, checks them against a list of forbidden
+    patterns (e.g., sensitive file paths), and manages user intervention if a 
+    command is flagged as potentially unsafe. It utilizes a whitelist system to 
+    allow known safe paths.
+
+    Attributes:
+        security_context (SecurityContext): The context managing whitelists and 
+            security state.
+        llm (StructuredLLM): The structured LLM instance (retained for potential 
+            future intent verification).
+        _project_root (str): The absolute path to the project root directory, 
+            used for resolving relative paths.
+    """
 
     def __init__(self, security_context: SecurityContext, llm: StructuredLLM):
+        """Initializes the ShellSecurityGuard.
+
+        Args:
+            security_context (SecurityContext): The context object for security settings.
+            llm (StructuredLLM): The structured LLM instance.
+        """
         self.security_context = security_context
         self.llm = llm
         self._project_root = Config.get().project_root
 
     def review_command(self, command: str) -> SecurityVerdict:
-        """Validates a command and returns a verdict on how to proceed."""
+        """Validates a command and returns a verdict on how to proceed.
+
+        This is the main entry point for the security guard. It performs the 
+        following checks:
+        1. Parses the command to identify sensitive file paths based on forbidden patterns.
+        2. If a match is found, checks if the path is explicitly whitelisted.
+        3. If not whitelisted, triggers the user intervention workflow.
+
+        Args:
+            command (str): The shell command string to be executed.
+
+        Returns:
+            SecurityVerdict: A data class containing the action (PROCEED, SKIPPED, 
+            COMPLETED_MANUALLY) and the reasoning or output.
+        """
         result = self._extract_sensitive_path(command)
         if result is None:
             return SecurityVerdict(
@@ -53,6 +87,7 @@ class ShellSecurityGuard:
 
         Args:
             command (str): The command that triggered the alert.
+            forbidden_file (str): The extracted file path that caused the alert.
             pattern (str): The specific forbidden pattern detected in the command.
 
         Returns:
@@ -103,24 +138,52 @@ class ShellSecurityGuard:
         return SecurityVerdict(action=SecurityVerdictAction.PROCEED, reason="User allowed to proceed with the command execution.")
     
     def _is_path_whitelisted(self, path: str) -> bool:
+        """Checks if the given path is present in the whitelist.
+
+        This method resolves the provided path to an absolute path (relative to the
+        project root) before querying the security context.
+
+        Args:
+            path (str): The file path to check.
+
+        Returns:
+            bool: True if the resolved absolute path is whitelisted, False otherwise.
+        """
         abs_path = self._resolve_path(path)
         return self.security_context.is_whitelisted(path=abs_path)
 
     def _resolve_path(self, path: str) -> str:
+        """Resolves a given path to an absolute path against the project root.
+
+        If the input path is already absolute, the project root is ignored.
+        If the input path is relative, it is joined with the project root.
+
+        Args:
+            path (str): The file path to resolve.
+
+        Returns:
+            str: The normalized absolute path.
+        """
         return os.path.abspath(os.path.join(self._project_root, path))
             
     def _extract_sensitive_path(self, command: str) -> Optional[Tuple[str, str]]:
         """Extracts the specific file path or token that triggered the security alert.
         
-        Uses `shlex` to parse the command arguments safely, ignoring flags/options 
-        (tokens starting with '-').
+        Uses `shlex` to parse the command arguments safely. It employs a hybrid 
+        validation strategy:
+        1. Checks if a token matches a forbidden pattern (ignoring pure strings 
+           like environment keys).
+        2. If matched, it validates if the token represents a file by:
+           a) Checking if the file explicitly exists on disk.
+           b) Checking if it structurally resembles a path (contains separators, 
+              starts with a dot, or has an extension) to catch file creation.
 
         Args:
             command (str): The shell command to parse.
 
         Returns:
-            Optional[str]: The specific token matching the forbidden pattern, 
-            or None if parsing fails or no match is found.
+            Optional[Tuple[str, str]]: A tuple containing the specific token 
+            (file path) and the matching pattern, or None if no match is found.
         """
         try:
             tokens = shlex.split(command)
@@ -154,8 +217,11 @@ class ShellSecurityGuard:
     def _is_forbidden_pattern(self, sequence: str) -> Optional[str]:
         """Checks if the sequence contains any globally forbidden patterns.
 
+        This performs a case-insensitive wildcard match against the list of 
+        forbidden paths defined in constants.
+
         Args:
-            sequence (str): The sequence to check.
+            sequence (str): The text sequence (filename/path) to check.
 
         Returns:
             Optional[str]: The matching pattern (lowercased and wrapped in wildcards) 
