@@ -21,6 +21,7 @@ dependencies = [
     "pre-commit>=4.3.0",
     "pyahocorasick>=2.2.0",
     "questionary>=2.1.1",
+    "rich>=14.2.0",
     "typer>=0.20.0",
     "unidiff>=0.7.5",
     "unstructured>=0.18.15",
@@ -37,3 +38,9 @@ package = true
 
 [project.scripts]
 devops-agent = "cli.cli:app"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+detect_secrets = ["**/*.model"]

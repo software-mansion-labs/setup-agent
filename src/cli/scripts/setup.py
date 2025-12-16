@@ -1,64 +1,114 @@
 import typer
 from workflow_builder import WorkflowBuilder
-from typing import List, Optional
+import questionary
+import os
+from llm.constants import SuggestedModels, DEFAULT_MODEL
 
-app = typer.Typer(help="Operations for script1")
+app = typer.Typer()
+
 
 @app.command()
-def run(
-    project_root: str = typer.Option(
-        ...,
-        "--project_root",
-        help="Path to the root of the project",
-        exists=True,
-        file_okay=False,
-        dir_okay=True,
-    ),
-    guideline_files: List[str] = typer.Option(
-        [],
-        "--guideline_files",
-        help="Path to the guidelines file",
-        exists=True,
-        file_okay=True,
-        dir_okay=False
-    ),
-    task: str = typer.Option(
-        None,
-        "--task",
-        help="Predefined task for the agent",
-    ),
-    model: str = typer.Option(
-        "anthropic:claude-sonnet-4-5",
-        "--model",
-        help="LLM model to be used.",
-    ),
-    log_file: str = typer.Option(
-        None,
-        "--log_file",
-        help="Path the log file where all shells outputs will be saved"
-    ),
-    max_output_tokens: Optional[int] = typer.Option(
-        None,
-        "--max_output_tokens",
-        help="Max output tokens for LLM response."
-    ),
-    temperature: Optional[float] = typer.Option(
-        None,
-        "--temperature",
-        help="Model temperature for controlling randomness (0.0 to 1.0)."
-    ),
-    timeout: Optional[float] = typer.Option(
-        None,
-        "--timeout",
-        help="Maximum time (in seconds) to wait for a response."
-    ),
-    max_retries: Optional[int] = typer.Option(
-        None,
-        "--max_retries",
-        help="Maximum number of retry attempts for failed requests."
+def run() -> None:
+    project_root = questionary.path(
+        "Where is the project root?",
+        default=".",
+        only_directories=True,
+        validate=lambda p: True
+        if os.path.exists(p) and os.path.isdir(p)
+        else "Directory does not exist.",
+    ).ask()
+
+    add_guidelines = questionary.confirm(
+        "Do you want to add guideline files? Otherwise agent will suggest some files.",
+        default=False,
+    ).ask()
+    guideline_files = []
+
+    if add_guidelines:
+        while True:
+            path = questionary.path(
+                "Enter path to a guideline file (or press Enter to stop):",
+                validate=lambda p: True
+                if not p or os.path.isfile(p)
+                else "Must be a valid filepath",
+            ).unsafe_ask()
+
+            if not path:
+                break
+            guideline_files.append(path)
+
+    task = (
+        questionary.text(
+            "Enter a predefined task (optional, press Enter to skip):"
+        ).unsafe_ask()
+        or None
     )
-) -> None:
-    """Run the workflow builder."""
+
+    OTHER_MODEL_CHOICE = "Other"
+    model = questionary.select(
+        "Which LLM model should be used?",
+        choices=[
+            SuggestedModels.CLAUDE_SONNET_4_5.value,
+            SuggestedModels.CLAUDE_OPUS_3.value,
+            SuggestedModels.GPT_4o.value,
+            OTHER_MODEL_CHOICE,
+        ],
+        default=DEFAULT_MODEL,
+    ).unsafe_ask()
+
+    if model == OTHER_MODEL_CHOICE:
+        model = questionary.text("Enter model name:").unsafe_ask()
+
+    log_file = (
+        questionary.text(
+            "Path to log file (optional, press Enter to skip):"
+        ).unsafe_ask()
+        or None
+    )
+
+    configure_advanced = questionary.confirm(
+        "Do you want to configure advanced settings (tokens, temperature, timeout)?"
+    ).unsafe_ask()
+
+    max_output_tokens = None
+    temperature = None
+    timeout = None
+    max_retries = None
+
+    if configure_advanced:
+        temp_input = questionary.text(
+            "Temperature (0.0 to 1.0, optional):",
+            validate=lambda val: True
+            if val == ""
+            or (val.replace(".", "", 1).isdigit() and 0.0 <= float(val) <= 1.0)
+            else "Must be a number between 0.0 and 1.0",
+        ).unsafe_ask()
+        temperature = float(temp_input) if temp_input else None
+
+        tokens_input = questionary.text(
+            "Max output tokens (optional, press Enter to skip):",
+            validate=lambda val: True
+            if val == "" or val.isdigit()
+            else "Must be a valid integer",
+        ).unsafe_ask()
+        max_output_tokens = int(tokens_input) if tokens_input else None
+
+        timeout_input = questionary.text(
+            "Timeout in seconds (optional, press Enter to skip):",
+            validate=lambda val: True
+            if val == "" or val.replace(".", "", 1).isdigit()
+            else "Must be a valid number",
+        ).unsafe_ask()
+        timeout = float(timeout_input) if timeout_input else None
+
+        retries_input = questionary.text(
+            "Max retries (optional, press Enter to skip):",
+            validate=lambda val: True
+            if val == "" or val.isdigit()
+            else "Must be a valid integer",
+        ).unsafe_ask()
+        max_retries = int(retries_input) if retries_input else None
+
     builder = WorkflowBuilder(
         project_root=project_root,
         guideline_files=guideline_files,
@@ -68,6 +118,6 @@ def run(
         max_output_tokens=max_output_tokens,
         temperature=temperature,
         timeout=timeout,
-        max_retries=max_retries
+        max_retries=max_retries,
     )
     builder.run("Install all required tools according to the provided guidelines.")

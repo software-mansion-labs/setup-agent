@@ -10,6 +10,7 @@ from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
 from shell.base_shell import BaseShell
 from uuid import UUID
 import fnmatch
+from rich.console import Console
 
 
 FORBIDDEN_PATHS: List[str] = [
@@ -54,6 +55,11 @@ class InteractiveShell(BaseShell):
         self._log_file = log_file
         self._read_buffer_size = read_buffer_size
         self._read_timeout = read_timeout
+        self.console = Console(
+            log_path=False,
+            log_time_format="[%Y-%m-%d %H:%M:%S]"
+        )
+        self._console_log_prefix = f"[bold blue][INFO] [{self.name}]:[/bold blue]"
 
     def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
@@ -156,48 +162,54 @@ class InteractiveShell(BaseShell):
                                  an LLM decision indicating that interaction is required.
         """
         command_to_display = self._mask_sequence(sequence=sequence, hide_input=hide_input)
-        
-        self.logger.info(f"Running command: {command_to_display}")
-        llm_called = False
+            
+        with self.console.status(f"[bold green]Running command: {command_to_display}...\n[/bold green]") as status:
+            self.logger.info(f"Running command: {command_to_display}")
+            llm_called = False
 
-        while True:
-            try:
-                chunk = self.child.read_nonblocking(
-                    self._read_buffer_size, timeout=self._read_timeout
-                )
-                clean_chunk = self._clean_chunk(chunk)
+            while True:
+                try:
+                    chunk = self.child.read_nonblocking(
+                        self._read_buffer_size, timeout=self._read_timeout
+                    )
+                    clean_chunk = self._clean_chunk(chunk)
 
-                self._buffer += clean_chunk
-                self._step_buffer += clean_chunk
+                    self._buffer += clean_chunk
+                    self._step_buffer += clean_chunk
 
-                if not self._is_progress_noise(clean_chunk):
-                    self._log_to_file(clean_chunk)
+                    if not self._is_progress_noise(clean_chunk):
+                        self._log_to_file(clean_chunk)
 
-                llm_called = False
+                    llm_called = False
 
-                if clean_chunk.rstrip().endswith("$"):
-                    self.logger.info("Detected shell prompt; command finished.")
+                    if clean_chunk.rstrip().endswith("$"):
+                        self.logger.info("Detected shell prompt; command finished.")
+                        break
+
+                except pexpect.TIMEOUT:
+                    if not llm_called:
+                        self.console.log(f"{self._console_log_prefix} Output stable for {self._read_timeout}s; invoking LLM...")
+                        llm_called = True
+                        self._buffer = self._mask_sequence_in_text(
+                            self._buffer, sequence=sequence, hide_input=hide_input
+                        )
+                        self._buffer = self._redact_text(self._buffer)
+
+                        status.update("[bold yellow]Analyzing shell state...\n[/bold yellow]", spinner="dots")
+                        result = self._evaluate_buffer_state()
+
+                        if result:
+                            return result
+                        
+                        self.console.log(f"{self._console_log_prefix} Analysis complete: Command is still processing. Resuming...")
+                        status.update(f"[bold green]Running command: {command_to_display}...\n[/bold green]", spinner="dots")
+                except pexpect.EOF:
+                    self.logger.error("EOF reached; shell closed.")
+                    break
+                except Exception as e:
+                    self.logger.error(f"Unexpected exception: {e}")
                     break
 
-            except pexpect.TIMEOUT:
-                if not llm_called:
-                    self.logger.info(f"Output stable for {self._read_timeout}s; invoking LLM...")
-                    llm_called = True
-                    self._buffer = self._mask_sequence_in_text(
-                        self._buffer, sequence=sequence, hide_input=hide_input
-                    )
-                    self._buffer = self._redact_text(self._buffer)
-
-                    result = self._evaluate_buffer_state()
-                    if result:
-                        return result
-            except pexpect.EOF:
-                self.logger.error("EOF reached; shell closed.")
-                break
-            except Exception as e:
-                self.logger.error(f"Unexpected exception: {e}")
-                break
-            
         self._buffer = self._mask_sequence_in_text(self._buffer, sequence=sequence, hide_input=hide_input)
         self._buffer = self._redact_text(self._buffer)
         
@@ -229,6 +241,7 @@ class InteractiveShell(BaseShell):
                     output=self._buffer
                 )
 
+            wait_reason = interaction_review.reason
             if self._id != "MAIN":
                 long_running_review = self._review_for_long_running(self._buffer)
 
@@ -248,7 +261,8 @@ class InteractiveShell(BaseShell):
                         reason=long_running_review.reason,
                         output=self._buffer,
                     )
-
+                wait_reason = long_running_review.reason
+            self.console.log(f"{self._console_log_prefix} Command is still processing. Reason: {wait_reason}")
         except Exception as e:
             self.logger.error(f"LLM invocation failed: {e}")
 

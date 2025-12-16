@@ -3,6 +3,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
 from typing import Optional, TypedDict, cast
 from utils.singleton_meta import SingletonMeta
+from llm.constants import DEFAULT_MODEL
 
 class LLMParams(TypedDict, total=False):
     model: str
@@ -19,7 +20,7 @@ class LLMManager(metaclass=SingletonMeta):
 
     def __init__(
         self, 
-        model: str = "anthropic:claude-sonnet-4-5", 
+        model: str = DEFAULT_MODEL, 
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         timeout: Optional[float] = None,
@@ -36,7 +37,7 @@ class LLMManager(metaclass=SingletonMeta):
     @classmethod
     def init(
         cls, 
-        model: str = "anthropic:claude-sonnet-4-5", 
+        model: str = DEFAULT_MODEL, 
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         timeout: Optional[float] = None,
