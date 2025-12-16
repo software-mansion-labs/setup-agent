@@ -26,7 +26,7 @@ class SafeInteractiveShell(InteractiveShell):
             init_timeout: int = 10,
             read_buffer_size: int = 65536,
             read_timeout: int = 2
-        ):
+        ) -> None:
         """
         Initialize the SafeInteractiveShell instance.
 
