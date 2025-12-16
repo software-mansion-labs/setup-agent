@@ -28,7 +28,8 @@ class BaseShell(ABC):
         self._id = str(id) if id else "MAIN"
         self._buffer = ""
         self._step_buffer = ""
-        self.logger = LoggerFactory.get_logger(name=f"SHELL - {self._id}")
+        self.name = f"SHELL - {self._id}"
+        self.logger = LoggerFactory.get_logger(name=self.name)
         self._llm = StructuredLLM()
 
         env = os.environ.copy()

@@ -14,6 +14,7 @@ from typing import List, Optional
 import sys
 from utils.logger import LoggerFactory
 from llm.model import LLMManager
+from llm.constants import DEFAULT_MODEL
 from pathlib import Path
 
 
@@ -23,7 +24,7 @@ class WorkflowBuilder:
             project_root: str = ".",
             guideline_files: List[str] = [],
             task: Optional[str] = None,
-            model: str = "anthropic:claude-sonnet-4-5",
+            model: str = DEFAULT_MODEL,
             log_file: Optional[str] = None,
             max_output_tokens: Optional[int] = None,
             max_retries: Optional[int] = None,

@@ -23,7 +23,7 @@ class ContinueProcessNode(BaseLLMNode):
             choice = select(
                 f'Task "{current_task}" completed. How would you like to proceed?',
                 choices=[action.value for action in ProcessAction]
-            ).ask()
+            ).unsafe_ask()
 
             if choice == ProcessAction.CONTINUE.value:
                 current_guideline_files = state["selected_guideline_files"]
