@@ -1,46 +1,28 @@
 import pexpect
-from shell.types import (
+from uuid import UUID
+from typing import Optional
+
+from shell.shell_types import StreamToShellOutput
+from shell.interactive_shell.shell_types import (
     InteractionReviewLLMResponse,
     InteractionReview,
-    StreamToShellOutput,
-    LongRunningShellInteractionReviewLLMResponse
+    LongRunningShellInteractionReviewLLMResponse,
 )
-from typing import Optional, List, Tuple
 from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
 from shell.base_shell import BaseShell
-from uuid import UUID
-import fnmatch
 from rich.console import Console
-
-
-FORBIDDEN_PATHS: List[str] = [
-    "/home/*/.ssh/*",
-    "/home/*/.gnupg/*",
-    "/home/*/.aws/*",
-    "/home/*/.config/*",
-    "*.env",
-    ".*env*",
-    "*secret*",
-    "*password*",
-    "*token*",
-    "*credential*",
-]
+from shell.security_context import SecurityContext
+from shell.shell_security_guard.shell_security_guard import ShellSecurityGuard, SecurityVerdictAction
 
 class InteractiveShell(BaseShell):
     """
-    A persistent interactive shell interface with streaming output and
-    LLM-based detection of user interaction requirements.
-
-    Features:
-    - Spawns a persistent zsh shell.
-    - Streams command output in real time.
-    - Cleans shell output by removing ANSI codes, carriage returns, and handling backspaces.
-    - Uses an LLM to determine if the shell is awaiting user input.
-    - Logs shell output and LLM decisions.
+    A persistent interactive shell interface with streaming output,
+    LLM-based detection of user interaction, and global security context.
     """
 
     def __init__(
         self,
+        security_context: SecurityContext,
         id: Optional[UUID] = None,
         log_file: Optional[str] = None,
         init_timeout: int = 10,
@@ -48,8 +30,7 @@ class InteractiveShell(BaseShell):
         read_timeout: int = 2,
     ) -> None:
         """
-        Initialize the interactive shell and set up environment.
-        Starts a persistent zsh shell and sets a simple prompt.
+        Initialize the interactive shell.
         """
         super().__init__(id=id, init_timeout=init_timeout)
         self._log_file = log_file
@@ -60,6 +41,11 @@ class InteractiveShell(BaseShell):
             log_time_format="[%Y-%m-%d %H:%M:%S]"
         )
         self._console_log_prefix = f"[bold blue][INFO] [{self.name}]:[/bold blue]"
+        self._security_context = security_context
+        self._shell_security_guard = ShellSecurityGuard(
+            security_context=self._security_context,
+            llm=self._llm
+        )
 
     def send(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
@@ -117,15 +103,28 @@ class InteractiveShell(BaseShell):
         Returns:
             StreamToShellOutput: A structured object representing the command output.
         """
-        is_forbidden, pattern = self._is_forbidden_command(command=command)
-        if is_forbidden:
+        security_verdict = self._shell_security_guard.review_command(command=command)
+        
+        if security_verdict.action == SecurityVerdictAction.COMPLETED_MANUALLY:
+            user_output = security_verdict.output or ""
             return StreamToShellOutput(
                 needs_action=False,
-                reason=f"Command attempts to access forbidden files or secrets: {pattern}",
-                output="Access denied: this command is not allowed."
+                reason=security_verdict.reason,
+                output=user_output + "\n"
             )
-
-        return self.send_line(sequence=command, hide_input=hide_input)
+        
+        if security_verdict.action == SecurityVerdictAction.SKIPPED:
+            output = security_verdict.output or "Command skipped due to security issues."
+            return StreamToShellOutput(
+                needs_action=False,
+                reason=security_verdict.reason,
+                output=output
+            )
+        
+        return self.send_line(
+            sequence=command,
+            hide_input=hide_input
+        )
 
     def _review_for_interaction(self, buffer: str) -> InteractionReview:
         """
@@ -150,16 +149,7 @@ class InteractiveShell(BaseShell):
 
     def stream_command(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
         """
-        Run a command in the shell, stream output, and use the LLM to detect
-        if user interaction is required.
-
-        Args:
-            sequence (str): Command to execute in the shell.
-            hide_input (bool, optional): If True, masks the command in logs/output. Defaults to False.
-
-        Returns:
-            StreamToShellOutput: Either the final shell output (needs_action=False) or
-                                 an LLM decision indicating that interaction is required.
+        Run a command in the shell, stream output, and detect interaction.
         """
         command_to_display = self._mask_sequence(sequence=sequence, hide_input=hide_input)
             
@@ -268,20 +258,6 @@ class InteractiveShell(BaseShell):
 
         return None
 
-    def _log_to_file(self, sequence: str) -> None:
-        """
-        Append a sequence of text to the shell's log file if logging is enabled.
-
-        This method safely opens the log file in append mode and writes
-        the provided sequence. If no log file is set, it does nothing.
-
-        Args:
-            sequence (str): The text or command output to log.
-        """
-        if self._log_file:
-            with open(self._log_file, "a") as f:
-                f.write(sequence)
-
     def _review_for_long_running(self, buffer: str) -> LongRunningShellInteractionReviewLLMResponse:
         """
         LLM review for long-running/background shells.
@@ -301,9 +277,16 @@ class InteractiveShell(BaseShell):
 
         return long_running_review
 
-    def _is_forbidden_command(self, command: str) -> Tuple[bool, Optional[str]]:
-        command_lower = command.lower()
-        for pattern in FORBIDDEN_PATHS:
-            if fnmatch.fnmatch(command_lower, f"*{pattern.lower()}*"):
-                return True, f"*{pattern.lower()}*"
-        return False, None
+    def _log_to_file(self, sequence: str) -> None:
+        """
+        Append a sequence of text to the shell's log file if logging is enabled.
+
+        This method safely opens the log file in append mode and writes
+        the provided sequence. If no log file is set, it does nothing.
+
+        Args:
+            sequence (str): The text or command output to log.
+        """
+        if self._log_file:
+            with open(self._log_file, "a") as f:
+                f.write(sequence)
