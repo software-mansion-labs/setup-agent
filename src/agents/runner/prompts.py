@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class RunnerPrompts(str, Enum):
     _CORE_RUNNER_RULES = """
         Follow these rules carefully:

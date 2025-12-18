@@ -117,19 +117,22 @@ class GuidelinesRetrieverNode(BaseLLMNode):
 
         self.logger.info(f"Supported files found: {len(supported_files)}")
         return supported_files
-    
+
     def _get_guideline_files(self) -> List[GuidelineFile]:
         """
         Retrieves the list of guideline files to be processed.
 
-        Sources files either directly from the configuration (if provided) or by 
+        Sources files either directly from the configuration (if provided) or by
         scanning the project structure and filtering for relevant content.
 
         Returns:
             List[GuidelineFile]: A list of GuidelineFile objects.
         """
         if self._config.guideline_files:
-            return [GuidelineFile(file=file, content=self._file_loader.load_document(file)) for file in self._config.guideline_files]
+            return [
+                GuidelineFile(file=file, content=self._file_loader.load_document(file))
+                for file in self._config.guideline_files
+            ]
         else:
             supported_files = self._collect_supported_files()
             relevant_files = self._filter_non_relevant_files(supported_files)
@@ -150,8 +153,10 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         self.logger.info("Retrieving guidelines from the project")
         possible_guideline_files = self._get_guideline_files()
         state["possible_guideline_files"] = possible_guideline_files
-        
-        selected_files = self._guidelines_selector.select_guidelines(guideline_files=possible_guideline_files)
+
+        selected_files = self._guidelines_selector.select_guidelines(
+            guideline_files=possible_guideline_files
+        )
         state["selected_guideline_files"] = selected_files
 
         return state

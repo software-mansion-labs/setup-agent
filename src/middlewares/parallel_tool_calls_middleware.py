@@ -14,7 +14,7 @@ class ParallelToolCallsMiddleware(AgentMiddleware):
     ) -> ModelResponse:
         model_settings = request.model_settings.copy()
         model_settings.update({"parallel_tool_calls": self.parallel_tool_calls})
-        
+
         updated_request = request.override(model_settings=model_settings)
 
         return handler(updated_request)

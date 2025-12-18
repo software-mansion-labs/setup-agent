@@ -51,8 +51,10 @@ class StructuredLLM:
             return schema.model_validate(raw_result.model_dump())
         else:
             raise TypeError(f"Unexpected return type: {type(raw_result)}")
-        
-    def invoke_with_messages_list(self, schema: Type[T], messages: List[AnyMessage]) -> T:
+
+    def invoke_with_messages_list(
+        self, schema: Type[T], messages: List[AnyMessage]
+    ) -> T:
         structured_llm = self._raw_llm.with_structured_output(
             schema, method="json_schema"
         )

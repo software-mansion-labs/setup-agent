@@ -8,13 +8,16 @@ from typing import Any, cast, Dict, Generator, Set
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.plugins.base import BasePlugin, PotentialSecretResult
 
+
 class PotentialSecretResultWithEntropy(PotentialSecretResult):
     """Typed dictionary representing a secret result with an added entropy score.
 
     Attributes:
         entropy (float): The calculated Shannon entropy of the secret string.
     """
+
     entropy: float
+
 
 class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
     """Base class for plugins that detect secrets based on information density (entropy)."""
@@ -31,7 +34,7 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         """
         if limit < 0 or limit > 8:
             raise ValueError(
-                'The limit set for HighEntropyStrings must be between 0.0 and 8.0',
+                "The limit set for HighEntropyStrings must be between 0.0 and 8.0",
             )
 
         self.charset = charset
@@ -62,10 +65,7 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
             yield result
 
     def analyze_line(
-        self,
-        line: str,
-        enable_eager_search: bool = False,
-        **kwargs
+        self, line: str, enable_eager_search: bool = False, **kwargs
     ) -> Set[PotentialSecret]:
         """Examines a line and filters results based on entropy limits.
 
@@ -90,8 +90,8 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
                 secret
                 for secret in (output or set())
                 if (
-                    self.calculate_shannon_entropy(cast(str, secret.secret_value)) >
-                    self.entropy_limit
+                    self.calculate_shannon_entropy(cast(str, secret.secret_value))
+                    > self.entropy_limit
                 )
             }
 
@@ -107,7 +107,7 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
 
     def calculate_shannon_entropy(self, data: str) -> float:
         """Returns the Shannon entropy of a given string.
-        
+
         This calculates the amount of information (randomness) contained in the string.
         Higher values indicate more randomness.
         Borrowed from: http://blog.dkbza.org/2007/05/scanning-data-for-entropy-anomalies.html.
@@ -125,11 +125,13 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         for x in self.charset:
             p_x = float(data.count(x)) / len(data)
             if p_x > 0:
-                entropy += - p_x * math.log(p_x, 2)
+                entropy += -p_x * math.log(p_x, 2)
 
         return entropy
-    
-    def prepare_secret_result_with_entropy(self, secret: PotentialSecret) -> PotentialSecretResultWithEntropy:
+
+    def prepare_secret_result_with_entropy(
+        self, secret: PotentialSecret
+    ) -> PotentialSecretResultWithEntropy:
         """Prepare data structures including the calculated entropy score.
 
         Args:
@@ -138,14 +140,16 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         Returns:
             PotentialSecretResultWithEntropy: The result dictionary containing entropy.
         """
-        entropy = round(self.calculate_shannon_entropy(cast(str, secret.secret_value)), 3)
+        entropy = round(
+            self.calculate_shannon_entropy(cast(str, secret.secret_value)), 3
+        )
         is_secret = entropy > self.entropy_limit
 
         return {
-            'is_secret': is_secret,
-            'secret_value': secret.secret_value,
-            'secret_type': secret.secret_type,
-            'entropy': entropy,
+            "is_secret": is_secret,
+            "secret_value": secret.secret_value,
+            "secret_type": secret.secret_type,
+            "entropy": entropy,
         }
 
     def prepare_secret_result(self, secret: PotentialSecret) -> PotentialSecretResult:
@@ -159,9 +163,9 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         """
         secret_result_with_entropy = self.prepare_secret_result_with_entropy(secret)
         return {
-            'is_secret': secret_result_with_entropy['is_secret'],
-            'secret_value': secret_result_with_entropy['secret_value'],
-            'secret_type': secret_result_with_entropy['secret_type'],
+            "is_secret": secret_result_with_entropy["is_secret"],
+            "secret_value": secret_result_with_entropy["secret_value"],
+            "secret_type": secret_result_with_entropy["secret_type"],
         }
 
     def format_scan_result(self, secret: PotentialSecret) -> str:
@@ -174,9 +178,9 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
             str: A string in the format 'True/False (entropy_score)'.
         """
         secret_result_with_entropy = self.prepare_secret_result_with_entropy(secret)
-        is_secret_part = 'True' if secret_result_with_entropy['is_secret'] else 'False'
-        entropy = secret_result_with_entropy['entropy']
-        return f'{is_secret_part} ({entropy})'
+        is_secret_part = "True" if secret_result_with_entropy["is_secret"] else "False"
+        entropy = secret_result_with_entropy["entropy"]
+        return f"{is_secret_part} ({entropy})"
 
     def json(self) -> Dict[str, Any]:
         """Returns a JSON-serializable representation including the entropy limit.
@@ -186,11 +190,13 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         """
         return {
             **super().json(),
-            'limit': self.entropy_limit,
+            "limit": self.entropy_limit,
         }
 
     @contextmanager
-    def non_quoted_string_regex(self, is_exact_match: bool = True) -> Generator[None, None, None]:
+    def non_quoted_string_regex(
+        self, is_exact_match: bool = True
+    ) -> Generator[None, None, None]:
         """Context manager to temporarily allow scanning without quotes.
 
         For certain file formats, strings need not necessarily follow the
@@ -206,9 +212,9 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
         """
         old_regex = self.regex
 
-        regex_alternative = r'([{}]+)'.format(re.escape(self.charset))
+        regex_alternative = r"([{}]+)".format(re.escape(self.charset))
         if is_exact_match:
-            regex_alternative = r'^' + regex_alternative + r'$'
+            regex_alternative = r"^" + regex_alternative + r"$"
 
         self.regex = re.compile(regex_alternative)
 
@@ -220,6 +226,7 @@ class HighEntropyStringsPlugin(BasePlugin, metaclass=ABCMeta):
 
 class Base64HighEntropyString(HighEntropyStringsPlugin):
     """Scans for random-looking base64 encoded strings."""
+
     @property
     def secret_type(self) -> str:
         """Returns the secret type identifier.
@@ -227,7 +234,7 @@ class Base64HighEntropyString(HighEntropyStringsPlugin):
         Returns:
             str: 'Base64 High Entropy String'.
         """
-        return 'Base64 High Entropy String'
+        return "Base64 High Entropy String"
 
     def __init__(self, limit: float = 4.5) -> None:
         """Initializes the plugin with Base64 charset.
@@ -239,9 +246,9 @@ class Base64HighEntropyString(HighEntropyStringsPlugin):
             charset=(
                 string.ascii_letters
                 + string.digits
-                + '+/'  # Regular base64
-                + '\\-_'  # Url-safe base64
-                + '='  # Padding
+                + "+/"  # Regular base64
+                + "\\-_"  # Url-safe base64
+                + "="  # Padding
             ),
             limit=limit,
         )
@@ -249,7 +256,7 @@ class Base64HighEntropyString(HighEntropyStringsPlugin):
 
 class HexHighEntropyString(HighEntropyStringsPlugin):
     """Scans for random-looking hex encoded strings."""
-    
+
     @property
     def secret_type(self) -> str:
         """Returns the secret type identifier.
@@ -257,7 +264,7 @@ class HexHighEntropyString(HighEntropyStringsPlugin):
         Returns:
             str: 'Hex High Entropy String'.
         """
-        return 'Hex High Entropy String'
+        return "Hex High Entropy String"
 
     def __init__(self, limit: float = 3.0) -> None:
         """Initializes the plugin with Hex charset.

@@ -13,12 +13,15 @@ class KeyboardKey(Enum):
     """
     Enum representing special non-character keys used in shell input.
     """
+
     ENTER = "ENTER"
     CTRL_C = "CTRL_C"
 
 
 @tool(parse_docstring=True)
-def use_keyboard_keys(key: KeyboardKey, state: Annotated[CustomAgentState, InjectedState]) -> StreamToShellOutput:
+def use_keyboard_keys(
+    key: KeyboardKey, state: Annotated[CustomAgentState, InjectedState]
+) -> StreamToShellOutput:
     """
     Sends a single non-character key input to a shell instance.
 
@@ -40,6 +43,6 @@ def use_keyboard_keys(key: KeyboardKey, state: Annotated[CustomAgentState, Injec
         case KeyboardKey.ENTER:
             return shell.send_line("")
         case KeyboardKey.CTRL_C:
-            return shell.send_control('c')
+            return shell.send_control("c")
         case _:
             raise Exception(f"Unsupported key: {key}")

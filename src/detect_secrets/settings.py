@@ -41,6 +41,7 @@ from detect_secrets.plugins import (
     BasePlugin,
 )
 
+
 @lru_cache(maxsize=1)
 def get_plugins() -> List[BasePlugin]:
     return [
@@ -81,7 +82,7 @@ def get_filters() -> List[BaseSecretFilter]:
         UUIDFilter(),
         TemplatedSecretFilter(),
         NotAlphanumericFilter(),
-        GibberishFilter()
+        GibberishFilter(),
     ]
 
     return filters

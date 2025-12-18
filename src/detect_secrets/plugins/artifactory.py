@@ -18,7 +18,7 @@ class ArtifactoryDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Artifactory Credentials'.
         """
-        return 'Artifactory Credentials'
+        return "Artifactory Credentials"
 
     @property
     def denylist(self) -> List[Pattern]:

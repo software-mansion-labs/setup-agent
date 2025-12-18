@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 from detect_secrets.plugins.base import BasePlugin
 from detect_secrets.filters.base_secret_filter import BaseSecretFilter
 
+
 class SequentialStringFilter(BaseSecretFilter):
     """Filter for simple sequential strings.
 
@@ -13,11 +14,12 @@ class SequentialStringFilter(BaseSecretFilter):
     Attributes:
         SEQUENCES (tuple): Tuple of strings in which the secret is searched.
     """
+
     SEQUENCES: Tuple[str, ...] = (
         # Base64 letters first
-        string.ascii_uppercase + string.ascii_uppercase + string.digits + '+/',
+        string.ascii_uppercase + string.ascii_uppercase + string.digits + "+/",
         # Base64 numbers first
-        string.digits + string.ascii_uppercase + string.ascii_uppercase + '+/',
+        string.digits + string.ascii_uppercase + string.ascii_uppercase + "+/",
         # Alphanumeric sequences
         (string.digits + string.ascii_uppercase) * 2,
         # Capturing any number sequences
@@ -25,7 +27,7 @@ class SequentialStringFilter(BaseSecretFilter):
         # Hex sequences
         string.hexdigits.upper() + string.hexdigits.upper(),
         # Other common patterns
-        string.ascii_uppercase + '=/',
+        string.ascii_uppercase + "=/",
     )
 
     def should_exclude(self, secret: str, plugin: Optional[BasePlugin] = None) -> bool:

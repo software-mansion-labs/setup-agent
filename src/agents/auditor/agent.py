@@ -11,6 +11,7 @@ from agents.auditor.prompts import AuditorPrompts
 
 class AuditorVerdict(BaseModel):
     """Structured response format for the Auditor agent."""
+
     success: bool
     reason: str
     guidance: str
@@ -72,7 +73,7 @@ class Auditor(BaseReactAgent):
         previous_steps: List[FinishedStep],
         failed_steps: List[FailedStep],
         state: GraphState,
-        characters_to_analyze: int = 65536
+        characters_to_analyze: int = 65536,
     ) -> GraphState:
         """Internal helper to verify the last finished step using LLM and tools.
 
@@ -90,7 +91,11 @@ class Auditor(BaseReactAgent):
             if previous_steps
             else "none"
         )
-        step_output = last_step.output[-characters_to_analyze:] if last_step.output else "No output recorded."
+        step_output = (
+            last_step.output[-characters_to_analyze:]
+            if last_step.output
+            else "No output recorded."
+        )
 
         prompt = self._build_verification_prompt(
             last_step.step.description, previous_text, step_output
@@ -98,7 +103,11 @@ class Auditor(BaseReactAgent):
 
         try:
             response: AuditorVerdict = self.agent.invoke(
-                {"messages": [HumanMessage(content=prompt)], "shell_id": None, "agent_name": self.name}
+                {
+                    "messages": [HumanMessage(content=prompt)],
+                    "shell_id": None,
+                    "agent_name": self.name,
+                }
             )["structured_response"]
 
             if not response.success:

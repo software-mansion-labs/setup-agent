@@ -19,6 +19,7 @@ class Node(str, Enum):
     START = START
     END = END
 
+
 class Substep(BaseModel):
     description: str
     suggested_commands: List[str] = []

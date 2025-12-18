@@ -18,21 +18,21 @@ class CloudantDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Cloudant Credentials'.
         """
-        return 'Cloudant Credentials'
+        return "Cloudant Credentials"
 
     # Regex components for building complex patterns
     # opt means optional
-    dot = r'\.'
-    cl_account = r'[\w\-]+'
-    cl = r'(?:cloudant|cl|clou)'
-    opt_api = r'(?:api|)'
-    cl_key_or_pass = opt_api + r'(?:key|pwd|pw|password|pass|token)'
-    cl_pw = r'([0-9a-f]{64})'
-    cl_api_key = r'([a-z]{24})'
-    colon = r'\:'
-    at = r'\@'
-    http = r'(?:https?\:\/\/)'
-    cloudant_api_url = r'cloudant\.com'
+    dot = r"\."
+    cl_account = r"[\w\-]+"
+    cl = r"(?:cloudant|cl|clou)"
+    opt_api = r"(?:api|)"
+    cl_key_or_pass = opt_api + r"(?:key|pwd|pw|password|pass|token)"
+    cl_pw = r"([0-9a-f]{64})"
+    cl_api_key = r"([a-z]{24})"
+    colon = r"\:"
+    at = r"\@"
+    http = r"(?:https?\:\/\/)"
+    cloudant_api_url = r"cloudant\.com"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -64,7 +64,7 @@ class CloudantDetector(RegexBasedDetector):
             ),
             # 3. URL embedding Password
             re.compile(
-                r'{http}{cl_account}{colon}{cl_pw}{at}{cl_account}{dot}{cloudant_api_url}'.format(
+                r"{http}{cl_account}{colon}{cl_pw}{at}{cl_account}{dot}{cloudant_api_url}".format(
                     http=self.http,
                     colon=self.colon,
                     cl_account=self.cl_account,
@@ -77,7 +77,7 @@ class CloudantDetector(RegexBasedDetector):
             ),
             # 4. URL embedding API Key
             re.compile(
-                r'{http}{cl_account}{colon}{cl_api_key}{at}{cl_account}{dot}{cloudant_api_url}'.format(
+                r"{http}{cl_account}{colon}{cl_api_key}{at}{cl_account}{dot}{cloudant_api_url}".format(
                     http=self.http,
                     colon=self.colon,
                     cl_account=self.cl_account,

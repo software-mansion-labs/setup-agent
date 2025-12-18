@@ -19,14 +19,14 @@ class SafeInteractiveShell(InteractiveShell):
     """
 
     def __init__(
-            self,
-            security_context: SecurityContext,
-            id: Optional[UUID] = None,
-            log_file: Optional[str] = None,
-            init_timeout: int = 10,
-            read_buffer_size: int = 65536,
-            read_timeout: int = 2
-        ) -> None:
+        self,
+        security_context: SecurityContext,
+        id: Optional[UUID] = None,
+        log_file: Optional[str] = None,
+        init_timeout: int = 10,
+        read_buffer_size: int = 65536,
+        read_timeout: int = 2,
+    ) -> None:
         """
         Initialize the SafeInteractiveShell instance.
 
@@ -38,11 +38,13 @@ class SafeInteractiveShell(InteractiveShell):
             log_file=log_file,
             init_timeout=init_timeout,
             read_buffer_size=read_buffer_size,
-            read_timeout=read_timeout
+            read_timeout=read_timeout,
         )
         self.logger.info("SafeInteractiveShell initialized.")
 
-    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
+    def run_command(
+        self, command: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Review a shell command with a language model before executing it.
 
@@ -56,7 +58,9 @@ class SafeInteractiveShell(InteractiveShell):
         Returns:
             StreamToShellOutput: A structured object representing the command output.
         """
-        command_to_display = self._mask_sequence(sequence=command, hide_input=hide_input)
+        command_to_display = self._mask_sequence(
+            sequence=command, hide_input=hide_input
+        )
         self.logger.info(f"Reviewing command before execution: {command_to_display}")
         review = self._review_command(command_to_display)
 

@@ -19,10 +19,10 @@ class ContinueProcessNode(BaseLLMNode):
     def invoke(self, state: GraphState) -> GraphState:
         while True:
             current_task = state.get("chosen_task", "Unknown Task")
-            
+
             choice = select(
                 f'Task "{current_task}" completed. How would you like to proceed?',
-                choices=[action.value for action in ProcessAction]
+                choices=[action.value for action in ProcessAction],
             ).unsafe_ask()
 
             if choice == ProcessAction.CONTINUE.value:
@@ -30,7 +30,7 @@ class ContinueProcessNode(BaseLLMNode):
                 possible_guideline_files = state["possible_guideline_files"]
                 updated_files = self._guidelines_selector.select_guidelines(
                     guideline_files=possible_guideline_files,
-                    default_files=current_guideline_files
+                    default_files=current_guideline_files,
                 )
                 current_file_paths = set(gf.file for gf in current_guideline_files)
                 updated_file_paths = set(gf.file for gf in updated_files)
@@ -43,17 +43,20 @@ class ContinueProcessNode(BaseLLMNode):
                 state["failed_steps"] = []
 
                 if guidelines_changed:
-                    self.logger.info("Guideline files updated. Routing to task identifier node.")
+                    self.logger.info(
+                        "Guideline files updated. Routing to task identifier node."
+                    )
                     state["next_node"] = Node.TASK_IDENTIFIER_NODE
                     state["possible_tasks"] = []
                     return state
-                
-                
+
                 chosen_task = state["chosen_task"]
                 possible_tasks = state["possible_tasks"]
                 finished_tasks = state["finished_tasks"]
 
-                possible_tasks = [task for task in possible_tasks if task != chosen_task]
+                possible_tasks = [
+                    task for task in possible_tasks if task != chosen_task
+                ]
                 finished_tasks.append(chosen_task)
                 state["possible_tasks"] = possible_tasks
                 state["finished_tasks"] = finished_tasks
@@ -61,7 +64,7 @@ class ContinueProcessNode(BaseLLMNode):
                 if possible_tasks:
                     task_choice = self._task_selector.select_task(
                         tasks=possible_tasks,
-                        message="Select the next task to continue with:"
+                        message="Select the next task to continue with:",
                     )
                     state["chosen_task"] = task_choice
                     state["next_node"] = Node.PLANNER_AGENT
@@ -75,7 +78,7 @@ class ContinueProcessNode(BaseLLMNode):
                 self.logger.info("Exiting workflow as per user request.")
                 state["next_node"] = Node.END
                 return state
-            
+
             if choice == ProcessAction.PAUSE.value:
                 print("--- Workflow Paused ---")
                 print("Background shells are still running.")
