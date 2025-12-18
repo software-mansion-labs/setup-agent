@@ -20,7 +20,7 @@ from typing import List
 from constants import FILE_SEPARATOR
 from questionary import select
 from shell import BaseShell
-from agents.installer.types import StepExplanation
+from agents.installer.agent_types import StepExplanation
 
 
 class Installer(BaseReactAgent):
