@@ -18,7 +18,7 @@ from questionary import select
 from agents.runner.prompts import RunnerPrompts
 from shell import BaseShell
 from constants import FILE_SEPARATOR
-from agents.runner.types import StepExplanation
+from agents.agent_types import StepExplanation
 
 
 class Runner(BaseReactAgent):
