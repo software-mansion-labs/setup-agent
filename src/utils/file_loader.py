@@ -54,7 +54,7 @@ class SupportedExtension(str, Enum):
 
 
 class FileLoader:
-    def __init__(self, project_root: str):
+    def __init__(self, project_root: str) -> None:
         self.project_root = project_root
         self._logger = LoggerFactory.get_logger(name="FILE_LOADER")
 

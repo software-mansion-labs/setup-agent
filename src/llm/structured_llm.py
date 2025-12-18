@@ -14,7 +14,7 @@ class StructuredLLM:
     Provides shared interface and utility methods.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         llm_manager = LLMManager.get()
         self._raw_llm = llm_manager.get_llm()
 
