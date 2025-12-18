@@ -6,7 +6,7 @@ from graph_state import GuidelineFile, Node, GraphState
 from nodes.base_llm_node import BaseLLMNode
 from utils.file_loader import FileLoader
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
-from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
+from nodes.guidelines_retriever.node_types import PickedEntries, GuidelineFileCheck
 from user_prompts.guidelines_selector import GuidelinesSelector
 
 
