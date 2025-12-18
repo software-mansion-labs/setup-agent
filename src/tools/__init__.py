@@ -15,5 +15,5 @@ __all__ = [
     "prompt_user_selection_tool",
     "prompt_user_input_tool",
     "use_arrow_keys_sequence",
-    "use_keyboard_keys"
+    "use_keyboard_keys",
 ]

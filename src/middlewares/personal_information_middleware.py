@@ -7,18 +7,21 @@ from detect_secrets.core.secrets_collection import SecretsCollection
 import re
 from typing import Dict
 
+
 def retrieve_key_value_pairs(text: str) -> Dict[str, str]:
     pattern = r'(\w+)=(".*?"|\'.*?\'|[^\s]+)'
     pairs = re.findall(pattern, text)
-    result: Dict[str, str] = {
-        key: value.strip('"').strip("'")
-        for key, value in pairs
-    }
+    result: Dict[str, str] = {key: value.strip('"').strip("'") for key, value in pairs}
 
     return result
 
+
 class PersonalInformationMiddleware(AgentMiddleware):
-    def wrap_tool_call(self, request: ToolCallRequest, handler: Callable[[ToolCallRequest], ToolMessage | Command]) -> ToolMessage | Command:
+    def wrap_tool_call(
+        self,
+        request: ToolCallRequest,
+        handler: Callable[[ToolCallRequest], ToolMessage | Command],
+    ) -> ToolMessage | Command:
         result = handler(request)
 
         if isinstance(result, ToolMessage):
@@ -31,7 +34,9 @@ class PersonalInformationMiddleware(AgentMiddleware):
                     potential_secrets.append(secret["secret_value"])
 
             for secret in set(potential_secrets):
-                content_str = content_str.replace(secret, "[REDACTED_PERSONAL_INFORMATION]")
+                content_str = content_str.replace(
+                    secret, "[REDACTED_PERSONAL_INFORMATION]"
+                )
             updated_result.content = content_str
             return updated_result
 

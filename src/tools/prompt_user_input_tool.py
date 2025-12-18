@@ -7,11 +7,13 @@ from questionary import text
 
 
 @tool(parse_docstring=True)
-def prompt_user_input_tool(prompt: str, state: Annotated[CustomAgentState, InjectedState]) -> str:
+def prompt_user_input_tool(
+    prompt: str, state: Annotated[CustomAgentState, InjectedState]
+) -> str:
     """
     Prompt the user for input and return their response directly to the agent.
 
-    This tool allows the agent to request additional information from the user, e. g. to fill some placeholders or missing values. 
+    This tool allows the agent to request additional information from the user, e. g. to fill some placeholders or missing values.
     It should not be used to get confirmation from the user or to ask user a question.
     Unlike `authenticate_tool`, the user's
     response is not passed to the shell, but returned directly for further

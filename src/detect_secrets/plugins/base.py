@@ -4,12 +4,14 @@ In most cases, you probably can just use the RegexBasedPlugin. In more advanced 
 you can also use the LineBasedPlugin, and FileBasedPlugin. If you're extending the BasePlugin,
 things may not work as you expect (see the scan logic in SecretsCollection).
 """
+
 import re
 from abc import ABCMeta
 from abc import abstractmethod
 from typing import Any, Dict, Generator, Iterable, Pattern, Set, Optional, TypedDict
 
 from detect_secrets.core.potential_secret import PotentialSecret
+
 
 class PotentialSecretResult(TypedDict):
     """Typed dictionary representing the structure of a secret result.
@@ -19,9 +21,11 @@ class PotentialSecretResult(TypedDict):
         secret_value (Optional[str]): The actual string value of the secret, or None.
         secret_type (str): The identifier string for the type of secret.
     """
+
     is_secret: bool
     secret_value: Optional[str]
     secret_type: str
+
 
 class BasePlugin(metaclass=ABCMeta):
     """Abstract base class for all plugins."""
@@ -49,11 +53,7 @@ class BasePlugin(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def analyze_line(
-        self,
-        line: str,
-        **kwargs: Any
-    ) -> Set[PotentialSecret]:
+    def analyze_line(self, line: str, **kwargs: Any) -> Set[PotentialSecret]:
         """Examines a line and finds all possible secret values in it.
 
         Args:
@@ -75,7 +75,7 @@ class BasePlugin(metaclass=ABCMeta):
             )
 
         return output
-    
+
     def json(self) -> Dict[str, Any]:
         """Returns a JSON-serializable representation of the plugin.
 
@@ -83,9 +83,9 @@ class BasePlugin(metaclass=ABCMeta):
             Dict[str, Any]: A dictionary containing the class name.
         """
         return {
-            'name': self.__class__.__name__,
+            "name": self.__class__.__name__,
         }
-    
+
     def prepare_secret_result(self, secret: PotentialSecret) -> PotentialSecretResult:
         """Prepare any data structures needed for formatting results.
 
@@ -96,15 +96,23 @@ class BasePlugin(metaclass=ABCMeta):
             PotentialSecretResult: A dictionary containing the formatted secret details.
         """
         if not secret.secret_value and not secret.is_verified:
-            return {'is_secret': True, 'secret_value': None, 'secret_type': secret.secret_type}
-        
+            return {
+                "is_secret": True,
+                "secret_value": None,
+                "secret_type": secret.secret_type,
+            }
+
         if secret.is_verified:
-            return {'is_secret': True, 'secret_value': secret.secret_value, 'secret_type': secret.secret_type}
+            return {
+                "is_secret": True,
+                "secret_value": secret.secret_value,
+                "secret_type": secret.secret_type,
+            }
 
         return {
-            'is_secret': True,
-            'secret_value': None,
-            'secret_type': secret.secret_type,
+            "is_secret": True,
+            "secret_value": None,
+            "secret_type": secret.secret_type,
         }
 
     def format_scan_result(self, secret: PotentialSecret) -> str:
@@ -117,7 +125,7 @@ class BasePlugin(metaclass=ABCMeta):
             str: 'True' if the item is a secret, otherwise 'False'.
         """
         secret_result = self.prepare_secret_result(secret)
-        return 'True' if secret_result['is_secret'] else 'False'
+        return "True" if secret_result["is_secret"] else "False"
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, BasePlugin):
@@ -139,6 +147,7 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
                 re.compile(r'foo'),
             )
     """
+
     @property
     @abstractmethod
     def denylist(self) -> Iterable[Pattern]:
@@ -175,11 +184,11 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
     ) -> Pattern:
         """Generates a regular expression for detecting assignments.
 
-        This method constructs a regex that looks for a secret assignment in the 
+        This method constructs a regex that looks for a secret assignment in the
         following format:
-        
+
         `<prefix_regex>(-|_|)<secret_keyword_regex> <assignment> <secret_regex>`
-        
+
         It accounts for:
         * Assignments using `=`, `:`, `:=`, `=>`, or `::`.
         * Optional quotes around key names and values.
@@ -194,17 +203,17 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
         Returns:
             Pattern: A compiled regular expression object ignoring case.
         """
-        begin = r'(?:(?<=\W)|(?<=^))'
+        begin = r"(?:(?<=\W)|(?<=^))"
         opt_quote = r'(?:"|\'|)'
-        opt_open_square_bracket = r'(?:\[|)'
-        opt_close_square_bracket = r'(?:\]|)'
-        opt_dash_underscore = r'(?:_|-|)'
-        opt_space = r'(?: *)'
-        assignment = r'(?:=|:|:=|=>| +|::)'
+        opt_open_square_bracket = r"(?:\[|)"
+        opt_close_square_bracket = r"(?:\]|)"
+        opt_dash_underscore = r"(?:_|-|)"
+        opt_space = r"(?: *)"
+        assignment = r"(?:=|:|:=|=>| +|::)"
         return re.compile(
-            r'{begin}{opt_open_square_bracket}{opt_quote}{prefix_regex}{opt_dash_underscore}'
-            '{secret_keyword_regex}{opt_quote}{opt_close_square_bracket}{opt_space}'
-            '{assignment}{opt_space}{opt_quote}{secret_regex}{opt_quote}'.format(
+            r"{begin}{opt_open_square_bracket}{opt_quote}{prefix_regex}{opt_dash_underscore}"
+            "{secret_keyword_regex}{opt_quote}{opt_close_square_bracket}{opt_space}"
+            "{assignment}{opt_space}{opt_quote}{secret_regex}{opt_quote}".format(
                 begin=begin,
                 opt_open_square_bracket=opt_open_square_bracket,
                 opt_quote=opt_quote,
@@ -215,5 +224,6 @@ class RegexBasedDetector(BasePlugin, metaclass=ABCMeta):
                 opt_space=opt_space,
                 assignment=assignment,
                 secret_regex=secret_regex,
-            ), flags=re.IGNORECASE,
+            ),
+            flags=re.IGNORECASE,
         )

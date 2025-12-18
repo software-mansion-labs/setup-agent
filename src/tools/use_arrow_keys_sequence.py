@@ -1,4 +1,3 @@
-
 from langchain_core.tools import tool
 from agents.base_react_agent import CustomAgentState
 from typing_extensions import Annotated
@@ -15,14 +14,17 @@ class ArrowKey(Enum):
     """
     Enum representing the four directional arrow keys on a keyboard.
     """
-    UP = '\x1b[A'
-    DOWN = '\x1b[B'
-    RIGHT = '\x1b[C'
-    LEFT = '\x1b[D'
+
+    UP = "\x1b[A"
+    DOWN = "\x1b[B"
+    RIGHT = "\x1b[C"
+    LEFT = "\x1b[D"
 
 
 @tool(parse_docstring=True)
-def use_arrow_keys_sequence(arrow_keys: List[ArrowKey], state: Annotated[CustomAgentState, InjectedState]) -> StreamToShellOutput:
+def use_arrow_keys_sequence(
+    arrow_keys: List[ArrowKey], state: Annotated[CustomAgentState, InjectedState]
+) -> StreamToShellOutput:
     """
     Sends a sequence of arrow key inputs to a shell instance.
 

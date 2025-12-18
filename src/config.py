@@ -6,7 +6,10 @@ from pathlib import Path
 
 class Config(metaclass=SingletonMeta):
     def __init__(
-        self, project_root: str = ".", guideline_files: List[str] = [], task: Optional[str] = None
+        self,
+        project_root: str = ".",
+        guideline_files: List[str] = [],
+        task: Optional[str] = None,
     ) -> None:
         self.project_root = str(Path(project_root).resolve())
         self.guideline_files = [
@@ -15,7 +18,12 @@ class Config(metaclass=SingletonMeta):
         self.task = task
 
     @classmethod
-    def init(cls, project_root: str = ".", guideline_files: List[str] = [], task: Optional[str] = None) -> Config:
+    def init(
+        cls,
+        project_root: str = ".",
+        guideline_files: List[str] = [],
+        task: Optional[str] = None,
+    ) -> Config:
         return cls(project_root, guideline_files, task)
 
     @classmethod

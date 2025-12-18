@@ -1,4 +1,5 @@
 """This plugin searches for NPM tokens."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class NpmDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'NPM tokens'.
         """
-        return 'NPM tokens'
+        return "NPM tokens"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -41,5 +42,5 @@ class NpmDetector(RegexBasedDetector):
         return [
             # npmrc authToken
             # ref. https://stackoverflow.com/questions/53099434/using-auth-tokens-in-npmrc
-            re.compile(r'\/\/.+\/:_authToken=\s*((npm_.+)|([A-Fa-f0-9-]{36})).*'),
+            re.compile(r"\/\/.+\/:_authToken=\s*((npm_.+)|([A-Fa-f0-9-]{36})).*"),
         ]

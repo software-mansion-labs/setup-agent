@@ -7,6 +7,7 @@ from langgraph.graph import StateGraph
 
 K = TypeVar("K", bound=AgentState)
 
+
 class BaseCustomAgent(BaseLLMNode, Generic[K]):
     """
     Abstract base class for all agents.
@@ -22,7 +23,7 @@ class BaseCustomAgent(BaseLLMNode, Generic[K]):
     @abstractmethod
     def _build_agent_workflow(self) -> StateGraph:
         pass
-        
+
     @abstractmethod
     def invoke(self, state: K) -> K:
         """

@@ -2,8 +2,7 @@ from enum import Enum
 
 
 class SuccessVerifierPrompts(str, Enum):
-    SHOULD_END_CONVERSATION = (
-        """
+    SHOULD_END_CONVERSATION = """
         Analyze if this error collection/troubleshooting conversation should end. Consider:
 
         1. **Explicit completion**: User says "done", "that's all", "nothing else", "finish"
@@ -16,7 +15,6 @@ class SuccessVerifierPrompts(str, Enum):
         Return 'end' with MEDIUM confidence if error collection is complete and user shows no intent to add more.
         Return 'continue' if user might have more information to provide or issues to report.
         """
-    )
     COLLECT_USER_ERRORS = (
         "You are a planner agent helping fix installation issues.\n"
         "The user reported the following problem:\n{problem_description}\n\n"
