@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
 from enum import Enum
+from typing import Optional
 
 class InteractionReviewLLMResponse(BaseModel):
     """
@@ -38,20 +38,17 @@ class InteractionReview(InteractionReviewLLMResponse):
     Attributes:
         output (str): The shell output that was analyzed by the LLM.
     """
-
     output: str
 
+class SecurityCheckLLMResponse(BaseModel):
+    is_safe: bool = Field( 
+        description="True if command is a safe write OR accesses only whitelisted files. False otherwise."
+    )
+    reason: str = Field(
+        description="Reasoning for the decision."
+    )
 
-class StreamToShellOutput(BaseModel):
-    """
-    Standardized structure for output returned from executing a shell command.
-
-    Attributes:
-        needs_action (bool): True if the shell requires user input; False if command completed.
-        reason (Optional[str]): Explanation provided by the LLM if needs_action is True.
-        output (str): The final cleaned shell output from the command execution.
-    """
-
-    needs_action: bool
-    reason: Optional[str] = None
-    output: str
+class FileExtractionResponse(BaseModel):
+    file_path: Optional[str] = Field(
+        description="The specific sensitive file path extracted from the command, or None if unclear."
+    )

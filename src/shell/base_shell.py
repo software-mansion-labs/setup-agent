@@ -3,7 +3,7 @@ import pexpect
 import re
 from uuid import UUID
 from typing import Optional
-from shell.types import StreamToShellOutput
+from shell.shell_types import StreamToShellOutput
 from functools import reduce
 from utils.logger import LoggerFactory
 from llm import StructuredLLM
@@ -19,11 +19,11 @@ CARRIAGE_CHARACTER = "\r"
 
 class BaseShell(ABC):
     def __init__(
-        self, 
-        id: Optional[UUID] = None, 
+        self,
+        id: Optional[UUID] = None,
         init_timeout: int = 10,
         term: str = "vt100",
-        columns: int = 2000
+        columns: int = 2000,
     ) -> None:
         self._id = str(id) if id else "MAIN"
         self._buffer = ""
