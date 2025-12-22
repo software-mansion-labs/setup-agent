@@ -10,6 +10,7 @@ from graph_state import FinishedStep, GraphState, Step, WorkflowError, Node
 from shell import ShellRegistry, BaseShell
 from agents.base_step_executing_agent.agent_types import StepExplanation
 from agents.base_step_executing_agent.prompts import BaseStepExecutingAgentPrompts
+from agents.base_step_executing_agent.constants import ChooseActionPromptOptions
 from langchain.tools import BaseTool
 
 
@@ -60,7 +61,7 @@ class BaseStepExecutingAgent(BaseReactAgent):
             self.logger.info(f"Suggested commands:\n{suggested_commands}")
 
         choice = self._choose_action()
-        if choice != "Continue":
+        if choice != ChooseActionPromptOptions.CONTINUE.value:
             return self._handle_non_continue_choice(choice, step, finished_steps, state)
 
         shell.clean_step_buffer()
@@ -92,8 +93,12 @@ class BaseStepExecutingAgent(BaseReactAgent):
         """
         return select(
             message="Choose an action:",
-            choices=["Continue", "Skip", "Learn more"],
-            default="Continue",
+            choices=[
+                ChooseActionPromptOptions.CONTINUE.value,
+                ChooseActionPromptOptions.SKIP.value,
+                ChooseActionPromptOptions.LEARN_MORE.value,
+            ],
+            default=ChooseActionPromptOptions.CONTINUE.value,
         ).unsafe_ask()
 
     def _handle_non_continue_choice(
@@ -114,19 +119,19 @@ class BaseStepExecutingAgent(BaseReactAgent):
         Returns:
             GraphState: Updated workflow state after processing the user's decision.
         """
-        if choice == "Skip":
+        if choice == ChooseActionPromptOptions.SKIP.value:
             self.logger.info(f"Skipping step: {step.description}")
             finished_steps.append(
                 FinishedStep(step=step, output="Command skipped by user", skipped=True)
             )
-        elif choice == "Learn more":
+        elif choice == ChooseActionPromptOptions.LEARN_MORE.value:
             explanation = self._learn_more_about_step(step)
             print("\n=== Step Explanation ===")
             print(explanation)
             print("========================\n")
 
             next_choice = self._choose_action()
-            if next_choice == "Continue":
+            if next_choice == ChooseActionPromptOptions.CONTINUE.value:
                 shell = self._shell_registry.get_shell(step.shell_id)
                 return self._execute_commands(
                     step, shell, finished_steps, state.get("errors", []), state
