@@ -1,5 +1,5 @@
 from langchain_core.messages import HumanMessage
-from langgraph.graph import StateGraph
+from langgraph.graph.state import StateGraph, CompiledStateGraph
 from agents.runner.agent import Runner
 from graph_state import GraphState, Node
 from nodes import GuidelinesRetrieverNode, TaskIdentifierNode, ContinueProcessNode
@@ -58,7 +58,9 @@ class WorkflowBuilder:
         self.success_verifier = SuccessVerifier()
         self.continue_process_node = ContinueProcessNode()
 
-    def _build_workflow(self):
+    def _build_workflow(
+        self,
+    ) -> CompiledStateGraph[GraphState, None, GraphState, GraphState]:
         self.graph = StateGraph(GraphState)
         self._add_nodes()
         self._add_edges()
