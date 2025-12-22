@@ -9,11 +9,12 @@ from tools import (
     use_arrow_keys_sequence,
     use_keyboard_keys,
 )
-from shell import ShellRegistry
 from agents.installer.prompts import InstallerPrompts
 from typing import List
 from constants import FILE_SEPARATOR
-from agents.base_step_executing_agent import BaseStepExecutingAgent
+from agents.base_step_executing_agent.base_step_executing_agent import (
+    BaseStepExecutingAgent,
+)
 
 
 class Installer(BaseStepExecutingAgent):
@@ -33,7 +34,6 @@ class Installer(BaseStepExecutingAgent):
     """
 
     def __init__(self) -> None:
-        self._shell_registry = ShellRegistry.get()
         websearch_tool = get_websearch_tool()
         tools = [
             websearch_tool,
@@ -51,13 +51,18 @@ class Installer(BaseStepExecutingAgent):
             tools=tools,
         )
 
-    @property
-    def step_explanation_prompt(self) -> str:
-        return InstallerPrompts.STEP_EXPLANATION_PROMPT.value
-
     def _prepare_execution_prompt(
         self, step: Step, finished_steps: List[FinishedStep]
     ) -> str:
+        """Construct a formatted prompt for the language model to guide command execution.
+
+        Args:
+            step (Step): Current step being processed.
+            finished_steps (List[FinishedStep]): Previously completed steps.
+
+        Returns:
+            str: Fully formatted text prompt for LLM invocation.
+        """
         commands_text = FILE_SEPARATOR.join(
             ", ".join(substep.suggested_commands) for substep in step.substeps
         )

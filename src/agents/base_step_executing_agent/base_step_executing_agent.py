@@ -8,7 +8,8 @@ from langchain_core.messages import HumanMessage
 from agents.base_react_agent import BaseReactAgent
 from graph_state import FinishedStep, GraphState, Step, WorkflowError, Node
 from shell import ShellRegistry, BaseShell
-from agents.agent_types import StepExplanation
+from agents.base_step_executing_agent.agent_types import StepExplanation
+from agents.base_step_executing_agent.prompts import BaseStepExecutingAgentPrompts
 from langchain.tools import BaseTool
 
 
@@ -23,17 +24,19 @@ class BaseStepExecutingAgent(BaseReactAgent):
         super().__init__(name=name, prompt=prompt, tools=tools)
         self._shell_registry = ShellRegistry.get()
 
-    @property
-    @abstractmethod
-    def step_explanation_prompt(self) -> str:
-        """The prompt template used for 'Learn more' functionality."""
-        pass
-
     @abstractmethod
     def _prepare_execution_prompt(
         self, step: Step, finished_steps: List[FinishedStep]
     ) -> str:
-        """Construct the specific prompt for the LLM to execute commands."""
+        """Construct a formatted prompt for the language model to guide command execution.
+
+        Args:
+            step (Step): Current step being processed.
+            finished_steps (List[FinishedStep]): Previously completed steps.
+
+        Returns:
+            str: Fully formatted text prompt for LLM invocation.
+        """
         pass
 
     def _process_step(self, step: Step, state: GraphState) -> GraphState:
@@ -150,7 +153,7 @@ class BaseStepExecutingAgent(BaseReactAgent):
         try:
             response: StepExplanation = self._llm.invoke(
                 StepExplanation,
-                self.step_explanation_prompt,
+                BaseStepExecutingAgentPrompts.STEP_EXPLANATION_PROMPT.value,
                 f"Step description: {step.description}\nSuggested commands: {self._get_suggested_commands(step)}",
             )
             return (
@@ -206,7 +209,6 @@ class BaseStepExecutingAgent(BaseReactAgent):
         state["errors"] = errors
         state["finished_steps"] = finished_steps
 
-        self._post_execution_hook(state)
         return state
 
     def invoke(self, state: GraphState) -> GraphState:
@@ -236,7 +238,3 @@ class BaseStepExecutingAgent(BaseReactAgent):
             return state
 
         return self._process_step(next_step, state)
-
-    def _post_execution_hook(self, state: GraphState):
-        """Optional hook for subclasses to update state after execution."""
-        pass
