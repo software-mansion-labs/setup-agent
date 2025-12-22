@@ -2,25 +2,32 @@ from agents.base_custom_agent import BaseCustomAgent
 from graph_state import GraphState, WorkflowError, Node
 from langchain_core.messages import HumanMessage, SystemMessage
 from questionary import text, select, Choice
-from langgraph.graph import StateGraph
+from langgraph.graph.state import StateGraph, CompiledStateGraph
 from agents.success_verifier.types import (
     ShutdownDecision,
     VerifierAgentNode,
     VerifierState,
-    VerificationOutcome,
 )
 from agents.success_verifier.prompts import SuccessVerifierPrompts
+from agents.success_verifier.constants import (
+    ErrorCategory,
+    VerificationOutcome,
+    ClarificationChoice,
+    VerifierUserPrompts,
+)
 
 
-class SuccessVerifier(BaseCustomAgent):
-    def __init__(self) -> None:
+class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
+    def __init__(self, max_questions: int = 5) -> None:
         super().__init__(
             name=Node.SUCCESS_VERIFIER_AGENT.value,
         )
-        self.subgraph = self._build_agent_workflow().compile()
-        self.max_questions = 5
+        self.subgraph = self._build_agent_workflow()
+        self.max_questions = max_questions
 
-    def _build_agent_workflow(self) -> StateGraph:
+    def _build_agent_workflow(
+        self,
+    ) -> CompiledStateGraph[VerifierState, None, VerifierState, VerifierState]:
         workflow = StateGraph(VerifierState)
 
         workflow.add_node(
@@ -69,25 +76,25 @@ class SuccessVerifier(BaseCustomAgent):
             },
         )
 
-        return workflow
+        return workflow.compile()
 
     def _check_outcome_node(self, state: VerifierState) -> VerifierState:
         """Node: Check the installation/execution outcome with user"""
         self.logger.info("Checking installation outcome...")
 
         outcome = select(
-            message="How did the installation/execution process go?",
+            message=VerifierUserPrompts.CHECK_OUTCOME.value,
             choices=[
                 Choice(
-                    "Success - everything works as expected",
+                    title=VerificationOutcome.SUCCESS.value,
                     value=VerificationOutcome.SUCCESS,
                 ),
                 Choice(
-                    "Partial success - works but with errors",
+                    title=VerificationOutcome.PARTIAL_SUCCESS.value,
                     value=VerificationOutcome.PARTIAL_SUCCESS,
                 ),
                 Choice(
-                    "Failure - critical error occurred",
+                    title=VerificationOutcome.FAILURE.value,
                     value=VerificationOutcome.FAILURE,
                 ),
             ],
@@ -103,18 +110,18 @@ class SuccessVerifier(BaseCustomAgent):
         outcome = state.get("outcome") or VerificationOutcome.FAILURE
 
         error_category = select(
-            message="What is the nature of the problem?",
+            message=VerifierUserPrompts.ERROR_NATURE.value,
             choices=[
-                "Terminal error (Exception/Traceback)",
-                "Missing expected file/directory",
-                "Application does not start (hang/freeze)",
-                "Incorrect output/logic",
-                "Other issue",
+                ErrorCategory.TERMINAL.value,
+                ErrorCategory.MISSING_FILE.value,
+                ErrorCategory.HANG.value,
+                ErrorCategory.LOGIC.value,
+                ErrorCategory.OTHER.value,
             ],
         ).unsafe_ask()
 
         problem_description = text(
-            message="Please describe the details or paste the error log:",
+            message=VerifierUserPrompts.ERROR_DETAILS.value,
         ).unsafe_ask()
 
         if not problem_description:
@@ -154,25 +161,27 @@ class SuccessVerifier(BaseCustomAgent):
             print(f'   "{agent_question}"\n')
 
             user_choice = select(
-                message="How would you like to proceed?",
+                message=VerifierUserPrompts.PROCEED_ACTION.value,
                 choices=[
-                    Choice("Answer the question", value="answer"),
-                    Choice("Skip this question", value="skip"),
-                    Choice("Stop questioning and start fixing", value="stop"),
+                    ClarificationChoice.ANSWER.value,
+                    ClarificationChoice.SKIP.value,
+                    ClarificationChoice.STOP.value,
                 ],
             ).unsafe_ask()
 
             state["question_count"] = question_count + 1
 
-            if user_choice == "stop":
+            if user_choice == ClarificationChoice.STOP.value:
                 state["should_continue"] = False
                 state["user_stopped_questioning"] = True
                 return state
 
-            if user_choice == "skip":
+            if user_choice == ClarificationChoice.SKIP.value:
                 return state
 
-            user_reply = text(message="Your answer:").unsafe_ask()
+            user_reply = text(
+                message=VerifierUserPrompts.USER_ANSWER.value
+            ).unsafe_ask()
 
             if user_reply:
                 messages_list = state.get("messages", [])
