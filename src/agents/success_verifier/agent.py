@@ -18,7 +18,20 @@ from agents.success_verifier.constants import (
 
 
 class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
+    """Agent responsible for verifying the success of an executed workflow.
+
+    This agent interacts with the user to confirm if the task was completed
+    successfully. If errors occur, it engages in a troubleshooting loop to
+    gather details and clarification before returning control to the planner.
+    """
+
     def __init__(self, max_questions: int = 5) -> None:
+        """Initializes the SuccessVerifier agent.
+
+        Args:
+            max_questions: The maximum number of clarifying questions the agent
+                is allowed to ask the user regarding an error. Defaults to 5.
+        """
         super().__init__(
             name=Node.SUCCESS_VERIFIER_AGENT.value,
         )
@@ -28,6 +41,14 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
     def _build_agent_workflow(
         self,
     ) -> CompiledStateGraph[VerifierState, None, VerifierState, VerifierState]:
+        """Constructs and compiles the internal state graph for the verification process.
+
+        Defines the nodes (outcome check, error collection, clarification loop)
+        and the conditional edges that dictate the flow based on user input.
+
+        Returns:
+            CompiledStateGraph: The compiled LangGraph workflow ready for invocation.
+        """
         workflow = StateGraph(VerifierState)
 
         workflow.add_node(
@@ -79,7 +100,17 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
         return workflow.compile()
 
     def _check_outcome_node(self, state: VerifierState) -> VerifierState:
-        """Node: Check the installation/execution outcome with user"""
+        """Prompts the user to confirm the success of the installation/execution.
+
+        Displays a selection menu to the user to categorize the outcome as
+        Success, Partial Success, or Failure.
+
+        Args:
+            state: The current verifier state.
+
+        Returns:
+            VerifierState: The updated verifier state.
+        """
         self.logger.info("Checking installation outcome...")
 
         outcome = select(
@@ -105,6 +136,16 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
         return state
 
     def _collect_error_node(self, state: VerifierState) -> VerifierState:
+        """Collects initial error details from the user via interactive prompts.
+
+        Asks the user to categorize the error and provide a specific description or error log.
+
+        Args:
+            state: The current verifier state.
+
+        Returns:
+            VerifierState: The updated verifier state.
+        """
         self.logger.info("Collecting error details...")
 
         outcome = state.get("outcome") or VerificationOutcome.FAILURE
@@ -133,7 +174,18 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
         return state
 
     def _ask_clarification_node(self, state: VerifierState) -> VerifierState:
-        """Node: Ask clarifying questions about the error"""
+        """Generates a clarifying question using LLM and captures user input.
+
+        Uses the current error description to prompt the LLM for a relevant
+        troubleshooting question. Allows the user to answer, skip, or stop
+        the questioning process.
+
+        Args:
+            state: The current verifier state.
+
+        Returns:
+            VerifierState: The updated verifier state.
+        """
         question_count = state.get("question_count", 0)
 
         full_description = state.get(
@@ -203,8 +255,17 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
         return state
 
     def _check_continuation_node(self, state: VerifierState) -> VerifierState:
-        """Check if we should continue asking questions or end the verification"""
+        """Determines if the troubleshooting conversation should continue.
 
+        Uses an LLM call to decide if enough information has been gathered
+        or if the user has explicitly requested to stop.
+
+        Args:
+            state: The current state containing recent messages.
+
+        Returns:
+            VerifierState: The updated verifier state.
+        """
         if state["user_stopped_questioning"]:
             self.logger.info(
                 "User explicitly stopped questioning - ending verification"
@@ -240,11 +301,27 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
         return state
 
     def _route_after_outcome(self, state: VerifierState) -> str:
+        """Determines the next node based on the user's reported outcome.
+
+        Args:
+            state: The current verifier state.
+
+        Returns:
+            str: The name of the next node.
+        """
         if state["outcome"] == VerificationOutcome.SUCCESS:
             return VerifierAgentNode.END.value
         return VerifierAgentNode.COLLECT_ERROR.value
 
     def _route_after_clarification(self, state: VerifierState) -> str:
+        """Routes execution after a clarification question is processed.
+
+        Args:
+            state: The current verifier state.
+
+        Returns:
+            str: The name of the next node.
+        """
         if not state.get("should_continue", True):
             return VerifierAgentNode.SHOULD_CONTINUE.value
 
@@ -255,14 +332,29 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
         return VerifierAgentNode.ASK_CLARIFICATION.value
 
     def _route_final(self, state: VerifierState) -> str:
+        """Final routing logic after the continuation check.
+
+        Args:
+            state: The current verifier state.
+
+        Returns:
+            str: The name of the next node.
+        """
         if not state["should_continue"] or state["user_stopped_questioning"]:
             return VerifierAgentNode.END.value
         return VerifierAgentNode.COLLECT_ERROR.value
 
     def _create_execution_context(self, state: GraphState) -> str:
-        """
-        Constructs a system prompt summarizing the workflow history
-        based on the provided Pydantic models.
+        """Creates a text summary of the executed workflow for the LLM context.
+
+        Compiles the chosen task and a list of successfully completed steps
+        and substeps into a formatted string.
+
+        Args:
+            state: The main GraphState containing execution history.
+
+        Returns:
+            str: A formatted context string describing the current environment state.
         """
         task = state["chosen_task"]
 
@@ -293,6 +385,18 @@ class SuccessVerifier(BaseCustomAgent[VerifierState, GraphState]):
         return "\n".join(context_lines)
 
     def invoke(self, state: GraphState) -> GraphState:
+        """Executes the verification workflow.
+
+        This is the main entry point called by the parent graph. It initializes
+        the subgraph state, runs the verification workflow, and maps any collected
+        errors back to the main application state.
+
+        Args:
+            state: The main GraphState of the application.
+
+        Returns:
+            GraphState: The updated application state.
+        """
         self.logger.info("Starting success verification workflow...")
         context_messages = [
             SystemMessage(content=self._create_execution_context(state))
