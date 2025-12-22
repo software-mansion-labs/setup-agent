@@ -3,7 +3,7 @@ from graph_state import GraphState, WorkflowError, Node
 from langchain_core.messages import HumanMessage, SystemMessage
 from questionary import text, select, Choice
 from langgraph.graph.state import StateGraph, CompiledStateGraph
-from agents.success_verifier.types import (
+from agents.success_verifier.agent_types import (
     ShutdownDecision,
     VerifierAgentNode,
     VerifierState,
