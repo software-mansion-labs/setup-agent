@@ -35,7 +35,8 @@ class SecurityContext:
         Returns:
             bool: True if the path is in the whitelist, False otherwise.
         """
-        return path in self._whitelist
+        with self._lock:
+            return path in self._whitelist
 
     def get_whitelist_str(self) -> str:
         """Returns a string representation of the current whitelist.
@@ -43,4 +44,5 @@ class SecurityContext:
         Returns:
             str: A comma-separated list of whitelisted paths, or "None" if the list is empty.
         """
-        return ", ".join(self._whitelist) if self._whitelist else "None"
+        with self._lock:
+            return ", ".join(self._whitelist) if self._whitelist else "None"
