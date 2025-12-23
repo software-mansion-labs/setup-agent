@@ -43,14 +43,12 @@ class StructuredLLM:
         )
 
         chain = prompt | structured_llm
-        raw_result = chain.invoke({"input": input_text})
+        response = chain.invoke({"input": input_text})
 
-        if isinstance(raw_result, dict):
-            return schema.model_validate(raw_result)
-        elif isinstance(raw_result, BaseModel):
-            return schema.model_validate(raw_result.model_dump())
+        if isinstance(response, schema):
+            return response
         else:
-            raise TypeError(f"Unexpected return type: {type(raw_result)}")
+            raise TypeError(f"Unexpected return type: {type(response)}")
 
     def invoke_with_messages_list(
         self, schema: Type[T], messages: List[AnyMessage]
@@ -60,10 +58,8 @@ class StructuredLLM:
         )
 
         response = structured_llm.invoke(messages)
-        if isinstance(response, dict):
-            return schema.model_validate(response)
-        elif isinstance(response, BaseModel):
-            return schema.model_validate(response.model_dump())
+        if isinstance(response, schema):
+            return response
         else:
             raise TypeError(f"Unexpected return type: {type(response)}")
 
