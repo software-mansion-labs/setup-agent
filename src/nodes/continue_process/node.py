@@ -9,7 +9,22 @@ from utils.file_loader import FileLoader
 
 
 class ContinueProcessNode(BaseLLMNode):
+    """Node responsible for handling workflow continuation after task completion.
+
+    This node acts as an interactive breakpoint, prompting the user to decide
+    whether to proceed to the next task, pause the workflow, or exit. It also
+    handles the logic for updating guidelines and managing the task queue
+    between steps.
+
+    Attributes:
+        _config (Config): The global configuration settings.
+        _file_loader (FileLoader): Utility for loading file system resources.
+        _guidelines_selector (GuidelinesSelector): Helper for interactive guideline selection.
+        _task_selector (TaskSelector): Helper for interactive task selection.
+    """
+
     def __init__(self) -> None:
+        """Initializes the ContinueProcessNode with necessary selectors and loaders."""
         super().__init__(name=Node.CONTINUE_PROCESS_NODE.value)
         self._config = Config.get()
         self._file_loader = FileLoader(project_root=self._config.project_root)
@@ -17,6 +32,23 @@ class ContinueProcessNode(BaseLLMNode):
         self._task_selector = TaskSelector()
 
     def invoke(self, state: GraphState) -> GraphState:
+        """Executes the continuation logic based on user input.
+
+        Displays a menu to the user.
+        - If **CONTINUE**: Allows the user to update guidelines.
+            - If guidelines change: Routes to `TASK_IDENTIFIER_NODE` to re-evaluate tasks.
+            - If guidelines remain: Routes to `PLANNER_AGENT` with the next user-selected task.
+            - If no tasks remain: Routes to `END`.
+        - If **PAUSE**: Suspends execution until the user presses Enter.
+        - If **EXIT**: Routes to `END` to terminate the workflow.
+
+        Args:
+            state (GraphState): The current state of the workflow graph containing
+                completed tasks, remaining tasks, and active guidelines.
+
+        Returns:
+            GraphState: The updated state graph.
+        """
         while True:
             current_task = state.get("chosen_task", "Unknown Task")
 
