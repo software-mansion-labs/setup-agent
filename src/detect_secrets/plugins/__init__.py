@@ -27,11 +27,13 @@ from detect_secrets.plugins.square_oauth import SquareOAuthDetector
 from detect_secrets.plugins.stripe import StripeDetector
 from detect_secrets.plugins.telegram_token import TelegramBotTokenDetector
 from detect_secrets.plugins.twilio import TwilioKeyDetector
+from detect_secrets.plugins.base import BasePlugin
 
 __all__ = [
     "ArtifactoryDetector",
     "AWSKeyDetector",
     "AzureStorageKeyDetector",
+    "BasePlugin",
     "BasicAuthDetector",
     "CloudantDetector",
     "DiscordBotTokenDetector",

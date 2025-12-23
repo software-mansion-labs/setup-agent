@@ -1,0 +1,1 @@
+This module is heavily based on the [`detect-secrets`](https://github.com/Yelp/detect-secrets) package for scanning repositories for secrets and other personal information. It has been reworked to enable scanning of plain text strings, utilizing the plugins and filters from the original package.

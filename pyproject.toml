@@ -1,6 +1,6 @@
 [project]
-name = "devops-agent"
-version = "0.1.0"
+name = "setup-agent"
+version = "0.2.0"
 description = "AI agent for installing tools and running projects."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -17,6 +17,7 @@ dependencies = [
     "langgraph==1.0.2",
     "langsmith==0.4.39",
     "markdown>=3.9",
+    "pandoc>=2.4",
     "pexpect>=4.9.0",
     "pre-commit>=4.3.0",
     "pyahocorasick>=2.2.0",
@@ -37,7 +38,7 @@ dev = [
 package = true
 
 [project.scripts]
-devops-agent = "cli.cli:app"
+setup-agent = "cli.cli:app"
 
 [tool.setuptools]
 include-package-data = true
