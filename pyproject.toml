@@ -1,6 +1,6 @@
 [project]
-name = "devops-agent"
-version = "0.1.0"
+name = "setup-agent"
+version = "0.2.0"
 description = "AI agent for installing tools and running projects."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -37,7 +37,7 @@ dev = [
 package = true
 
 [project.scripts]
-devops-agent = "cli.cli:app"
+setup-agent = "cli.cli:app"
 
 [tool.setuptools]
 include-package-data = true

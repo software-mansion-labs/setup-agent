@@ -1,4 +1,4 @@
-# DevOps Agent
+# Setup Agent
 
 AI Agent responsible for installing all the necessary tools and dependencies and running the app, built with Python and LangGraph.
 
