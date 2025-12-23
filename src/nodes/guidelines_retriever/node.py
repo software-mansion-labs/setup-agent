@@ -11,7 +11,26 @@ from user_prompts.guidelines_selector import GuidelinesSelector
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):
+    """Node responsible for identifying and retrieving project guideline files.
+
+    This node scans the project directory structure, filters directories and files
+    based on relevance (using LLM filtering), validates content to ensure it
+    contains actual guidelines (e.g., coding standards, readmes), and prompts
+    the user to select which guidelines should be active for the current workflow.
+
+    Attributes:
+        _config (Config): The global configuration settings.
+        _project_root (str): The root directory of the project being analyzed.
+        _file_loader (FileLoader): Utility for loading file system resources.
+        _guidelines_selector (GuidelinesSelector): Helper for interactive guideline selection.
+    """
+
     def __init__(self) -> None:
+        """Initializes the GuidelinesRetrieverNode.
+
+        Sets up the file loader and guideline selector utilities using the
+        global configuration.
+        """
         super().__init__(name=Node.GUIDELINES_RETRIEVER_NODE.value)
         self._config = Config.get()
         self._project_root = self._config.project_root
