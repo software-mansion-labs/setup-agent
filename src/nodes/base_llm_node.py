@@ -17,7 +17,7 @@ class BaseLLMNode(ABC, Generic[K]):
     Provides shared interface and utility methods.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         self.name = name
         self._llm = StructuredLLM()
         self.logger = LoggerFactory.get_logger(name=name)

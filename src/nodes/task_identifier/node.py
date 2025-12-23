@@ -2,7 +2,7 @@ from typing import List
 from graph_state import GraphState, Node
 from nodes.base_llm_node import BaseLLMNode
 from nodes.task_identifier.prompts import TaskIdentifierPrompts
-from nodes.task_identifier.types import DeveloperTasks
+from nodes.task_identifier.node_types import DeveloperTasks
 from constants import FILE_SEPARATOR
 from config import Config
 from user_prompts.task_selector import TaskSelector

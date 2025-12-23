@@ -18,6 +18,22 @@ CARRIAGE_CHARACTER = "\r"
 
 
 class BaseShell(ABC):
+    """Abstract base class for a shell interface.
+
+    Manages a persistent shell process (zsh), handles input/output streaming,
+    output cleaning (ANSI, progress bars, secrets), and integrates with an LLM
+    for interactive decision-making.
+
+    Attributes:
+        _id (str): Unique identifier for this shell instance.
+        _buffer (str): Accumulator for raw shell output.
+        _step_buffer (str): Accumulator for output specific to the current step/command.
+        name (str): Name for the shell.
+        logger (Logger): Logger instance.
+        _llm (StructuredLLM): LLM instance used for analyzing shell output.
+        child (pexpect.spawn): The underlying pexpect process spawning the shell.
+    """
+
     def __init__(
         self,
         id: Optional[UUID] = None,
@@ -25,6 +41,17 @@ class BaseShell(ABC):
         term: str = "vt100",
         columns: int = 2000,
     ) -> None:
+        """Initializes the shell environment.
+
+        Spawns a new zsh process with specific environment variables to control
+        formatting (e.g., terminal type, columns, disabling color).
+
+        Args:
+            id (Optional[UUID]): A unique identifier for the shell. Defaults to "MAIN" if None.
+            init_timeout (int): Timeout in seconds for waiting for the initial shell prompt. Defaults to 10.
+            term (str): The value for the TERM environment variable. Defaults to "vt100".
+            columns (int): The number of columns for the terminal window. Defaults to 2000.
+        """
         self._id = str(id) if id else "MAIN"
         self._buffer = ""
         self._step_buffer = ""
@@ -300,10 +327,7 @@ class BaseShell(ABC):
             return True
 
         stripped = sequence.strip()
-        if len(stripped) > 0 and all(ch in SPINNER_CHARS for ch in stripped):
-            return True
-
-        return False
+        return len(stripped) > 0 and all(ch in SPINNER_CHARS for ch in stripped)
 
     def _clean_chunk(self, chunk: str) -> str:
         """
@@ -332,11 +356,27 @@ class BaseShell(ABC):
         return reduce(lambda acc, func: func(acc), cleaning_pipeline, chunk)
 
     def _write_log(self, text: str, fname: str = "logs.txt") -> None:
+        """Appends the provided text to a log file.
+
+        Args:
+            text (str): The text content to write.
+            fname (str): The filename of the log file. Defaults to "logs.txt".
+        """
         with open(fname, "a") as f:
             f.write(text)
 
     def clean_step_buffer(self) -> None:
+        """Clears the step-specific output buffer.
+
+        This should be called at the beginning of a new step to ensure
+        output from previous commands is not mixed in.
+        """
         self._step_buffer = ""
 
     def get_step_buffer(self) -> str:
+        """Retrieves the accumulated output buffer for the current step.
+
+        Returns:
+            str: The raw string content currently stored in the step buffer.
+        """
         return self._step_buffer

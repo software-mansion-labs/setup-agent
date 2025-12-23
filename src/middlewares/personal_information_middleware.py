@@ -1,27 +1,42 @@
 from langchain.agents.middleware import AgentMiddleware
-from typing import Callable
+from typing import Callable, Union
 from langchain_core.messages import ToolMessage
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
 from detect_secrets.core.secrets_collection import SecretsCollection
-import re
-from typing import Dict
-
-
-def retrieve_key_value_pairs(text: str) -> Dict[str, str]:
-    pattern = r'(\w+)=(".*?"|\'.*?\'|[^\s]+)'
-    pairs = re.findall(pattern, text)
-    result: Dict[str, str] = {key: value.strip('"').strip("'") for key, value in pairs}
-
-    return result
 
 
 class PersonalInformationMiddleware(AgentMiddleware):
+    """Middleware to redact sensitive information from tool outputs.
+
+    This middleware intercepts the result of a tool execution (ToolMessage).
+    It utilizes secret detectors to scan the output content for potential
+    secrets or PII and replaces them with a redaction placeholder before
+    the message is passed back to the agent.
+    """
+
     def wrap_tool_call(
         self,
         request: ToolCallRequest,
-        handler: Callable[[ToolCallRequest], ToolMessage | Command],
-    ) -> ToolMessage | Command:
+        handler: Callable[[ToolCallRequest], Union[ToolMessage, Command]],
+    ) -> Union[ToolMessage, Command]:
+        """Intercepts the tool call execution to sanitize the output.
+
+        Executes the underlying tool handler first. If the result is a
+        `ToolMessage`, it scans the content for secrets and redacts them.
+        If the result is a `Command` (used for graph control flow), it returns
+        it unmodified.
+
+        Args:
+            request (ToolCallRequest): The request object containing the tool
+                name, arguments, and context.
+            handler (Callable[[ToolCallRequest], Union[ToolMessage, Command]]):
+                The callable that executes the actual tool logic.
+
+        Returns:
+            Union[ToolMessage, Command]: The sanitized ToolMessage with secrets
+            redacted, or the original Command object.
+        """
         result = handler(request)
 
         if isinstance(result, ToolMessage):

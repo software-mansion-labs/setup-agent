@@ -5,7 +5,7 @@ from shell import ShellRegistry
 from tools import get_websearch_tool
 from typing import List
 from config import Config
-from agents.planner.types import ReadmeAnalysis
+from agents.planner.agent_types import ReadmeAnalysis
 from agents.planner.prompts import PlannerPrompts
 from constants import FILE_SEPARATOR
 

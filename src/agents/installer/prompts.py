@@ -40,16 +40,3 @@ class InstallerPrompts(str, Enum):
         "Rules:\n"
         f"{_CORE_INSTALLER_RULES}"
     )
-
-    STEP_EXPLANATION_PROMPT = """
-        You are a helpful assistant explaining installation steps.
-        You are given a step description and suggested commands for this step.
-
-        Provide brief explanation of the step, return JSON matching this schema:
-
-        {{
-            "purpose": "string",  # What the step is for
-            "actions": "string",  # What this step will do
-            "safe": "string"      # Whether these commands are safe to run
-        }}
-    """
