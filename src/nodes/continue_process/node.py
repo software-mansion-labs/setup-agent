@@ -2,7 +2,7 @@ from config import Config
 from graph_state import Node, GraphState
 from nodes.base_llm_node import BaseLLMNode
 from questionary import select
-from nodes.continue_process.types import ProcessAction
+from nodes.continue_process.node_types import ProcessAction
 from user_prompts.guidelines_selector import GuidelinesSelector
 from user_prompts.task_selector import TaskSelector
 from utils.file_loader import FileLoader
