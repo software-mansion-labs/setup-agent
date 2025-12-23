@@ -33,6 +33,7 @@ __all__ = [
     "ArtifactoryDetector",
     "AWSKeyDetector",
     "AzureStorageKeyDetector",
+    "BasePlugin",
     "BasicAuthDetector",
     "CloudantDetector",
     "DiscordBotTokenDetector",

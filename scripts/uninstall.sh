@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-APP_NAME="devops-agent"
+APP_NAME="setup-agent"
 
 echo "🔧 Uninstalling $APP_NAME ..."
 
@@ -37,12 +37,12 @@ fi
 
 if [ -f "$ZSHRC_FILE" ]; then
     echo "Checking for PATH modifications in $ZSHRC_FILE..."
-    if grep -q "Added by devops-agent installer" "$ZSHRC_FILE"; then
+    if grep -q "Added by setup-agent installer" "$ZSHRC_FILE"; then
         echo "Removing PATH entries added by the installer..."
-        sed -i.bak '/Added by devops-agent installer/,+1d' "$ZSHRC_FILE"
+        sed -i.bak '/Added by setup-agent installer/,+1d' "$ZSHRC_FILE"
         echo "✅ Removed PATH modification (backup at ${ZSHRC_FILE}.bak)"
     else
-        echo "ℹ️ No devops-agent-specific PATH entry found in $ZSHRC_FILE."
+        echo "ℹ️ No setup-agent-specific PATH entry found in $ZSHRC_FILE."
     fi
 else
     echo "ℹ️ No .zshrc file found — skipping PATH cleanup."
