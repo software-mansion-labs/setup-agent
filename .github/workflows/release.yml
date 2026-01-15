@@ -1,4 +1,4 @@
-name: Release Version
+name: Release to PyPI and Homebrew
 
 on:
   workflow_dispatch:
