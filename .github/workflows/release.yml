@@ -21,6 +21,21 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Get Version from Tag
+        id: get_version
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION=${TAG_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Sync version in pyproject.toml
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          uv version "$VERSION"
 
       - name: Build package
         run: uv build
@@ -28,22 +43,20 @@ jobs:
       - name: Publish to PyPI
         run: uv publish
 
-      - name: Get Version and SHA256
-        id: get_version
+      - name: Calculate SHA256
         run: |
-          TAG_NAME="${{ github.event.release.tag_name }}"
-          VERSION=${TAG_NAME#v}
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          FILENAME="setup_agent-$VERSION.tar.gz" # Note: uv might normalize name with underscore
           
-          FILENAME="setup-agent-$VERSION.tar.gz"
+          FILEPATH=$(find dist -name "*.tar.gz" | head -n 1)
           
-          if [ ! -f "dist/$FILENAME" ]; then
-            echo "Error: Could not find dist/$FILENAME"
+          if [ -z "$FILEPATH" ]; then
+            echo "Error: Could not find tar.gz in dist/"
             ls -R dist/
             exit 1
           fi
 
-          SHASUM=$(sha256sum "dist/$FILENAME" | awk '{print $1}')
+          SHASUM=$(sha256sum "$FILEPATH" | awk '{print $1}')
           echo "SHASUM=$SHASUM" >> $GITHUB_OUTPUT
 
   update_homebrew:
@@ -53,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: main 
 
       - name: Generate Formula
         env:
@@ -67,7 +80,7 @@ jobs:
 
             desc "AI agent for installing tools and running projects."
             homepage "https://github.com/software-mansion-labs/setup-agent"
-            url "https://pypi.io/packages/source/s/setup-agent/setup-agent-#{version}.tar.gz"
+            url "https://pypi.io/packages/source/s/setup-agent/setup_agent-#{version}.tar.gz"
             sha256 "${SHA256}"
             license "MIT"
 
