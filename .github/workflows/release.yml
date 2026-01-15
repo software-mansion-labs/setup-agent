@@ -94,7 +94,7 @@ jobs:
 
             desc "AI agent for installing tools and running projects."
             homepage "https://github.com/software-mansion-labs/setup-agent"
-            url "https://pypi.io/packages/source/s/setup-agent/${PACKAGE_NAME}-\${VERSION}.tar.gz"
+            url "https://pypi.io/packages/source/s/setup-agent/${PACKAGE_NAME}-${VERSION}.tar.gz"
             sha256 "${SHA256}"
             license "MIT"
 
