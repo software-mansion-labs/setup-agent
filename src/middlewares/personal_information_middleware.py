@@ -1,8 +1,10 @@
-from langchain.agents.middleware import AgentMiddleware
 from typing import Callable, Union
+
+from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import ToolMessage
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
+
 from detect_secrets.core.secrets_collection import SecretsCollection
 
 

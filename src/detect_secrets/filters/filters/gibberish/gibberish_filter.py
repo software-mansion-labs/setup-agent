@@ -2,13 +2,14 @@ import os
 import string
 from typing import Optional
 
-from detect_secrets.plugins.base import BasePlugin
-from detect_secrets.filters.base_secret_filter import BaseSecretFilter
-from detect_secrets.plugins import PrivateKeyDetector
 from gibberish_detector import serializer
-from gibberish_detector.model import Model
 from gibberish_detector.detector import Detector
 from gibberish_detector.exceptions import ParsingError
+from gibberish_detector.model import Model
+
+from detect_secrets.filters.base_secret_filter import BaseSecretFilter
+from detect_secrets.plugins import PrivateKeyDetector
+from detect_secrets.plugins.base import BasePlugin
 
 
 class GibberishFilter(BaseSecretFilter):

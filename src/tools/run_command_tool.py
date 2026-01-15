@@ -1,11 +1,12 @@
-from langchain_core.tools import tool
-from shell import BaseShell, StreamToShellOutput
-from typing_extensions import Annotated
-from langgraph.prebuilt import InjectedState
-from shell import ShellRegistry
-from uuid import UUID
-from agents.base_react_agent import CustomAgentState
 from typing import Optional
+from uuid import UUID
+
+from langchain_core.tools import tool
+from langgraph.prebuilt import InjectedState
+from typing_extensions import Annotated
+
+from agents.base_react_agent import CustomAgentState
+from shell import BaseShell, ShellRegistry, StreamToShellOutput
 from utils.logger import LoggerFactory
 
 

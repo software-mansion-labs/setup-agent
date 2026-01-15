@@ -1,14 +1,16 @@
-from abc import abstractmethod, ABC
-import pexpect
-import re
-from uuid import UUID
-from typing import Optional
-from shell.shell_types import StreamToShellOutput
-from functools import reduce
-from utils.logger import LoggerFactory
-from llm import StructuredLLM
-from utils.secrets_redactor import SecretsRedactor
 import os
+import re
+from abc import ABC, abstractmethod
+from functools import reduce
+from typing import Optional
+from uuid import UUID
+
+import pexpect
+
+from llm import StructuredLLM
+from shell.shell_types import StreamToShellOutput
+from utils.logger import LoggerFactory
+from utils.secrets_redactor import SecretsRedactor
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|[=><!])")
 PROGRESS_RE = re.compile(r"\d{1,3}\.\d%#+\s*")

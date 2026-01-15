@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from typing import Dict, Optional
 from uuid import UUID, uuid1
-from shell import InteractiveShell, BaseShell
+
+from shell import BaseShell, InteractiveShell
 from shell.security_context import SecurityContext
 from utils.singleton_meta import SingletonMeta
 

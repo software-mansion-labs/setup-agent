@@ -1,7 +1,9 @@
 from __future__ import annotations
-from utils.singleton_meta import SingletonMeta
-from typing import List, Optional
+
 from pathlib import Path
+from typing import List, Optional
+
+from utils.singleton_meta import SingletonMeta
 
 
 class Config(metaclass=SingletonMeta):

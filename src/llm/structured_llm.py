@@ -1,9 +1,11 @@
-from pydantic import BaseModel
-from llm.model import LLMManager
-from langchain_core.prompts import ChatPromptTemplate
-from typing import Type, TypeVar, List
+from typing import List, Type, TypeVar
+
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AnyMessage
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel
+
+from llm.model import LLMManager
 
 T = TypeVar("T", bound=BaseModel)
 

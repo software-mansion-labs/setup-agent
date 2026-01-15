@@ -1,9 +1,12 @@
 from __future__ import annotations
+
+from typing import Optional, TypedDict, cast
+
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models.chat_models import BaseChatModel
-from typing import Optional, TypedDict, cast
-from utils.singleton_meta import SingletonMeta
+
 from llm.constants import DEFAULT_MODEL
+from utils.singleton_meta import SingletonMeta
 
 
 class LLMParams(TypedDict, total=False):

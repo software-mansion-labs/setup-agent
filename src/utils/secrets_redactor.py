@@ -1,5 +1,6 @@
-from detect_secrets import SecretsCollection
 from typing import Set
+
+from detect_secrets import SecretsCollection
 
 
 class SecretsRedactor:

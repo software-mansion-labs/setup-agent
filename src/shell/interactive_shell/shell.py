@@ -1,21 +1,22 @@
-import pexpect
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
 
-from shell.shell_types import StreamToShellOutput
+import pexpect
+from rich.console import Console
+
+from shell.base_shell import BaseShell
+from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
 from shell.interactive_shell.shell_types import (
-    InteractionReviewLLMResponse,
     InteractionReview,
+    InteractionReviewLLMResponse,
     LongRunningShellInteractionReviewLLMResponse,
 )
-from shell.interactive_shell.prompts import BaseInteractiveShellPrompts
-from shell.base_shell import BaseShell
-from rich.console import Console
 from shell.security_context import SecurityContext
 from shell.shell_security_guard.shell_security_guard import (
-    ShellSecurityGuard,
     SecurityVerdictAction,
+    ShellSecurityGuard,
 )
+from shell.shell_types import StreamToShellOutput
 
 
 class InteractiveShell(BaseShell):

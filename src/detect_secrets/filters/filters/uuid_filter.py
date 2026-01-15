@@ -1,8 +1,8 @@
-from typing import Optional, Pattern
 import re
+from typing import Optional, Pattern
 
-from detect_secrets.plugins.base import BasePlugin
 from detect_secrets.filters.base_secret_filter import BaseSecretFilter
+from detect_secrets.plugins.base import BasePlugin
 
 
 class UUIDFilter(BaseSecretFilter):

@@ -1,8 +1,10 @@
-import typer
-from workflow_builder import WorkflowBuilder
-import questionary
 import os
-from llm.constants import SuggestedModels, DEFAULT_MODEL
+
+import questionary
+import typer
+
+from llm.constants import DEFAULT_MODEL, SuggestedModels
+from workflow_builder import WorkflowBuilder
 
 app = typer.Typer()
 

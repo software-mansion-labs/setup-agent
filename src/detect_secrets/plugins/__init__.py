@@ -1,6 +1,7 @@
 from detect_secrets.plugins.artifactory import ArtifactoryDetector
 from detect_secrets.plugins.aws import AWSKeyDetector
 from detect_secrets.plugins.azure_storage_key import AzureStorageKeyDetector
+from detect_secrets.plugins.base import BasePlugin
 from detect_secrets.plugins.basic_auth import BasicAuthDetector
 from detect_secrets.plugins.cloudant import CloudantDetector
 from detect_secrets.plugins.discord import DiscordBotTokenDetector
@@ -27,7 +28,6 @@ from detect_secrets.plugins.square_oauth import SquareOAuthDetector
 from detect_secrets.plugins.stripe import StripeDetector
 from detect_secrets.plugins.telegram_token import TelegramBotTokenDetector
 from detect_secrets.plugins.twilio import TwilioKeyDetector
-from detect_secrets.plugins.base import BasePlugin
 
 __all__ = [
     "ArtifactoryDetector",

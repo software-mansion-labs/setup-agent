@@ -2,16 +2,16 @@ from abc import abstractmethod
 from itertools import chain
 from typing import List, Sequence
 
-from questionary import select
+from langchain.tools import BaseTool
 from langchain_core.messages import HumanMessage
+from questionary import select
 
 from agents.base_react_agent import BaseReactAgent
-from graph_state import FinishedStep, GraphState, Step, WorkflowError, Node
-from shell import ShellRegistry, BaseShell
 from agents.base_step_executing_agent.agent_types import StepExplanation
-from agents.base_step_executing_agent.prompts import BaseStepExecutingAgentPrompts
 from agents.base_step_executing_agent.constants import ChooseActionPromptOptions
-from langchain.tools import BaseTool
+from agents.base_step_executing_agent.prompts import BaseStepExecutingAgentPrompts
+from graph_state import FinishedStep, GraphState, Node, Step, WorkflowError
+from shell import BaseShell, ShellRegistry
 
 
 class BaseStepExecutingAgent(BaseReactAgent):
