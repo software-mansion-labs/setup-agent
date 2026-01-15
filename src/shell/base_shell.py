@@ -1,16 +1,18 @@
-from abc import abstractmethod, ABC
-import pexpect
-import re
-from uuid import UUID
-from typing import Optional
-from shell.types import StreamToShellOutput
-from functools import reduce
-from utils.logger import LoggerFactory
-from llm import StructuredLLM
-from utils.secrets_redactor import SecretsRedactor
 import os
+import re
+from abc import ABC, abstractmethod
+from functools import reduce
+from typing import Optional
+from uuid import UUID
 
-ANSI_ESCAPE_RE = re.compile(r'\x1B(?:\[[0-?]*[ -/]*[@-~]|[=><!])')
+import pexpect
+
+from llm import StructuredLLM
+from shell.shell_types import StreamToShellOutput
+from utils.logger import LoggerFactory
+from utils.secrets_redactor import SecretsRedactor
+
+ANSI_ESCAPE_RE = re.compile(r"\x1B(?:\[[0-?]*[ -/]*[@-~]|[=><!])")
 PROGRESS_RE = re.compile(r"\d{1,3}\.\d%#+\s*")
 ZSH_ARTIFACT_RE = re.compile(r"%\s+(\r|$)")
 SPINNER_CHARS = set("⠏⠋⠙⠹⠸⠼⠴⠦⠧⠇|/-\\")
@@ -18,17 +20,45 @@ CARRIAGE_CHARACTER = "\r"
 
 
 class BaseShell(ABC):
+    """Abstract base class for a shell interface.
+
+    Manages a persistent shell process (zsh), handles input/output streaming,
+    output cleaning (ANSI, progress bars, secrets), and integrates with an LLM
+    for interactive decision-making.
+
+    Attributes:
+        _id (str): Unique identifier for this shell instance.
+        _buffer (str): Accumulator for raw shell output.
+        _step_buffer (str): Accumulator for output specific to the current step/command.
+        name (str): Name for the shell.
+        logger (Logger): Logger instance.
+        _llm (StructuredLLM): LLM instance used for analyzing shell output.
+        child (pexpect.spawn): The underlying pexpect process spawning the shell.
+    """
+
     def __init__(
-        self, 
-        id: Optional[UUID] = None, 
+        self,
+        id: Optional[UUID] = None,
         init_timeout: int = 10,
         term: str = "vt100",
-        columns: int = 2000
+        columns: int = 2000,
     ) -> None:
+        """Initializes the shell environment.
+
+        Spawns a new zsh process with specific environment variables to control
+        formatting (e.g., terminal type, columns, disabling color).
+
+        Args:
+            id (Optional[UUID]): A unique identifier for the shell. Defaults to "MAIN" if None.
+            init_timeout (int): Timeout in seconds for waiting for the initial shell prompt. Defaults to 10.
+            term (str): The value for the TERM environment variable. Defaults to "vt100".
+            columns (int): The number of columns for the terminal window. Defaults to 2000.
+        """
         self._id = str(id) if id else "MAIN"
         self._buffer = ""
         self._step_buffer = ""
-        self.logger = LoggerFactory.get_logger(name=f"SHELL - {self._id}")
+        self.name = f"SHELL - {self._id}"
+        self.logger = LoggerFactory.get_logger(name=self.name)
         self._llm = StructuredLLM()
 
         env = os.environ.copy()
@@ -39,18 +69,16 @@ class BaseShell(ABC):
 
         self.logger.info("Starting zsh shell...")
         self.child = pexpect.spawn(
-            "/bin/zsh",
-            ["-l"],
-            encoding="utf-8",
-            echo=False,
-            env=env
+            "/bin/zsh", ["-l"], encoding="utf-8", echo=False, env=env
         )
         self.child.sendline('PS1="$ "')
         self.child.expect(r"\$ ", timeout=init_timeout)
         self.logger.info("Ready.")
 
     @abstractmethod
-    def stream_command(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+    def stream_command(
+        self, sequence: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Run a command in the shell, stream output, and use the LLM to detect
         if user interaction is required.
@@ -91,9 +119,11 @@ class BaseShell(ABC):
             StreamToShellOutput: A structured object representing the shell's response.
         """
         pass
-    
+
     @abstractmethod
-    def send_control(self, sequence: str, hide_input: bool = False) -> StreamToShellOutput:
+    def send_control(
+        self, sequence: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Send a control sequence (e.g., Ctrl+C, Ctrl+D) to the shell.
 
@@ -107,7 +137,9 @@ class BaseShell(ABC):
         pass
 
     @abstractmethod
-    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
+    def run_command(
+        self, command: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Execute a command in the shell and return its output after completion.
 
@@ -119,7 +151,7 @@ class BaseShell(ABC):
             StreamToShellOutput: A structured object representing the command output.
         """
         pass
-    
+
     def _mask_sequence(self, sequence: str, hide_input: bool = False) -> str:
         """
         Mask a sequence of characters with asterisks if hide_input is True.
@@ -132,8 +164,10 @@ class BaseShell(ABC):
             str: The masked sequence or the original sequence if hide_input is False.
         """
         return "*" * len(sequence) if hide_input else sequence
-    
-    def _mask_sequence_in_text(self, text: str, sequence: str, hide_input: bool = False) -> str:
+
+    def _mask_sequence_in_text(
+        self, text: str, sequence: str, hide_input: bool = False
+    ) -> str:
         """
         Replace all occurrences of a sequence in a text with asterisks if hide_input is True.
 
@@ -146,7 +180,7 @@ class BaseShell(ABC):
             str: The text with the sequence masked or unchanged if hide_input is False.
         """
         return text.replace(sequence, "*" * len(sequence)) if hide_input else text
-    
+
     def _redact_text(self, text: str) -> str:
         """
         Redact all secrets and personal information in the text by applying mask.
@@ -158,13 +192,13 @@ class BaseShell(ABC):
             str: The redacted text.
         """
         return SecretsRedactor.mask_secrets_in_text(text)
-    
+
     def _remove_zsh_artifacts(self, sequence: str) -> str:
         """
         Remove Zsh PROMPT_SP artifacts (a '%' followed by spaces and a CR).
-        
-        This artifact is generated by Zsh when a command output doesn't end 
-        with a newline. Zsh prints a '%' (inverted) and fills the rest of 
+
+        This artifact is generated by Zsh when a command output doesn't end
+        with a newline. Zsh prints a '%' (inverted) and fills the rest of
         the line with spaces.
         Args:
             sequence (str): The input string that may contain Zsh artifacts.
@@ -192,29 +226,29 @@ class BaseShell(ABC):
             'Hello'
         """
         return ANSI_ESCAPE_RE.sub("", sequence)
-    
+
     def _remove_progress_noise(self, sequence: str) -> str:
         """
         Remove progress indicators (spinners, progress bars) from a sequence.
-        
+
         Args:
             sequence (str): The input string that may contain progress noise.
-        
+
         Returns:
             str: The input string with progress noise removed.
         """
         sequence = PROGRESS_RE.sub("", sequence)
-        
-        lines = sequence.split('\n')
+
+        lines = sequence.split("\n")
         cleaned_lines = []
-        
+
         for line in lines:
             stripped = line.strip()
             if stripped and all(ch in SPINNER_CHARS for ch in stripped):
                 continue
             cleaned_lines.append(line)
-        
-        return '\n'.join(cleaned_lines)
+
+        return "\n".join(cleaned_lines)
 
     def _remove_carriage_character(self, sequence: str) -> str:
         """
@@ -293,7 +327,7 @@ class BaseShell(ABC):
 
         if PROGRESS_RE.search(sequence):
             return True
-        
+
         stripped = sequence.strip()
         return len(stripped) > 0 and all(ch in SPINNER_CHARS for ch in stripped)
 
@@ -319,16 +353,32 @@ class BaseShell(ABC):
             self._remove_zsh_artifacts,
             self._remove_carriage_character,
             self._apply_backspaces,
-            self._remove_progress_noise
+            self._remove_progress_noise,
         ]
         return reduce(lambda acc, func: func(acc), cleaning_pipeline, chunk)
 
     def _write_log(self, text: str, fname: str = "logs.txt") -> None:
+        """Appends the provided text to a log file.
+
+        Args:
+            text (str): The text content to write.
+            fname (str): The filename of the log file. Defaults to "logs.txt".
+        """
         with open(fname, "a") as f:
             f.write(text)
 
     def clean_step_buffer(self) -> None:
+        """Clears the step-specific output buffer.
+
+        This should be called at the beginning of a new step to ensure
+        output from previous commands is not mixed in.
+        """
         self._step_buffer = ""
 
     def get_step_buffer(self) -> str:
+        """Retrieves the accumulated output buffer for the current step.
+
+        Returns:
+            str: The raw string content currently stored in the step buffer.
+        """
         return self._step_buffer

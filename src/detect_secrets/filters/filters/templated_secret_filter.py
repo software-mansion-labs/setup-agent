@@ -1,7 +1,8 @@
 from typing import Optional
 
-from detect_secrets.plugins.base import BasePlugin
 from detect_secrets.filters.base_secret_filter import BaseSecretFilter
+from detect_secrets.plugins.base import BasePlugin
+
 
 class TemplatedSecretFilter(BaseSecretFilter):
     """
@@ -25,7 +26,7 @@ class TemplatedSecretFilter(BaseSecretFilter):
             return True
 
         return (
-            (secret.startswith('{') and secret.endswith('}'))
-            or (secret.startswith('<') and secret.endswith('>'))
-            or (secret.startswith('${') and secret.endswith('}'))
+            (secret.startswith("{") and secret.endswith("}"))
+            or (secret.startswith("<") and secret.endswith(">"))
+            or (secret.startswith("${") and secret.endswith("}"))
         )

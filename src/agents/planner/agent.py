@@ -1,13 +1,14 @@
 from collections import deque
+from typing import List
+
 from agents.base_react_agent import BaseReactAgent
-from graph_state import GraphState, Step, Substep, Node
+from agents.planner.agent_types import ReadmeAnalysis
+from agents.planner.prompts import PlannerPrompts
+from config import Config
+from constants import FILE_SEPARATOR
+from graph_state import GraphState, Node, Step, Substep
 from shell import ShellRegistry
 from tools import get_websearch_tool
-from typing import List
-from config import Config
-from agents.planner.types import ReadmeAnalysis
-from agents.planner.prompts import PlannerPrompts
-from constants import FILE_SEPARATOR
 
 
 class Planner(BaseReactAgent):
@@ -62,7 +63,7 @@ class Planner(BaseReactAgent):
         """
         Perform the first analysis of the project's README or guideline files for given task.
         Includes context on finished steps from previous executions so the LLM can skip them.
-        
+
         Args:
             state (GraphState): The current workflow state, containing chosen task and guideline files.
 
@@ -91,9 +92,9 @@ class Planner(BaseReactAgent):
             for fs in finished_steps:
                 status = "SKIPPED" if fs.skipped else "COMPLETED"
                 history_lines.append(f"- {fs.step.description} [{status}]")
-            
+
             finished_steps_context = (
-                "\n\n**CONTEXT: STEPS ALREADY COMPLETED (DO NOT INCLUDE IN NEW PLAN)**:\n" 
+                "\n\n**CONTEXT: STEPS ALREADY COMPLETED (DO NOT INCLUDE IN NEW PLAN)**:\n"
                 + "\n".join(history_lines)
             )
 
@@ -165,10 +166,7 @@ class Planner(BaseReactAgent):
         plan = state.get("plan") or deque()
 
         planned_steps = self._assign_shells(analysis.plan)
-        state["plan"] = (
-            deque(planned_steps)
-            + plan
-        )
+        state["plan"] = deque(planned_steps) + plan
 
         state["failed_steps"] = []
         return state
@@ -188,7 +186,6 @@ class Planner(BaseReactAgent):
                 step.substeps = [self.cd_substep] + step.substeps
                 step.shell_id = self.shell_registry.register_new_shell()
         return steps
-
 
     def _decide_next_agent(self, state: GraphState) -> GraphState:
         """

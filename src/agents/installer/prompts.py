@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class InstallerPrompts(str, Enum):
     _CORE_INSTALLER_RULES = """
         Follow these rules carefully:
@@ -25,7 +26,7 @@ class InstallerPrompts(str, Enum):
         - User does not have access to files that you opened in the shell, if you enter a file you need to exit it as well.
         - Never print commands for manual execution — always use the tools above to perform them automatically.
     """
-    
+
     INSTALLER_AGENT_DESCRIPTION = (
         "You are responsible for installing required tools on macOS.\n\n"
         f"{_CORE_INSTALLER_RULES}"
@@ -39,16 +40,3 @@ class InstallerPrompts(str, Enum):
         "Rules:\n"
         f"{_CORE_INSTALLER_RULES}"
     )
-
-    STEP_EXPLANATION_PROMPT = """
-        You are a helpful assistant explaining installation steps.
-        You are given a step description and suggested commands for this step.
-
-        Provide brief explanation of the step, return JSON matching this schema:
-
-        {{
-            "purpose": "string",  # What the step is for
-            "actions": "string",  # What this step will do
-            "safe": "string"      # Whether these commands are safe to run
-        }}
-    """

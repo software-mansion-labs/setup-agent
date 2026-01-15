@@ -1,17 +1,37 @@
-from config import Config
-from typing import List
 import os
 from itertools import chain
-from graph_state import GuidelineFile, Node, GraphState
+from typing import List
+
+from config import Config
+from graph_state import GraphState, GuidelineFile, Node
 from nodes.base_llm_node import BaseLLMNode
-from utils.file_loader import FileLoader
+from nodes.guidelines_retriever.node_types import GuidelineFileCheck, PickedEntries
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
-from nodes.guidelines_retriever.types import PickedEntries, GuidelineFileCheck
 from user_prompts.guidelines_selector import GuidelinesSelector
+from utils.file_loader import FileLoader
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):
+    """Node responsible for identifying and retrieving project guideline files.
+
+    This node scans the project directory structure, filters directories and files
+    based on relevance (using LLM filtering), validates content to ensure it
+    contains actual guidelines (e.g., coding standards, readmes), and prompts
+    the user to select which guidelines should be active for the current workflow.
+
+    Attributes:
+        _config (Config): The global configuration settings.
+        _project_root (str): The root directory of the project being analyzed.
+        _file_loader (FileLoader): Utility for loading file system resources.
+        _guidelines_selector (GuidelinesSelector): Helper for interactive guideline selection.
+    """
+
     def __init__(self) -> None:
+        """Initializes the GuidelinesRetrieverNode.
+
+        Sets up the file loader and guideline selector utilities using the
+        global configuration.
+        """
         super().__init__(name=Node.GUIDELINES_RETRIEVER_NODE.value)
         self._config = Config.get()
         self._project_root = self._config.project_root
@@ -117,19 +137,22 @@ class GuidelinesRetrieverNode(BaseLLMNode):
 
         self.logger.info(f"Supported files found: {len(supported_files)}")
         return supported_files
-    
+
     def _get_guideline_files(self) -> List[GuidelineFile]:
         """
         Retrieves the list of guideline files to be processed.
 
-        Sources files either directly from the configuration (if provided) or by 
+        Sources files either directly from the configuration (if provided) or by
         scanning the project structure and filtering for relevant content.
 
         Returns:
             List[GuidelineFile]: A list of GuidelineFile objects.
         """
         if self._config.guideline_files:
-            return [GuidelineFile(file=file, content=self._file_loader.load_document(file)) for file in self._config.guideline_files]
+            return [
+                GuidelineFile(file=file, content=self._file_loader.load_document(file))
+                for file in self._config.guideline_files
+            ]
         else:
             supported_files = self._collect_supported_files()
             relevant_files = self._filter_non_relevant_files(supported_files)
@@ -150,8 +173,10 @@ class GuidelinesRetrieverNode(BaseLLMNode):
         self.logger.info("Retrieving guidelines from the project")
         possible_guideline_files = self._get_guideline_files()
         state["possible_guideline_files"] = possible_guideline_files
-        
-        selected_files = self._guidelines_selector.select_guidelines(guideline_files=possible_guideline_files)
+
+        selected_files = self._guidelines_selector.select_guidelines(
+            guideline_files=possible_guideline_files
+        )
         state["selected_guideline_files"] = selected_files
 
         return state

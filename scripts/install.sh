@@ -74,7 +74,7 @@ fi
 
 if ! grep -q "$PIPX_BIN_DIR" "$ZSHRC_FILE" 2>/dev/null; then
   echo "" >> "$ZSHRC_FILE"
-  echo "# Added by devops-agent installer on $(date)" >> "$ZSHRC_FILE"
+  echo "# Added by setup-agent installer on $(date)" >> "$ZSHRC_FILE"
   echo "export PATH=\"$PIPX_BIN_DIR:\$PATH\"" >> "$ZSHRC_FILE"
   echo "✅ Added $PIPX_BIN_DIR to PATH in $ZSHRC_FILE"
 else
@@ -85,15 +85,15 @@ export PATH="$PIPX_BIN_DIR:$PATH"
 
 echo ""
 echo "Verifying installation..."
-if command -v devops-agent >/dev/null 2>&1; then
-    echo "✅ devops-agent is now available on your PATH!"
+if command -v setup-agent >/dev/null 2>&1; then
+    echo "✅ setup-agent is now available on your PATH!"
 else
-    echo "⚠️ devops-agent not found automatically."
+    echo "⚠️ setup-agent not found automatically."
     echo "Run this to fix it:"
     echo "    export PATH=\"$PIPX_BIN_DIR:\$PATH\""
     echo "Then restart your terminal or run: source $ZSHRC_FILE"
 fi
 
 echo ""
-echo "✨ Setup complete!"
-echo "You can now run: devops-agent --help"
+echo "Setup complete!"
+echo "You can now run: setup-agent --help"

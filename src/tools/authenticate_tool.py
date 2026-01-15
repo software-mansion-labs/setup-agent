@@ -1,18 +1,20 @@
-from langchain_core.tools import tool
-from typing_extensions import Annotated
-from langgraph.prebuilt import InjectedState
-from agents.base_react_agent import CustomAgentState
-from uuid import UUID
-from shell import ShellRegistry, StreamToShellOutput
-from typing import Optional
-from utils.logger import LoggerFactory
 import getpass
+from typing import Optional
+from uuid import UUID
+
+from langchain_core.tools import tool
+from langgraph.prebuilt import InjectedState
+from typing_extensions import Annotated
+
+from agents.base_react_agent import CustomAgentState
+from shell import ShellRegistry, StreamToShellOutput
+from utils.logger import LoggerFactory
 
 
 @tool(parse_docstring=True)
 def authenticate_tool(
     state: Annotated[CustomAgentState, InjectedState],
-    prompt: str = "Enter your secret/password: "
+    prompt: str = "Enter your secret/password: ",
 ) -> StreamToShellOutput:
     """
     Prompt the user for a secret (password, API key, token, etc.) and securely send it directly to the persistent interactive shell.
@@ -41,5 +43,5 @@ def authenticate_tool(
     display_prompt = f"[{name}] {prompt}"
     logger.info("Prompting for secret/password")
     secret = getpass.getpass(f"\n{display_prompt}")
-    
+
     return shell.run_command(command=secret.strip(), hide_input=True)

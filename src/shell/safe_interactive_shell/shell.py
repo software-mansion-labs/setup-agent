@@ -1,7 +1,11 @@
+from typing import Optional
+from uuid import UUID
+
 from shell.interactive_shell.shell import InteractiveShell
-from shell.types import StreamToShellOutput
-from shell.safe_interactive_shell.types import CommandReview
 from shell.safe_interactive_shell.prompts import SafeInteractiveShellPrompts
+from shell.safe_interactive_shell.shell_types import CommandReview
+from shell.security_context import SecurityContext
+from shell.shell_types import StreamToShellOutput
 
 
 class SafeInteractiveShell(InteractiveShell):
@@ -15,16 +19,33 @@ class SafeInteractiveShell(InteractiveShell):
     3. Secure password prompting for sudo authentication.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        security_context: SecurityContext,
+        id: Optional[UUID] = None,
+        log_file: Optional[str] = None,
+        init_timeout: int = 10,
+        read_buffer_size: int = 65536,
+        read_timeout: int = 2,
+    ) -> None:
         """
         Initialize the SafeInteractiveShell instance.
 
         Logs initialization for auditing purposes.
         """
-        super().__init__()
+        super().__init__(
+            security_context=security_context,
+            id=id,
+            log_file=log_file,
+            init_timeout=init_timeout,
+            read_buffer_size=read_buffer_size,
+            read_timeout=read_timeout,
+        )
         self.logger.info("SafeInteractiveShell initialized.")
 
-    def run_command(self, command: str, hide_input: bool = False) -> StreamToShellOutput:
+    def run_command(
+        self, command: str, hide_input: bool = False
+    ) -> StreamToShellOutput:
         """
         Review a shell command with a language model before executing it.
 
@@ -38,7 +59,9 @@ class SafeInteractiveShell(InteractiveShell):
         Returns:
             StreamToShellOutput: A structured object representing the command output.
         """
-        command_to_display = self._mask_sequence(sequence=command, hide_input=hide_input)
+        command_to_display = self._mask_sequence(
+            sequence=command, hide_input=hide_input
+        )
         self.logger.info(f"Reviewing command before execution: {command_to_display}")
         review = self._review_command(command_to_display)
 

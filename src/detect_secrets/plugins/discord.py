@@ -1,4 +1,5 @@
 """Scans for Discord Bot tokens."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class DiscordBotTokenDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Discord Bot Token'.
         """
-        return 'Discord Bot Token'
+        return "Discord Bot Token"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -39,5 +40,5 @@ class DiscordBotTokenDetector(RegexBasedDetector):
             # Reference: https://discord.com/developers/docs/reference#authentication
             # Note: The [MNO] start char is a heuristic based on Base64 encoding of
             # recent User IDs. See: https://github.com/Yelp/detect-secrets/issues/627
-            re.compile(r'[MNO][a-zA-Z\d_-]{23,25}\.[a-zA-Z\d_-]{6}\.[a-zA-Z\d_-]{27}'),
+            re.compile(r"[MNO][a-zA-Z\d_-]{23,25}\.[a-zA-Z\d_-]{6}\.[a-zA-Z\d_-]{27}"),
         ]

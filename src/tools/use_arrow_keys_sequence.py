@@ -1,28 +1,30 @@
+from enum import Enum
+from typing import List, Optional
+from uuid import UUID
 
 from langchain_core.tools import tool
-from agents.base_react_agent import CustomAgentState
-from typing_extensions import Annotated
 from langgraph.prebuilt import InjectedState
-from enum import Enum
-from shell import ShellRegistry
-from typing import Optional
-from uuid import UUID
-from shell import StreamToShellOutput
-from typing import List
+from typing_extensions import Annotated
+
+from agents.base_react_agent import CustomAgentState
+from shell import ShellRegistry, StreamToShellOutput
 
 
 class ArrowKey(Enum):
     """
     Enum representing the four directional arrow keys on a keyboard.
     """
-    UP = '\x1b[A'
-    DOWN = '\x1b[B'
-    RIGHT = '\x1b[C'
-    LEFT = '\x1b[D'
+
+    UP = "\x1b[A"
+    DOWN = "\x1b[B"
+    RIGHT = "\x1b[C"
+    LEFT = "\x1b[D"
 
 
 @tool(parse_docstring=True)
-def use_arrow_keys_sequence(arrow_keys: List[ArrowKey], state: Annotated[CustomAgentState, InjectedState]) -> StreamToShellOutput:
+def use_arrow_keys_sequence(
+    arrow_keys: List[ArrowKey], state: Annotated[CustomAgentState, InjectedState]
+) -> StreamToShellOutput:
     """
     Sends a sequence of arrow key inputs to a shell instance.
 

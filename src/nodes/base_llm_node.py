@@ -1,11 +1,12 @@
-from pydantic import BaseModel
-from llm.structured_llm import StructuredLLM
-from typing import Type, TypeVar
-from abc import abstractmethod, ABC
-from utils.logger import LoggerFactory
+from abc import ABC, abstractmethod
+from typing import Generic, Type, TypeVar, Union
+
 from langchain.agents import AgentState
 from langgraph.graph import MessagesState
-from typing import Union, Generic
+from pydantic import BaseModel
+
+from llm.structured_llm import StructuredLLM
+from utils.logger import LoggerFactory
 
 T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", bound=Union[AgentState, MessagesState])
@@ -17,7 +18,7 @@ class BaseLLMNode(ABC, Generic[K]):
     Provides shared interface and utility methods.
     """
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         self.name = name
         self._llm = StructuredLLM()
         self.logger = LoggerFactory.get_logger(name=name)
@@ -33,7 +34,7 @@ class BaseLLMNode(ABC, Generic[K]):
         return self._llm.invoke(
             schema=schema, system_message=system_message, input_text=input_text
         )
-    
+
     @abstractmethod
     def invoke(self, state: K) -> K:
         """

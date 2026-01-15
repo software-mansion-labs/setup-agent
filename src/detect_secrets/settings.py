@@ -1,20 +1,20 @@
 from functools import lru_cache
 from typing import List
 
-from detect_secrets.filters.filters import (
-    SequentialStringFilter,
-    UUIDFilter,
-    TemplatedSecretFilter,
-    NotAlphanumericFilter,
-    GibberishFilter,
-)
 from detect_secrets.filters.base_secret_filter import BaseSecretFilter
-
+from detect_secrets.filters.filters import (
+    GibberishFilter,
+    NotAlphanumericFilter,
+    SequentialStringFilter,
+    TemplatedSecretFilter,
+    UUIDFilter,
+)
 from detect_secrets.plugins import (
     ArtifactoryDetector,
     AWSKeyDetector,
     AzureStorageKeyDetector,
     Base64HighEntropyString,
+    BasePlugin,
     BasicAuthDetector,
     CloudantDetector,
     DiscordBotTokenDetector,
@@ -38,8 +38,8 @@ from detect_secrets.plugins import (
     StripeDetector,
     TelegramBotTokenDetector,
     TwilioKeyDetector,
-    BasePlugin,
 )
+
 
 @lru_cache(maxsize=1)
 def get_plugins() -> List[BasePlugin]:
@@ -81,7 +81,7 @@ def get_filters() -> List[BaseSecretFilter]:
         UUIDFilter(),
         TemplatedSecretFilter(),
         NotAlphanumericFilter(),
-        GibberishFilter()
+        GibberishFilter(),
     ]
 
     return filters

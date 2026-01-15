@@ -1,8 +1,8 @@
 import string
 from typing import Optional
 
-from detect_secrets.plugins.base import BasePlugin
 from detect_secrets.filters.base_secret_filter import BaseSecretFilter
+from detect_secrets.plugins.base import BasePlugin
 
 
 class NotAlphanumericFilter(BaseSecretFilter):

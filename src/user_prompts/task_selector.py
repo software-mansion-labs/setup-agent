@@ -1,16 +1,15 @@
 from typing import List, Literal
+
 from questionary import select, text
 
 
 class TaskSelector:
     """Handles interactive task selection from a list of possible tasks."""
-    
+
     CUSTOM_TASK_OPTION = "Other: (Define custom task)"
 
     def select_task(
-        self, 
-        tasks: List[str],
-        message: str = "Which task would you like to perform?"
+        self, tasks: List[str], message: str = "Which task would you like to perform?"
     ) -> str:
         """
         Prompts the user to select one task from the list of identified tasks,
@@ -27,17 +26,15 @@ class TaskSelector:
             return ""
 
         choices = [*tasks, self.CUSTOM_TASK_OPTION]
-        
+
         selected_task = select(
-            message=message,
-            choices=choices,
-            default=choices[0]
+            message=message, choices=choices, default=choices[0]
         ).unsafe_ask()
 
         if selected_task == self.CUSTOM_TASK_OPTION:
             custom_task = text(
                 message="Please describe your custom task:",
-                validate=self._validate_custom_task
+                validate=self._validate_custom_task,
             ).unsafe_ask()
             return custom_task.strip() if custom_task else ""
 

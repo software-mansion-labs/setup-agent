@@ -1,4 +1,5 @@
 """This plugin searches for Telegram bot tokens."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class TelegramBotTokenDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Telegram Bot Token'.
         """
-        return 'Telegram Bot Token'
+        return "Telegram Bot Token"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -43,5 +44,5 @@ class TelegramBotTokenDetector(RegexBasedDetector):
         """
         return [
             # refs https://core.telegram.org/bots/api#authorizing-your-bot
-            re.compile(r'^\d{8,10}:[0-9A-Za-z_-]{35}$'),
+            re.compile(r"^\d{8,10}:[0-9A-Za-z_-]{35}$"),
         ]

@@ -1,4 +1,5 @@
 """This plugin searches for Mailchimp keys."""
+
 import re
 from typing import List, Pattern
 
@@ -19,7 +20,7 @@ class MailchimpDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Mailchimp Access Key'.
         """
-        return 'Mailchimp Access Key'
+        return "Mailchimp Access Key"
 
     @property
     def denylist(self) -> List[Pattern]:
@@ -34,5 +35,5 @@ class MailchimpDetector(RegexBasedDetector):
             List[Pattern]: A list of compiled regular expression patterns.
         """
         return [
-            re.compile(r'[0-9a-z]{32}-us[0-9]{1,2}'),
+            re.compile(r"[0-9a-z]{32}-us[0-9]{1,2}"),
         ]

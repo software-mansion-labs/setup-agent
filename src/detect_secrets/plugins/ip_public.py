@@ -1,4 +1,5 @@
 """This plugin searches for Public IP addresses."""
+
 import re
 from typing import List, Pattern
 
@@ -31,7 +32,7 @@ class IPPublicDetector(RegexBasedDetector):
         Returns:
             str: The string identifier 'Public IP (ipv4)'.
         """
-        return 'Public IP (ipv4)'
+        return "Public IP (ipv4)"
 
     denylist_ipv4_address = r"""
         (?<![\w.])         # Negative lookbehind: Ensures no preceding word character or dot

@@ -1,23 +1,20 @@
 from abc import abstractmethod
+from typing import Optional, Sequence, Type, TypeVar
+from uuid import UUID
+
+from langchain.agents import AgentState, create_agent
+from langchain.tools import BaseTool
+from pydantic import BaseModel
 
 from graph_state import GraphState
-from langchain.agents import create_agent
-from uuid import UUID
-from typing import Sequence
-from langchain.tools import BaseTool
-from typing import Optional
-from nodes.base_llm_node import BaseLLMNode
-from pydantic import BaseModel
-from typing import Type, TypeVar
-from langchain.agents import AgentState
 from middlewares import ParallelToolCallsMiddleware, PersonalInformationMiddleware
-from langchain.agents import AgentState
-from typing import Sequence
-from langchain.agents.middleware import PIIMiddleware
+from nodes.base_llm_node import BaseLLMNode
+
 
 class CustomAgentState(AgentState):
     agent_name: str
     shell_id: Optional[UUID]
+
 
 T = TypeVar("T", bound=BaseModel)
 K = TypeVar("K", bound=CustomAgentState)
@@ -48,10 +45,10 @@ class BaseReactAgent(BaseLLMNode[GraphState]):
             response_format=response_format,
             middleware=[
                 ParallelToolCallsMiddleware(parallel_tool_calls=parallel_tool_calls),
-                PersonalInformationMiddleware()
-            ]
+                PersonalInformationMiddleware(),
+            ],
         )
-        
+
     @abstractmethod
     def invoke(self, state: GraphState) -> GraphState:
         """

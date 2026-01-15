@@ -1,19 +1,13 @@
 from typing import List
 
-from graph_state import GraphState, FinishedStep, FailedStep, Node
 from langchain_core.messages import HumanMessage
-from tools.run_command_tool import run_command_tool
-from tools import get_websearch_tool
-from agents.base_react_agent import BaseReactAgent
-from pydantic import BaseModel
+
+from agents.auditor.agent_types import AuditorVerdict
 from agents.auditor.prompts import AuditorPrompts
-
-
-class AuditorVerdict(BaseModel):
-    """Structured response format for the Auditor agent."""
-    success: bool
-    reason: str
-    guidance: str
+from agents.base_react_agent import BaseReactAgent
+from graph_state import FailedStep, FinishedStep, GraphState, Node
+from tools import get_websearch_tool
+from tools.run_command_tool import run_command_tool
 
 
 class Auditor(BaseReactAgent):
@@ -72,7 +66,7 @@ class Auditor(BaseReactAgent):
         previous_steps: List[FinishedStep],
         failed_steps: List[FailedStep],
         state: GraphState,
-        characters_to_analyze: int = 65536
+        characters_to_analyze: int = 65536,
     ) -> GraphState:
         """Internal helper to verify the last finished step using LLM and tools.
 
@@ -90,7 +84,11 @@ class Auditor(BaseReactAgent):
             if previous_steps
             else "none"
         )
-        step_output = last_step.output[-characters_to_analyze:] if last_step.output else "No output recorded."
+        step_output = (
+            last_step.output[-characters_to_analyze:]
+            if last_step.output
+            else "No output recorded."
+        )
 
         prompt = self._build_verification_prompt(
             last_step.step.description, previous_text, step_output
@@ -98,12 +96,16 @@ class Auditor(BaseReactAgent):
 
         try:
             response: AuditorVerdict = self.agent.invoke(
-                {"messages": [HumanMessage(content=prompt)], "shell_id": None, "agent_name": self.name}
+                {
+                    "messages": [HumanMessage(content=prompt)],
+                    "shell_id": None,
+                    "agent_name": self.name,
+                }
             )["structured_response"]
 
             if not response.success:
                 self.logger.error(
-                    f"[Auditor] Step failed: {last_step.step.description}. Reason: {response.reason}, Guidance: {response.guidance}"
+                    f"Step failed: {last_step.step.description}. Reason: {response.reason}, Guidance: {response.guidance}"
                 )
                 failed_steps.append(
                     FailedStep(
@@ -114,7 +116,7 @@ class Auditor(BaseReactAgent):
                 )
 
         except Exception as e:
-            self.logger.error(f"[Auditor] Exception during verification: {e}")
+            self.logger.error(f"Exception during verification: {e}")
             failed_steps.append(
                 FailedStep(
                     step=last_step.step, reason="Auditor exception", guidance=str(e)
