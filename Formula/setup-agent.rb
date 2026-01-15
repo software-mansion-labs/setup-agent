@@ -4,7 +4,7 @@ class SetupAgent < Formula
   desc "AI agent for installing tools and running projects."
   homepage "https://github.com/software-mansion-labs/setup-agent"
   url "https://github.com/software-mansion-labs/setup-agent/archive/refs/tags/v0.2.0.tar.gz"
-  sha256 "0019dfc4b32d63c1392aa264aed2253c1e0c2fb09216f8e2cc269bbfb8bb49b5"
+  sha256 "34077fde90d7b5b7e5711a603d7a3af5dfe693ab696e68ca6fe3cfaac39d3ce7"
   license "MIT"
 
   depends_on "python@3.13"
