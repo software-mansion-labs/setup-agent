@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  pypi_publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+      shasum: ${{ steps.get_version.outputs.SHASUM }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to PyPI
+        run: uv publish
+
+      - name: Get Version and SHA256
+        id: get_version
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION=${TAG_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          FILENAME="setup-agent-$VERSION.tar.gz"
+          
+          if [ ! -f "dist/$FILENAME" ]; then
+            echo "Error: Could not find dist/$FILENAME"
+            ls -R dist/
+            exit 1
+          fi
+
+          SHASUM=$(sha256sum "dist/$FILENAME" | awk '{print $1}')
+          echo "SHASUM=$SHASUM" >> $GITHUB_OUTPUT
+
+  update_homebrew:
+    name: Update Homebrew Formula
+    needs: pypi_publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Generate Formula
+        env:
+          VERSION: ${{ needs.pypi_publish.outputs.version }}
+          SHA256: ${{ needs.pypi_publish.outputs.shasum }}
+        run: |
+          mkdir -p Formula
+          cat > Formula/setup-agent.rb <<EOF
+          class SetupAgent < Formula
+            include Language::Python::Virtualenv
+
+            desc "AI agent for installing tools and running projects."
+            homepage "https://github.com/software-mansion-labs/setup-agent"
+            url "https://pypi.io/packages/source/s/setup-agent/setup-agent-#{version}.tar.gz"
+            sha256 "${SHA256}"
+            license "MIT"
+
+            depends_on "python@3.12"
+
+            def install
+              virtualenv_install_with_resources
+            end
+
+            test do
+              system "#{bin}/setup-agent", "--version"
+            end
+          end
+          EOF
+
+      - name: Commit and Push Formula
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/setup-agent.rb
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update Homebrew formula to v${{ needs.pypi_publish.outputs.version }}"
+            git push origin main
+          fi
