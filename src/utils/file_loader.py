@@ -1,15 +1,18 @@
 from __future__ import annotations
+
+import os
+from enum import Enum
+from functools import lru_cache
+from typing import List, Optional, Type
+
 from langchain_community.document_loaders import (
+    TextLoader,
+    UnstructuredHTMLLoader,
     UnstructuredMarkdownLoader,
     UnstructuredPDFLoader,
-    UnstructuredHTMLLoader,
-    TextLoader,
     UnstructuredRSTLoader,
 )
-from enum import Enum
-from typing import List, Optional, Type
-import os
-from functools import lru_cache
+
 from utils.logger import LoggerFactory
 
 

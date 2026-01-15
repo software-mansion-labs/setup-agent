@@ -1,8 +1,8 @@
 from typing import Any, Generator, List
 
-from detect_secrets.settings import get_filters
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.plugins.base import BasePlugin
+from detect_secrets.settings import get_filters
 
 
 def scan_line(

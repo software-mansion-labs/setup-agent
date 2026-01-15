@@ -1,5 +1,5 @@
-from typing import Set
 from threading import Lock
+from typing import Set
 
 
 class SecurityContext:

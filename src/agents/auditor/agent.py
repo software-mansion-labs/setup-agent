@@ -1,12 +1,13 @@
 from typing import List
 
-from graph_state import GraphState, FinishedStep, FailedStep, Node
 from langchain_core.messages import HumanMessage
-from tools.run_command_tool import run_command_tool
-from tools import get_websearch_tool
-from agents.base_react_agent import BaseReactAgent
-from agents.auditor.prompts import AuditorPrompts
+
 from agents.auditor.agent_types import AuditorVerdict
+from agents.auditor.prompts import AuditorPrompts
+from agents.base_react_agent import BaseReactAgent
+from graph_state import FailedStep, FinishedStep, GraphState, Node
+from tools import get_websearch_tool
+from tools.run_command_tool import run_command_tool
 
 
 class Auditor(BaseReactAgent):

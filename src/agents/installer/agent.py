@@ -1,19 +1,20 @@
+from typing import List
+
+from agents.base_step_executing_agent.base_step_executing_agent import (
+    BaseStepExecutingAgent,
+)
+from agents.installer.prompts import InstallerPrompts
+from constants import FILE_SEPARATOR
 from graph_state import FinishedStep, Node, Step
 from tools import (
     authenticate_tool,
     get_websearch_tool,
-    run_command_tool,
-    user_input_tool,
     prompt_user_input_tool,
     prompt_user_selection_tool,
+    run_command_tool,
     use_arrow_keys_sequence,
     use_keyboard_keys,
-)
-from agents.installer.prompts import InstallerPrompts
-from typing import List
-from constants import FILE_SEPARATOR
-from agents.base_step_executing_agent.base_step_executing_agent import (
-    BaseStepExecutingAgent,
+    user_input_tool,
 )
 
 

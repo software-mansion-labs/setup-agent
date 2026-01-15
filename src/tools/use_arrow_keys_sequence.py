@@ -1,13 +1,13 @@
-from langchain_core.tools import tool
-from agents.base_react_agent import CustomAgentState
-from typing_extensions import Annotated
-from langgraph.prebuilt import InjectedState
 from enum import Enum
-from shell import ShellRegistry
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
-from shell import StreamToShellOutput
-from typing import List
+
+from langchain_core.tools import tool
+from langgraph.prebuilt import InjectedState
+from typing_extensions import Annotated
+
+from agents.base_react_agent import CustomAgentState
+from shell import ShellRegistry, StreamToShellOutput
 
 
 class ArrowKey(Enum):

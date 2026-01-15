@@ -1,4 +1,5 @@
 import typer
+
 from cli.scripts import setup
 
 app = typer.Typer(help="My multi-command CLI tool")

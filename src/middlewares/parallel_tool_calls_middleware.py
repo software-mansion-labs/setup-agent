@@ -1,6 +1,6 @@
-from langchain.agents.middleware import AgentMiddleware
-from langchain.agents.middleware import ModelRequest, ModelResponse
 from typing import Callable
+
+from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse
 
 
 class ParallelToolCallsMiddleware(AgentMiddleware):

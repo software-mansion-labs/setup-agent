@@ -5,7 +5,6 @@ from typing import List, Pattern
 
 from detect_secrets.plugins.base import RegexBasedDetector
 
-
 # This list is derived from RFC 3986 Section 2.2.
 #
 # We don't expect any of these delimiter characters to appear in

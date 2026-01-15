@@ -3,7 +3,7 @@ import re
 import string
 from abc import ABCMeta
 from contextlib import contextmanager
-from typing import Any, cast, Dict, Generator, Set
+from typing import Any, Dict, Generator, Set, cast
 
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.plugins.base import BasePlugin, PotentialSecretResult

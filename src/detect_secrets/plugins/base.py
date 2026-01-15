@@ -6,9 +6,8 @@ things may not work as you expect (see the scan logic in SecretsCollection).
 """
 
 import re
-from abc import ABCMeta
-from abc import abstractmethod
-from typing import Any, Dict, Generator, Iterable, Pattern, Set, Optional, TypedDict
+from abc import ABCMeta, abstractmethod
+from typing import Any, Dict, Generator, Iterable, Optional, Pattern, Set, TypedDict
 
 from detect_secrets.core.potential_secret import PotentialSecret
 

@@ -1,19 +1,21 @@
 import fnmatch
-import shlex
 import os
+import shlex
 from typing import Optional, Tuple
+
+from questionary import Choice, select, text
+
+from config import Config
 from llm import StructuredLLM
-from questionary import select, text, Choice
 from shell.security_context import SecurityContext
 from shell.shell_security_guard.constants import (
-    HandleForbiddenPatternChoices,
     FORBIDDEN_PATHS,
+    HandleForbiddenPatternChoices,
 )
 from shell.shell_security_guard.security_guard_types import (
     SecurityVerdict,
     SecurityVerdictAction,
 )
-from config import Config
 
 
 class ShellSecurityGuard:

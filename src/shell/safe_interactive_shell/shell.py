@@ -1,10 +1,11 @@
-from shell.interactive_shell.shell import InteractiveShell
-from shell.shell_types import StreamToShellOutput
-from shell.safe_interactive_shell.shell_types import CommandReview
-from shell.safe_interactive_shell.prompts import SafeInteractiveShellPrompts
-from shell.security_context import SecurityContext
 from typing import Optional
 from uuid import UUID
+
+from shell.interactive_shell.shell import InteractiveShell
+from shell.safe_interactive_shell.prompts import SafeInteractiveShellPrompts
+from shell.safe_interactive_shell.shell_types import CommandReview
+from shell.security_context import SecurityContext
+from shell.shell_types import StreamToShellOutput
 
 
 class SafeInteractiveShell(InteractiveShell):

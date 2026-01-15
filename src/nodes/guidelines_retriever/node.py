@@ -1,13 +1,14 @@
-from config import Config
-from typing import List
 import os
 from itertools import chain
-from graph_state import GuidelineFile, Node, GraphState
+from typing import List
+
+from config import Config
+from graph_state import GraphState, GuidelineFile, Node
 from nodes.base_llm_node import BaseLLMNode
-from utils.file_loader import FileLoader
+from nodes.guidelines_retriever.node_types import GuidelineFileCheck, PickedEntries
 from nodes.guidelines_retriever.prompts import GuidelinesRetrieverPrompts
-from nodes.guidelines_retriever.node_types import PickedEntries, GuidelineFileCheck
 from user_prompts.guidelines_selector import GuidelinesSelector
+from utils.file_loader import FileLoader
 
 
 class GuidelinesRetrieverNode(BaseLLMNode):

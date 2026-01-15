@@ -31,7 +31,6 @@ from typing import Any, Dict, Generator, Optional, Pattern, Set
 from detect_secrets.core.potential_secret import PotentialSecret
 from detect_secrets.plugins.base import BasePlugin
 
-
 # Note: All values here should be lowercase
 DENYLIST = (
     "api_?key",
