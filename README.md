@@ -4,6 +4,18 @@ AI Agent responsible for installing all the necessary tools and dependencies and
 
 ## Getting started
 
+### Installation
+
+#### pipx
+
+The easiest way to get started with the `setup-agent` is to use [pipx](https://pipx.pypa.io/stable/) for installing the agent as the CLI tool.
+
+```bash
+brew install pipx
+pipx install setup-agent
+setup-agent setup run
+```
+
 ### Development environment
 
 1. Install `uv` according to the [Astral docs](https://docs.astral.sh/uv/getting-started/installation/)
