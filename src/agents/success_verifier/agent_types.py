@@ -4,6 +4,7 @@ from langgraph.graph import END
 from langchain.agents import AgentState
 from enum import Enum
 from graph_state import WorkflowError
+from agents.success_verifier.constants import VerificationOutcome
 
 
 class ShutdownDecision(BaseModel):
@@ -13,12 +14,6 @@ class ShutdownDecision(BaseModel):
         description="'end' if conversation should end, 'continue' otherwise"
     )
     reason: str = Field(description="Brief explanation for the decision")
-
-
-class VerificationOutcome(str, Enum):
-    SUCCESS = "success"
-    PARTIAL_SUCCESS = "partial_success"
-    FAILURE = "failure"
 
 
 class VerifierState(AgentState):

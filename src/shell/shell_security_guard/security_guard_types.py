@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from enum import Enum
 
@@ -10,6 +10,22 @@ class SecurityVerdictAction(str, Enum):
 
 
 class SecurityVerdict(BaseModel):
-    action: SecurityVerdictAction
-    reason: str
-    output: Optional[str] = None
+    """
+    Structured result of a command security review.
+    """
+
+    action: SecurityVerdictAction = Field(
+        description=(
+            "The final decision on how to handle the command. "
+            "PROCEED: run automatically; "
+            "COMPLETED_MANUALLY: user ran it and provided output; "
+            "SKIPPED: command was blocked or rejected."
+        )
+    )
+    reason: str = Field(
+        description="The justification for the action, such as the specific forbidden pattern triggered or the user's choice in the interactive menu."
+    )
+    output: Optional[str] = Field(
+        default=None,
+        description="The shell output captured during manual execution. This should be populated only if the action is COMPLETED_MANUALLY.",
+    )

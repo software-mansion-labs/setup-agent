@@ -22,7 +22,7 @@ class GibberishFilter(BaseSecretFilter):
         detector (Detector): The Gibberish Detector.
     """
 
-    def __init__(self, model_path: str = "rfc.model", limit: float = 3.7):
+    def __init__(self, model_path: str = "rfc.model", limit: float = 3.7) -> None:
         """
         Initializes the Gibberish Detector model.
 

@@ -58,4 +58,5 @@ __all__ = [
     "StripeDetector",
     "TelegramBotTokenDetector",
     "TwilioKeyDetector",
+    "BasePlugin",
 ]

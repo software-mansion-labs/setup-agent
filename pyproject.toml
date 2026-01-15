@@ -38,7 +38,7 @@ dev = [
 package = true
 
 [project.scripts]
-setup-agent = "cli.cli:app"
+setup-agent = "cli.app:app"
 
 [tool.setuptools]
 include-package-data = true

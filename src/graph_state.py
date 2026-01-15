@@ -1,6 +1,6 @@
 from langgraph.graph import MessagesState
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 from typing import Deque
 from enum import Enum
@@ -21,38 +21,65 @@ class Node(str, Enum):
 
 
 class Substep(BaseModel):
-    description: str
-    suggested_commands: List[str] = []
+    description: str = Field(
+        description="A description of the action to be performed within a step."
+    )
+    suggested_commands: List[str] = Field(
+        default=[],
+        description="The specific shell commands required to complete this substep.",
+    )
 
 
 class Step(BaseModel):
-    description: str
-    substeps: List[Substep]
-    assigned_agent: Optional[Node] = None
-    run_in_separate_shell: bool = False
-    shell_id: Optional[UUID] = None
+    description: str = Field(
+        description="A description of the step in the installation or execution process."
+    )
+    substeps: List[Substep] = Field(
+        description="A list substeps required to complete this step."
+    )
+    assigned_agent: Optional[Node] = Field(
+        default=None, description="The specific agent responsible for this step."
+    )
+    run_in_separate_shell: bool = Field(
+        default=False,
+        description="Flag indicating if this step starts a long-running process (like a server) that needs its own persistent terminal.",
+    )
+    shell_id: Optional[UUID] = Field(
+        default=None,
+        description="The unique identifier for the shell session assigned to this step.",
+    )
 
 
 class FinishedStep(BaseModel):
-    step: Step
-    output: Optional[str] = None
-    skipped: bool = False
+    step: Step = Field(description="The original step definition that was executed.")
+    output: Optional[str] = Field(
+        default=None,
+        description="The full terminal output captured during the execution of this step.",
+    )
+    skipped: bool = Field(
+        default=False,
+        description="Indicates if the user chose to bypass this step manually.",
+    )
 
 
 class FailedStep(BaseModel):
-    step: Step
-    reason: str
-    guidance: str
+    step: Step = Field(
+        description="The original step definition that failed to complete successfully."
+    )
+    reason: str = Field(description="A description of the error or discrepancy.")
+    guidance: str = Field(description="Suggested corrective actions to fix the issue.")
 
 
 class GuidelineFile(BaseModel):
-    file: str
-    content: str
+    file: str = Field(description="The relative path to the documentation file.")
+    content: str = Field(description="The full raw text content of the file.")
 
 
 class WorkflowError(BaseModel):
-    description: str
-    error: str
+    description: str = Field(
+        description="A summary of where the workflow logic broke down."
+    )
+    error: str = Field(description="Error message associated with the failure.")
 
 
 class GraphState(MessagesState):

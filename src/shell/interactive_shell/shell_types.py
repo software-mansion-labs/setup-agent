@@ -1,19 +1,16 @@
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import Optional
 
 
 class InteractionReviewLLMResponse(BaseModel):
-    """
-    Structured response from the LLM analyzing shell output for interaction needs.
+    """Structured response from the LLM analyzing shell output for interaction needs."""
 
-    Attributes:
-        needs_action (bool): True if the shell is awaiting user input, False otherwise.
-        reason (str): Explanation of why the shell requires or does not require interaction.
-    """
-
-    needs_action: bool
-    reason: str
+    needs_action: bool = Field(
+        description="True if the terminal is currently blocked and waiting for human input (e.g., [Y/n], password, or menu selection). False if it is still processing or finished."
+    )
+    reason: str = Field(
+        description="A clear justification for the interaction status, identifying specific strings like 'Enter password:' or '[y/n]' found in the buffer."
+    )
 
 
 class ProcessState(str, Enum):
@@ -23,38 +20,20 @@ class ProcessState(str, Enum):
 
 
 class LongRunningShellInteractionReviewLLMResponse(BaseModel):
-    """
-    Structured response from the LLM analyzing long-running shell output for interaction needs.
+    """Structured response from the LLM analyzing long-running shell output for interaction needs."""
 
-    Attributes:
-        needs_action (bool): True if the shell is awaiting user input, False otherwise.
-        reason (str): Explanation of why the shell requires or does not require interaction.
-
-    """
-
-    state: ProcessState = ProcessState.INITIALIZING
-    reason: str
+    state: ProcessState = Field(
+        default=ProcessState.INITIALIZING,
+        description="The current lifecycle phase of the background process.",
+    )
+    reason: str = Field(description="The evidence for the state classification.")
 
 
 class InteractionReview(InteractionReviewLLMResponse):
     """
     Extends InteractionReviewLLMResponse to include the raw shell output.
-
-    Attributes:
-        output (str): The shell output that was analyzed by the LLM.
     """
 
-    output: str
-
-
-class SecurityCheckLLMResponse(BaseModel):
-    is_safe: bool = Field(
-        description="True if command is a safe write OR accesses only whitelisted files. False otherwise."
-    )
-    reason: str = Field(description="Reasoning for the decision.")
-
-
-class FileExtractionResponse(BaseModel):
-    file_path: Optional[str] = Field(
-        description="The specific sensitive file path extracted from the command, or None if unclear."
+    output: str = Field(
+        description="The full, redacted text buffer from the shell that was used for this specific analysis session."
     )

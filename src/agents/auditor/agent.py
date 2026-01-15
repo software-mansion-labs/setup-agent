@@ -5,16 +5,8 @@ from langchain_core.messages import HumanMessage
 from tools.run_command_tool import run_command_tool
 from tools import get_websearch_tool
 from agents.base_react_agent import BaseReactAgent
-from pydantic import BaseModel
 from agents.auditor.prompts import AuditorPrompts
-
-
-class AuditorVerdict(BaseModel):
-    """Structured response format for the Auditor agent."""
-
-    success: bool
-    reason: str
-    guidance: str
+from agents.auditor.agent_types import AuditorVerdict
 
 
 class Auditor(BaseReactAgent):
@@ -112,7 +104,7 @@ class Auditor(BaseReactAgent):
 
             if not response.success:
                 self.logger.error(
-                    f"[Auditor] Step failed: {last_step.step.description}. Reason: {response.reason}, Guidance: {response.guidance}"
+                    f"Step failed: {last_step.step.description}. Reason: {response.reason}, Guidance: {response.guidance}"
                 )
                 failed_steps.append(
                     FailedStep(
@@ -123,7 +115,7 @@ class Auditor(BaseReactAgent):
                 )
 
         except Exception as e:
-            self.logger.error(f"[Auditor] Exception during verification: {e}")
+            self.logger.error(f"Exception during verification: {e}")
             failed_steps.append(
                 FailedStep(
                     step=last_step.step, reason="Auditor exception", guidance=str(e)
